@@ -1,0 +1,60 @@
+/* 全站設計變數：沿用作業五《喵喵打字大冒險》的貼紙風 */
+:root {
+  --bg: #fff4e8;
+  --card: #ffffff;
+  --ink: #4a3550;
+  --ink-soft: #8a7590;
+  --pink: #ff8fab;
+  --pink-deep: #f05d86;
+  --mint: #6fd6b0;
+  --mint-deep: #34b98a;
+  --yellow: #ffd166;
+  --purple: #b79ced;
+  --sky: #8ecdf6;
+  --red: #ff6b6b;
+  --line: 3px solid var(--ink);
+  --pop: 4px 4px 0 var(--ink);
+  --radius: 22px;
+  --font: 'Fredoka', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--ink);
+  background-color: var(--bg);
+  background-image: radial-gradient(#ffd9c2 1.6px, transparent 1.6px);
+  background-size: 22px 22px;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+#root {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
