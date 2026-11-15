@@ -1,0 +1,6 @@
+/* 兔兔的耳朵會超出 viewBox 上緣，所以不能裁切 */
+.avatar {
+  display: block;
+  overflow: visible;
+  height: auto;
+}

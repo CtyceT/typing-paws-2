@@ -21,6 +21,11 @@ export interface Hero {
 
 export const HERO_ORDER: readonly HeroId[] = ['cat', 'shiba', 'bunny', 'panda']
 
+/** 勇者表情。normal：一般；happy：開心（攻擊、勝利）；hurt：受傷（被打、失敗）；ko：倒地 */
+export type HeroExpression = 'normal' | 'happy' | 'hurt' | 'ko'
+
+export const HERO_EXPRESSIONS: readonly HeroExpression[] = ['normal', 'happy', 'hurt', 'ko']
+
 export const DEFAULT_HERO: HeroId = 'cat'
 
 export const HEROES: Readonly<Record<HeroId, Hero>> = {

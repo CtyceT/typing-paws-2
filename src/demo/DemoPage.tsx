@@ -1,6 +1,24 @@
 import { useState } from 'react'
-import { Button, Card, MessageDialog, ProgressBar, Tag, type MessageDialogProps } from '../components/index.ts'
-import { DIFFICULTIES, DIFFICULTY_ORDER, MONSTERS } from '../game/index.ts'
+import {
+  Button,
+  Card,
+  HeroAvatar,
+  MessageDialog,
+  ProgressBar,
+  Tag,
+  type MessageDialogProps,
+} from '../components/index.ts'
+import {
+  DEFAULT_HERO,
+  DIFFICULTIES,
+  DIFFICULTY_ORDER,
+  HERO_EXPRESSIONS,
+  HERO_ORDER,
+  HEROES,
+  MONSTERS,
+  type HeroExpression,
+  type HeroId,
+} from '../game/index.ts'
 import styles from './DemoPage.module.css'
 
 /** 文字內容刻意和 1.0 版相同，方便截圖並排比對 */
@@ -11,12 +29,22 @@ const HOW = [
   { e: '🏆', title: '三關闖關', text: '打倒 3 隻怪物就通關，成績與最佳紀錄會自動保存' },
 ]
 
+const EXPRESSION_LABELS: Record<HeroExpression, string> = {
+  normal: '一般',
+  happy: '開心',
+  hurt: '受傷',
+  ko: '倒地',
+}
+
 type DialogContent = Omit<MessageDialogProps, 'open'>
 
 /** 共用元件展示頁，只在開發模式用 ?demo 開啟 */
 export default function DemoPage() {
   const [dialog, setDialog] = useState<DialogContent | null>(null)
   const [value, setValue] = useState(0.64)
+  const [hero, setHero] = useState<HeroId>(DEFAULT_HERO)
+  const [expression, setExpression] = useState<HeroExpression>('normal')
+  const [hovered, setHovered] = useState<HeroId | null>(null)
   const close = () => setDialog(null)
   const first = MONSTERS[0]
 
@@ -87,6 +115,46 @@ export default function DemoPage() {
         <input type="range" min={0} max={1} step={0.01} value={value} onChange={(e) => setValue(Number(e.target.value))} />
         {Math.round(value * 100)}%（蓄力條超過 75% 變紅）
       </label>
+
+      <div className={styles.title}>勇者 HeroAvatar</div>
+      {/* 卡片樣式照 1.0 版的勇者選擇卡片：滑過會浮起並變成開心表情 */}
+      <div className={styles.avatarGrid} data-demo="heroes">
+        {HERO_ORDER.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={[styles.avCard, id === hero && styles.selected].filter(Boolean).join(' ')}
+            aria-pressed={id === hero}
+            data-demo={`hero-${id}`}
+            onClick={() => setHero(id)}
+            onMouseEnter={() => setHovered(id)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <HeroAvatar hero={id} expression={hovered === id ? 'happy' : 'normal'} className={styles.avCardSvg} />
+            <div className={styles.nm}>{HEROES[id].name}勇者</div>
+            <div className={styles.sub}>{HEROES[id].sub}</div>
+          </button>
+        ))}
+      </div>
+      <div className={styles.row} style={{ marginTop: 18 }}>
+        <div className={styles.preview} data-demo="hero-preview">
+          <HeroAvatar hero={hero} expression={expression} className={styles.previewSvg} />
+        </div>
+        <div className={styles.row} role="group" aria-label="表情">
+          {HERO_EXPRESSIONS.map((e) => (
+            <Button
+              key={e}
+              size="small"
+              variant={e === expression ? 'primary' : 'ghost'}
+              aria-pressed={e === expression}
+              data-demo={`expression-${e}`}
+              onClick={() => setExpression(e)}
+            >
+              {EXPRESSION_LABELS[e]}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       <div className={styles.title}>訊息視窗 MessageDialog</div>
       <div className={styles.row}>

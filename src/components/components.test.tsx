@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { Button, Card, MessageDialog, ProgressBar, Tag } from './index.ts'
+import { HERO_EXPRESSIONS, HERO_ORDER, INK } from '../game/index.ts'
+import { Button, Card, HeroAvatar, MessageDialog, ProgressBar, Tag } from './index.ts'
 
 describe('Button', () => {
   it('預設是 type="button"，點擊會呼叫 onClick', () => {
@@ -116,5 +117,65 @@ describe('MessageDialog', () => {
     unmount()
     fireEvent.keyDown(document, { key: 'Enter' })
     expect(onPrimary).not.toHaveBeenCalled()
+  })
+})
+
+describe('HeroAvatar', () => {
+  const svgOf = (container: HTMLElement) => container.querySelector('svg')!
+
+  it('每位勇者、每種表情都畫得出來，而且只畫一組表情', () => {
+    for (const hero of HERO_ORDER) {
+      for (const expression of HERO_EXPRESSIONS) {
+        const { container, unmount } = render(<HeroAvatar hero={hero} expression={expression} />)
+        const svg = svgOf(container)
+        expect(svg).toHaveAttribute('viewBox', '0 0 120 124')
+        expect(svg).toHaveAttribute('data-hero', hero)
+        expect(svg).toHaveAttribute('data-expression', expression)
+        expect(svg.querySelectorAll(':scope > g:last-child')).toHaveLength(1)
+        unmount()
+      }
+    }
+  })
+
+  it('預設是一般表情，四種表情的五官都不同', () => {
+    const faces = HERO_EXPRESSIONS.map((expression) => {
+      const { container, unmount } = render(<HeroAvatar hero="cat" expression={expression} />)
+      const html = svgOf(container).lastElementChild!.innerHTML
+      unmount()
+      return html
+    })
+    expect(new Set(faces).size).toBe(4)
+    const { container } = render(<HeroAvatar hero="cat" />)
+    expect(svgOf(container)).toHaveAttribute('data-expression', 'normal')
+    expect(svgOf(container).lastElementChild!.innerHTML).toBe(faces[0])
+  })
+
+  it('四位勇者的外觀都不同', () => {
+    const bodies = HERO_ORDER.map((hero) => {
+      const { container, unmount } = render(<HeroAvatar hero={hero} />)
+      const html = svgOf(container).innerHTML
+      unmount()
+      return html
+    })
+    expect(new Set(bodies).size).toBe(4)
+  })
+
+  it('熊貓的眼睛是白色（畫在黑眼圈上），其他勇者是深紫色', () => {
+    const eyeFill = (hero: 'cat' | 'panda') => {
+      const { container, unmount } = render(<HeroAvatar hero={hero} />)
+      const fill = svgOf(container).lastElementChild!.firstElementChild!.getAttribute('fill')
+      unmount()
+      return fill
+    }
+    expect(eyeFill('panda')).toBe('#ffffff')
+    expect(eyeFill('cat')).toBe(INK)
+  })
+
+  it('是裝飾用圖片（aria-hidden），並保留外部傳入的 class 與屬性', () => {
+    const { container } = render(<HeroAvatar hero="bunny" className="extra" data-testid="av" />)
+    const svg = svgOf(container)
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(svg).toHaveClass('extra')
+    expect(svg).toHaveAttribute('data-testid', 'av')
   })
 })
