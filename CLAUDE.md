@@ -29,6 +29,7 @@ AI 個人化英文打字冒險遊戲。是 TAICA「生成式AI：文字與圖像
 - API 金鑰、Supabase service role key 只放 `.env.local` 或 Supabase secrets，`.env*` 必須在 `.gitignore`
 - 前端只能使用 Supabase anon key；資料表一律開啟 Row Level Security
 - Edge Function 要限制每位使用者每日呼叫次數
+- 1.0 和 2.0 都在 ctycet.github.io 同一個網域，localStorage 是共用的：2.0 的所有 localStorage 鍵一律用 `typingPaws2.` 開頭，絕對不能寫入或刪除 1.0 的 `typingPaws.v1`；唯一允許讀取它的地方是 ROADMAP 1.17 的「匯入舊紀錄」功能（只讀取）
 
 ## 工作方式
 - 照 ROADMAP 的順序一個項目一個項目做，每個項目各自 commit
