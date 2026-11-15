@@ -25,9 +25,19 @@
   background: #fff;
 }
 
-/* 刻意寫成 .btn.small：和 1.0 版一樣，小按鈕滑過、按下時陰影維持 3px，只有位移 */
+/* 小按鈕的陰影比大按鈕少 1px，滑過、按下時跟大按鈕一樣讓陰影跟著位移變化
+   （1.0 版的小按鈕陰影固定 3px，這裡刻意不同）。寫成 .btn.small 才蓋得過 .btn 的狀態樣式 */
 .btn.small {
   font-size: 0.9rem;
   padding: 6px 14px;
   box-shadow: 3px 3px 0 var(--ink);
+}
+
+.btn.small:hover {
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.btn.small:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
