@@ -1,0 +1,30 @@
+.chip {
+  background: #fff;
+  border: var(--line);
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.chip small {
+  color: var(--ink-soft);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+@media (max-width: 720px) {
+  .chip {
+    padding: 3px 4px;
+    font-size: 0.85rem;
+    text-align: center;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .chip small {
+    display: block;
+    margin: 0;
+    font-size: 0.7rem;
+  }
+}

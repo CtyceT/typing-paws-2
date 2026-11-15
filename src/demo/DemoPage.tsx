@@ -16,9 +16,13 @@ import {
   HERO_EXPRESSIONS,
   HERO_ORDER,
   MONSTERS,
+  createBattle,
+  createSeededRng,
+  type BattleState,
   type HeroExpression,
   type HeroId,
 } from '../game/index.ts'
+import { BattleView } from '../screens/BattleView.tsx'
 import styles from './DemoPage.module.css'
 
 /** 文字內容刻意和 1.0 版相同，方便截圖並排比對 */
@@ -36,6 +40,29 @@ const EXPRESSION_LABELS: Record<HeroExpression, string> = {
   ko: '倒地',
 }
 
+/** 戰鬥畫面的幾種假狀態 */
+const BATTLE_BASE = createBattle('normal', { words: ['pineapple', 'commit & push', 'keyboard', 'rainbow'], rng: createSeededRng(7) })
+const BATTLE_SAMPLES: Record<string, { label: string; state: BattleState }> = {
+  opening: { label: '開場', state: createBattle('easy', { rng: createSeededRng(3) }) },
+  mid: {
+    label: '打到一半',
+    state: { ...BATTLE_BASE, phase: 'running', index: 4, combo: 12, maxCombo: 12, correct: 86, typed: 90, score: 540, monsterHp: 71, playerHp: 76, charge: 0.4, activeMs: 31400 },
+  },
+  error: {
+    label: '打錯',
+    state: { ...BATTLE_BASE, phase: 'running', index: 2, errorFlash: true, correct: 40, typed: 46, wrong: 6, score: 210, monsterHp: 110, charge: 0.62, activeMs: 18200 },
+  },
+  danger: {
+    label: '蓄力快滿＋爆擊倍率',
+    state: { ...BATTLE_BASE, phase: 'running', index: 6, combo: 24, maxCombo: 24, correct: 150, typed: 152, score: 1480, monsterHp: 20, playerHp: 34, charge: 0.9, activeMs: 52000 },
+  },
+  boss: {
+    label: '魔王關',
+    state: { ...BATTLE_BASE, stage: 2, monsterHp: 224, monsterMaxHp: 224, playerHp: 88, score: 2600, activeMs: 70000, correct: 210, typed: 220 },
+  },
+  lost: { label: '被打倒', state: { ...BATTLE_BASE, phase: 'lost', playerHp: 0, charge: 0, activeMs: 44000, correct: 90, typed: 120 } },
+}
+
 type DialogContent = Omit<MessageDialogProps, 'open'>
 
 /** 共用元件展示頁，只在開發模式用 ?demo 開啟 */
@@ -44,6 +71,7 @@ export default function DemoPage() {
   const [value, setValue] = useState(0.64)
   const [hero, setHero] = useState<HeroId>(DEFAULT_HERO)
   const [expression, setExpression] = useState<HeroExpression>('normal')
+  const [sample, setSample] = useState('opening')
   const close = () => setDialog(null)
   const first = MONSTERS[0]
 
@@ -150,6 +178,18 @@ export default function DemoPage() {
         <Button variant="ghost" data-demo="open-pause" onClick={openPause}>
           暫停訊息
         </Button>
+      </div>
+
+      <div className={styles.title}>戰鬥畫面 BattleView（假資料）</div>
+      <div className={styles.row} style={{ marginBottom: 16 }}>
+        {Object.entries(BATTLE_SAMPLES).map(([id, s]) => (
+          <Button key={id} size="small" variant={id === sample ? 'primary' : 'ghost'} onClick={() => setSample(id)}>
+            {s.label}
+          </Button>
+        ))}
+      </div>
+      <div data-demo="battle">
+        <BattleView state={BATTLE_SAMPLES[sample].state} hero={hero} />
       </div>
 
       {dialog && <MessageDialog open {...dialog} />}

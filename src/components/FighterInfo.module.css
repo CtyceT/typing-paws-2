@@ -1,0 +1,37 @@
+.info {
+  background: rgba(255, 255, 255, 0.92);
+  border: var(--line);
+  border-radius: 16px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.name span:last-child {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.chargeLabel {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 720px) {
+  .name {
+    flex-direction: column;
+    gap: 0;
+  }
+}

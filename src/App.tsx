@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Difficulty, HeroId } from './game/index.ts'
-import { BattlePlaceholder } from './screens/BattlePlaceholder.tsx'
+import { BattleScreen } from './screens/BattleScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { loadHero, saveHero } from './storage/hero.ts'
 
@@ -16,7 +16,7 @@ function App() {
   }
 
   if (screen.name === 'battle') {
-    return <BattlePlaceholder hero={hero} difficulty={screen.difficulty} onExit={() => setScreen({ name: 'menu' })} />
+    return <BattleScreen hero={hero} difficulty={screen.difficulty} onExit={() => setScreen({ name: 'menu' })} />
   }
   return (
     <MenuScreen hero={hero} onSelectHero={selectHero} onStart={(difficulty) => setScreen({ name: 'battle', difficulty })} />

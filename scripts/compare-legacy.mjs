@@ -14,6 +14,7 @@ import { chromium } from 'playwright'
 
 const LEGACY_URL = process.env.LEGACY_URL ?? 'https://ctycet.github.io/typing-paws/'
 const LOCAL_URL = process.env.LOCAL_URL ?? 'http://localhost:5173/typing-paws-2/?demo'
+const LOCAL_APP_URL = LOCAL_URL.split('?')[0]
 const OUT = resolve('.compare/report')
 const VIEWPORT = { width: 960, height: 800 }
 const SCALE = 2
@@ -95,9 +96,9 @@ async function capture(page, selector, states, pad) {
   return out
 }
 
-async function compare(name, legacySel, localSel, { states = ['normal'], pad = 10, legacyPage = legacy } = {}) {
+async function compare(name, legacySel, localSel, { states = ['normal'], pad = 10, legacyPage = legacy, localPage = local } = {}) {
   const a = await capture(legacyPage, legacySel, states, pad)
-  const b = await capture(local, localSel, states, pad)
+  const b = await capture(localPage, localSel, states, pad)
   for (const state of states) {
     const id = states.length > 1 ? `${name}-${state}` : name
     writeFileSync(`${OUT}/legacy-${id}.png`, a[state].png)
@@ -194,6 +195,40 @@ for (const k of HEROES) {
 }
 await local.click('[data-demo=hero-cat]')
 await local.click('[data-demo=expression-normal]')
+
+// ---- 戰鬥畫面（開場狀態）：1.0 版 vs 2.0 的正式畫面（不是展示頁） ----
+// 題目是亂數選的。把兩邊的 Math.random 換成同一組固定數列，這組數字在 1.0 與 2.0 的選字方式下
+// 都會選到簡單字庫（46 個字）的第 20、10、5、2 個字，所以兩邊的題目和預覽會一樣。
+{
+  const fixedRandom = () => {
+    const seq = [0.4457, 0.23, 0.12, 0.055]
+    window.__randomIndex = 0
+    Math.random = () => seq[window.__randomIndex++ % seq.length]
+  }
+  const NO_MOTION = `${DOTS_OFF} *, *::before, *::after { animation: none !important; transition: none !important; }`
+  const a = await open(LEGACY_URL, fixedRandom)
+  const b = await open(LOCAL_APP_URL, fixedRandom)
+  // 頁面載入時可能已經用掉幾個亂數，開始戰鬥前把數列歸零
+  for (const page of [a, b]) await page.evaluate(() => (window.__randomIndex = 0))
+  await a.click('.diff-card[data-diff=easy]')
+  await b.getByRole('button', { name: /簡單/ }).click()
+  for (const page of [a, b]) await page.addStyleTag({ content: NO_MOTION })
+  // 蓋在上面的開場訊息視窗先藏起來
+  await a.evaluate(() => (document.getElementById('msgOverlay').style.visibility = 'hidden'))
+  await b.evaluate(() => {
+    const dialog = document.querySelector('[role=dialog]')
+    if (dialog) dialog.parentElement.style.visibility = 'hidden'
+  })
+  const words = (page, sel) => page.locator(sel).first().innerText()
+  const [wa, wb] = [await words(a, '#wordPanel'), await words(b, '[data-battle=word-panel]')]
+  if (wa.replace(/\s+/g, '') !== wb.replace(/\s+/g, '')) console.log(`注意：兩邊的題目不同，題目面板的比對沒有意義\n  1.0：${wa}\n  2.0：${wb}`)
+  const pages = { legacyPage: a, localPage: b }
+  await compare('battle-topbar', '.topbar', '[data-battle=topbar]', { pad: 8, ...pages })
+  await compare('battle-arena', '#arena', '[data-battle=arena]', { pad: 8, ...pages })
+  await compare('battle-word-panel', '#wordPanel', '[data-battle=word-panel]', { pad: 8, ...pages })
+  await a.context().close()
+  await b.context().close()
+}
 
 // 視窗是半透明遮罩蓋在頁面上，兩邊頁面內容不同會透出來。
 // 比視窗時先把背後的內容和點點背景藏起來，只留遮罩和視窗本身。

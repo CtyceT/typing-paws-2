@@ -1,0 +1,30 @@
+.sprite {
+  font-size: clamp(64px, 12vw, 104px);
+  line-height: 1;
+  display: inline-block;
+  filter: drop-shadow(0 6px 0 rgba(74, 53, 80, 0.18));
+}
+
+.boss {
+  font-size: clamp(84px, 15vw, 132px);
+}
+
+.idle {
+  animation: bobMonster 1.2s ease-in-out infinite;
+}
+
+/* 被打倒：先用變淡表示，倒地動畫在 ROADMAP 1.15 */
+.defeated {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+@keyframes bobMonster {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.04, 0.97);
+  }
+}
