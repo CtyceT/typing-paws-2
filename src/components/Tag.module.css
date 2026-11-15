@@ -1,0 +1,20 @@
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.easy {
+  background: #d9f7ea;
+}
+
+.normal {
+  background: #fff0c4;
+}
+
+.hard {
+  background: #ffd9e3;
+}

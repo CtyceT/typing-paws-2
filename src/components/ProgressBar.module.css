@@ -1,0 +1,37 @@
+.bar {
+  height: 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: #f4e8ee;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.player .fill {
+  background: var(--mint);
+}
+
+.monster .fill {
+  background: var(--pink);
+}
+
+.charge {
+  height: 10px;
+  margin-top: 6px;
+}
+
+.charge .fill {
+  background: var(--yellow);
+  transition: none;
+}
+
+.charge.danger .fill {
+  background: var(--red);
+}

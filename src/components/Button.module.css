@@ -1,0 +1,33 @@
+.btn {
+  border: var(--line);
+  border-radius: 999px;
+  box-shadow: var(--pop);
+  background: var(--yellow);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 10px 22px;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.ghost {
+  background: #fff;
+}
+
+/* 刻意寫成 .btn.small：和 1.0 版一樣，小按鈕滑過、按下時陰影維持 3px，只有位移 */
+.btn.small {
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+}

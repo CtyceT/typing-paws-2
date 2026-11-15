@@ -1,0 +1,64 @@
+/* 展示頁專用的排版；元件本身的樣式都在 src/components */
+.title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 26px 0 12px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.howGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* 多加一層選擇器，確保蓋得過 Card 本身的 padding（CSS Modules 不保證載入順序） */
+.howGrid .how {
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.how .e {
+  font-size: 30px;
+}
+
+.how b {
+  display: block;
+  margin: 4px 0 2px;
+}
+
+.how small {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  display: block;
+}
+
+.bars {
+  width: 300px;
+  background: #fff;
+  border: var(--line);
+  border-radius: 16px;
+  padding: 8px 10px;
+}
+
+.slider {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .howGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
