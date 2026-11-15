@@ -9,6 +9,7 @@ import {
   STAGE_CLEAR_DELAY_MS,
   VICTORY_DELAY_MS,
   type BattlePhase,
+  type BattleState,
   type Difficulty,
 } from '../game/index.ts'
 
@@ -18,6 +19,11 @@ const REVEAL_DELAY_MS: Partial<Record<BattlePhase, number>> = {
   won: VICTORY_DELAY_MS,
   lost: DEFEAT_DELAY_MS,
 }
+
+/** 暫停的原因，決定暫停時顯示哪一種訊息 */
+export type PauseKind = 'user'
+
+const isActive = (b: BattleState) => b.phase === 'running' && !b.paused
 
 /**
  * 一場戰鬥的流程控制：開場訊息 → 倒數 → 戰鬥 → 過關訊息 → 倒數 → … → 結束。
@@ -32,6 +38,13 @@ export function useBattleSession(difficulty: Difficulty) {
   /** 目前這個階段（過關、通關、被打倒）的訊息是否已經到了該顯示的時間 */
   const [revealedPhase, setRevealedPhase] = useState<BattlePhase | null>(null)
   const [focusLost, setFocusLost] = useState(false)
+  /** 這次暫停的原因：user 是玩家自己暫停（或切換分頁） */
+  const [pauseKind, setPauseKind] = useState<PauseKind>('user')
+  // 事件處理函式要讀最新的戰鬥狀態，但不想每次狀態變動都重新掛事件
+  const battleRef = useRef(battle)
+  useEffect(() => {
+    battleRef.current = battle
+  })
   const inputRef = useRef<HTMLInputElement>(null)
   const countdownTimer = useRef(0)
 
@@ -60,6 +73,33 @@ export function useBattleSession(difficulty: Difficulty) {
   }, [focusInput])
 
   useEffect(() => () => window.clearTimeout(countdownTimer.current), [])
+
+  /** 戰鬥中才能暫停；暫停時時間與怪物蓄力都不會前進（reducer 會忽略 tick） */
+  const pause = useCallback((kind: PauseKind) => {
+    if (!isActive(battleRef.current)) return
+    setPauseKind(kind)
+    dispatch({ type: 'pause' })
+  }, [])
+
+  const resume = useCallback(() => {
+    dispatch({ type: 'resume' })
+    focusInput()
+  }, [focusInput])
+
+  /** Esc 或暫停按鈕：戰鬥中就暫停，暫停中就繼續 */
+  const togglePause = useCallback(() => {
+    if (battleRef.current.paused) resume()
+    else pause('user')
+  }, [pause, resume])
+
+  // 切到別的分頁時自動暫停
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) pause('user')
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [pause])
 
   // 進入戰鬥畫面就先把焦點放到輸入框
   useEffect(() => focusInput(), [focusInput])
@@ -96,13 +136,18 @@ export function useBattleSession(difficulty: Difficulty) {
         altKey: e.altKey,
         capsLock: e.getModifierState?.('CapsLock'),
       })
+      if (intent.type === 'pause') {
+        e.preventDefault()
+        togglePause()
+        return
+      }
       if (intent.type !== 'char') return
       e.preventDefault() // 避免空白鍵捲動頁面，也避免輸入框的 input 事件重複觸發
       typeChar(intent.char)
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [typeChar])
+  }, [typeChar, togglePause])
 
   /** 手機虛擬鍵盤常常只送出 input 事件（keydown 的 key 是 Unidentified） */
   const onInput = useCallback(
@@ -148,6 +193,10 @@ export function useBattleSession(difficulty: Difficulty) {
     stageClearOpen: phase === 'stageClear' && revealedPhase === 'stageClear',
     /** 結束訊息該顯示了 */
     finishOpen: finished && revealedPhase === phase,
+    /** 暫停中：要顯示哪一種暫停訊息；沒有暫停時是 null */
+    pauseOpen: battle.paused ? pauseKind : null,
+    togglePause,
+    resume,
     focusLost,
     focusInput,
     inputProps,

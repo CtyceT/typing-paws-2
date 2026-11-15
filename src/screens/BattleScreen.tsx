@@ -24,6 +24,19 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
     dialog = (
       <MessageDialog open {...introMessage(currentMonster(battle))} buttons={[{ label: '⚔️ 開打！（Enter）', primary: true, onClick: session.begin }]} />
     )
+  } else if (session.pauseOpen === 'user') {
+    dialog = (
+      <MessageDialog
+        open
+        emoji="⏸"
+        title="暫停中"
+        text="喘口氣，準備好再繼續！"
+        buttons={[
+          { label: '▶ 繼續（Esc）', primary: true, onClick: session.resume },
+          { label: '🏳 放棄回選單', onClick: onExit },
+        ]}
+      />
+    )
   } else if (session.stageClearOpen) {
     dialog = (
       <MessageDialog
@@ -50,7 +63,7 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
 
   return (
     <main>
-      <BattleView state={battle} hero={hero} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
+      <BattleView state={battle} hero={hero} onPause={session.togglePause} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
         {/* type=password：瀏覽器在密碼欄位會關閉中文輸入法，避免注音／拼音吃掉按鍵 */}
         <input
           {...session.inputProps}

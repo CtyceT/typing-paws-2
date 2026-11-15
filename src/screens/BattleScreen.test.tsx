@@ -189,3 +189,87 @@ describe('遊戲迴圈', () => {
     expect(statValue('時間')).toBe(time) // 結束後不再計時
   })
 })
+
+describe('暫停', () => {
+  const chargeText = () => screen.getByText('⚡ 攻擊蓄力').nextElementSibling!.textContent
+  const setHidden = (hidden: boolean) => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    fireEvent(document, new Event('visibilitychange'))
+  }
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'hidden')
+  })
+
+  it('按 Esc 暫停，暫停 10 秒時間與蓄力都不前進，再按 Esc 繼續', () => {
+    setup()
+    startBattle()
+    advance(2000)
+    typeKey('Escape')
+    expect(dialog()).toHaveAccessibleName('暫停中')
+    const [time, charge] = [statValue('時間'), chargeText()]
+    advance(10000)
+    expect(statValue('時間')).toBe(time)
+    expect(chargeText()).toBe(charge)
+    expect(screen.getByText('100/100')).toBeInTheDocument()
+
+    typeKey('Escape')
+    expect(dialog()).not.toBeInTheDocument()
+    expect(screen.getByLabelText('打字輸入')).toHaveFocus()
+    advance(1000)
+    expect(Number.parseFloat(statValue('時間')!)).toBeCloseTo(Number.parseFloat(time!) + 1, 0)
+  })
+
+  it('暫停中打字不算，按 Enter 或「繼續」可以回到戰鬥', () => {
+    setup()
+    startBattle()
+    typeKey('Escape')
+    typeKey('#')
+    expect(statValue('準確率')).toBe('100%')
+    pressEnter()
+    expect(dialog()).not.toBeInTheDocument()
+    typeKey('Escape')
+    fireEvent.click(screen.getByRole('button', { name: /繼續/ }))
+    expect(dialog()).not.toBeInTheDocument()
+    typeKey(currentWord()[0])
+    expect(screen.getByText('COMBO').previousElementSibling).toHaveTextContent('1')
+  })
+
+  it('暫停按鈕可以暫停', () => {
+    setup()
+    startBattle()
+    fireEvent.click(screen.getByRole('button', { name: /暫停/ }))
+    expect(dialog()).toHaveAccessibleName('暫停中')
+  })
+
+  it('放棄回選單', () => {
+    const { onExit } = setup()
+    startBattle()
+    typeKey('Escape')
+    fireEvent.click(screen.getByRole('button', { name: /放棄回選單/ }))
+    expect(onExit).toHaveBeenCalledTimes(1)
+  })
+
+  it('切換分頁會自動暫停，切回來不會自己繼續', () => {
+    setup()
+    startBattle()
+    advance(1000)
+    setHidden(true)
+    expect(dialog()).toHaveAccessibleName('暫停中')
+    const time = statValue('時間')
+    setHidden(false)
+    advance(5000)
+    expect(dialog()).toHaveAccessibleName('暫停中')
+    expect(statValue('時間')).toBe(time)
+  })
+
+  it('開場訊息與倒數中不能暫停', () => {
+    setup()
+    typeKey('Escape')
+    expect(dialog()).toHaveAccessibleName('小 Bug 蟲 出現了！')
+    pressEnter()
+    typeKey('Escape')
+    setHidden(true)
+    expect(dialog()).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
+  })
+})
