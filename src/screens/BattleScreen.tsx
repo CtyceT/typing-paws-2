@@ -37,6 +37,16 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
         ]}
       />
     )
+  } else if (session.pauseOpen === 'ime') {
+    dialog = (
+      <MessageDialog
+        open
+        emoji="⌨️"
+        title="好像切到中文輸入法了"
+        text={'遊戲先幫你暫停 ⏸\n請按 Shift 切回英文輸入（Mac 可按 Caps Lock 或 Ctrl+Space），\n切好之後再按繼續。'}
+        buttons={[{ label: '▶ 切好了，繼續', primary: true, onClick: session.resumeFromIme }]}
+      />
+    )
   } else if (session.stageClearOpen) {
     dialog = (
       <MessageDialog
@@ -61,9 +71,20 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
     )
   }
 
+  let warning = null
+  if (session.warning === 'ime') {
+    warning = (
+      <>
+        ⚠️ 偵測到中文輸入法！請按 <kbd>Shift</kbd> 切回英文（Mac 可按 <kbd>Caps Lock</kbd> 或 <kbd>Ctrl</kbd>+<kbd>Space</kbd>）
+      </>
+    )
+  } else if (session.warning === 'capsLock') {
+    warning = '🔠 Caps Lock 開著喔！字母會變成大寫，可能一直打錯'
+  }
+
   return (
     <main>
-      <BattleView state={battle} hero={hero} onPause={session.togglePause} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
+      <BattleView state={battle} hero={hero} onPause={session.togglePause} warning={warning} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
         {/* type=password：瀏覽器在密碼欄位會關閉中文輸入法，避免注音／拼音吃掉按鍵 */}
         <input
           {...session.inputProps}

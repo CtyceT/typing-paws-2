@@ -273,3 +273,98 @@ describe('暫停', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 })
+
+describe('輸入法防呆與 Caps Lock 提醒', () => {
+  const composing = () => fireEvent.keyDown(document, { key: 'Process', isComposing: true })
+  const warning = () => screen.queryByRole('alert')
+
+  it('戰鬥中偵測到中文輸入法會自動暫停並提示，暫停中不計時', () => {
+    setup()
+    startBattle()
+    advance(1000)
+    composing()
+    expect(dialog()).toHaveAccessibleName('好像切到中文輸入法了')
+    expect(warning()).toHaveTextContent('偵測到中文輸入法')
+    expect(statValue('準確率')).toBe('100%') // 不算打錯
+    const time = statValue('時間')
+    advance(5000)
+    expect(statValue('時間')).toBe(time)
+  })
+
+  it('按「切好了，繼續」回到戰鬥，提示消失', () => {
+    setup()
+    startBattle()
+    composing()
+    fireEvent.click(screen.getByRole('button', { name: /切好了，繼續/ }))
+    expect(dialog()).not.toBeInTheDocument()
+    expect(warning()).not.toBeInTheDocument()
+    expect(screen.getByLabelText('打字輸入')).toHaveFocus()
+    typeKey(currentWord()[0])
+    expect(screen.getByText('COMBO').previousElementSibling).toHaveTextContent('1')
+  })
+
+  it('直接打出中文字、輸入框開始組字、手機送來中文，都會觸發', () => {
+    for (const trigger of [
+      () => typeKey('ㄅ'),
+      () => fireEvent.compositionStart(screen.getByLabelText('打字輸入')),
+      () => fireEvent.input(screen.getByLabelText('打字輸入'), { target: { value: '喵' } }),
+    ]) {
+      const { unmount } = render(<BattleScreen hero="cat" difficulty="easy" onExit={() => {}} onRetry={() => {}} />)
+      startBattle()
+      advance(2000) // 超過自動暫停的冷卻時間
+      trigger()
+      expect(dialog()).toHaveAccessibleName('好像切到中文輸入法了')
+      unmount()
+    }
+  })
+
+  it('剛按繼續的 1.5 秒內再偵測到只提示、不再暫停；提示 6 秒後消失', () => {
+    setup()
+    startBattle()
+    composing()
+    pressEnter()
+    advance(500)
+    composing()
+    expect(dialog()).not.toBeInTheDocument()
+    expect(warning()).toHaveTextContent('偵測到中文輸入法')
+    advance(5900)
+    expect(warning()).toBeInTheDocument()
+    advance(200)
+    expect(warning()).not.toBeInTheDocument()
+  })
+
+  it('開場訊息時偵測到只提示，不會蓋掉開場訊息', () => {
+    setup()
+    composing()
+    expect(dialog()).toHaveAccessibleName('小 Bug 蟲 出現了！')
+    expect(warning()).toHaveTextContent('偵測到中文輸入法')
+  })
+
+  it('全形英數照樣可以打，不會被當成中文輸入法', () => {
+    setup()
+    startBattle()
+    const word = currentWord()
+    typeKey(String.fromCharCode(word.charCodeAt(0) + 0xfee0))
+    expect(dialog()).not.toBeInTheDocument()
+    expect(warning()).not.toBeInTheDocument()
+    expect(screen.getByText('COMBO').previousElementSibling).toHaveTextContent('1')
+  })
+
+  it('Caps Lock 開著打字母會提醒 3 秒，字元照樣送出', () => {
+    setup()
+    startBattle()
+    fireEvent.keyDown(document, { key: 'A', modifierCapsLock: true })
+    expect(warning()).toHaveTextContent('Caps Lock 開著喔')
+    expect(statValue('準確率')).not.toBe('100%') // 簡單字庫都是小寫，大寫 A 算打錯
+    advance(3100)
+    expect(warning()).not.toBeInTheDocument()
+  })
+
+  it('Caps Lock 沒開、或開著但打的是數字，不提醒', () => {
+    setup()
+    startBattle()
+    typeKey('a')
+    fireEvent.keyDown(document, { key: '1', modifierCapsLock: true })
+    expect(warning()).not.toBeInTheDocument()
+  })
+})

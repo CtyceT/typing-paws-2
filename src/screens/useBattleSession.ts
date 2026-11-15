@@ -20,8 +20,18 @@ const REVEAL_DELAY_MS: Partial<Record<BattlePhase, number>> = {
   lost: DEFEAT_DELAY_MS,
 }
 
-/** 暫停的原因，決定暫停時顯示哪一種訊息 */
-export type PauseKind = 'user'
+/** 暫停的原因，決定暫停時顯示哪一種訊息：user 是玩家自己暫停或切換分頁，ime 是偵測到中文輸入法 */
+export type PauseKind = 'user' | 'ime'
+
+/** 題目面板下方的提醒種類 */
+export type WarningKind = 'ime' | 'capsLock'
+
+/** 輸入法提醒顯示多久 */
+const IME_WARNING_MS = 6000
+/** Caps Lock 提醒顯示多久 */
+const CAPS_WARNING_MS = 3000
+/** 兩次「因為輸入法而自動暫停」至少間隔多久，避免剛按繼續又馬上被暫停 */
+const IME_PAUSE_COOLDOWN_MS = 1500
 
 const isActive = (b: BattleState) => b.phase === 'running' && !b.paused
 
@@ -38,7 +48,7 @@ export function useBattleSession(difficulty: Difficulty) {
   /** 目前這個階段（過關、通關、被打倒）的訊息是否已經到了該顯示的時間 */
   const [revealedPhase, setRevealedPhase] = useState<BattlePhase | null>(null)
   const [focusLost, setFocusLost] = useState(false)
-  /** 這次暫停的原因：user 是玩家自己暫停（或切換分頁） */
+  /** 這次暫停的原因 */
   const [pauseKind, setPauseKind] = useState<PauseKind>('user')
   // 事件處理函式要讀最新的戰鬥狀態，但不想每次狀態變動都重新掛事件
   const battleRef = useRef(battle)
@@ -47,6 +57,9 @@ export function useBattleSession(difficulty: Difficulty) {
   })
   const inputRef = useRef<HTMLInputElement>(null)
   const countdownTimer = useRef(0)
+  const [warning, setWarning] = useState<WarningKind | null>(null)
+  const warningTimer = useRef(0)
+  const lastImePauseAt = useRef(0)
 
   const focusInput = useCallback(() => {
     inputRef.current?.focus({ preventScroll: true })
@@ -72,7 +85,25 @@ export function useBattleSession(difficulty: Difficulty) {
     step(0)
   }, [focusInput])
 
-  useEffect(() => () => window.clearTimeout(countdownTimer.current), [])
+  useEffect(
+    () => () => {
+      window.clearTimeout(countdownTimer.current)
+      window.clearTimeout(warningTimer.current)
+    },
+    [],
+  )
+
+  /** 在題目面板下方顯示提醒，過一段時間自動消失 */
+  const showWarning = useCallback((kind: WarningKind, ms: number) => {
+    setWarning(kind)
+    window.clearTimeout(warningTimer.current)
+    warningTimer.current = window.setTimeout(() => setWarning(null), ms)
+  }, [])
+
+  const clearWarning = useCallback(() => {
+    window.clearTimeout(warningTimer.current)
+    setWarning(null)
+  }, [])
 
   /** 戰鬥中才能暫停；暫停時時間與怪物蓄力都不會前進（reducer 會忽略 tick） */
   const pause = useCallback((kind: PauseKind) => {
@@ -91,6 +122,24 @@ export function useBattleSession(difficulty: Difficulty) {
     if (battleRef.current.paused) resume()
     else pause('user')
   }, [pause, resume])
+
+  /** 偵測到中文輸入法：顯示提醒，戰鬥中的話先自動暫停，避免切輸入法的時候被怪物打 */
+  const imeDetected = useCallback(() => {
+    const { phase } = battleRef.current
+    if (phase === 'won' || phase === 'lost') return
+    if (inputRef.current) inputRef.current.value = ''
+    showWarning('ime', IME_WARNING_MS)
+    const now = Date.now()
+    if (now - lastImePauseAt.current < IME_PAUSE_COOLDOWN_MS) return
+    lastImePauseAt.current = now
+    pause('ime')
+  }, [pause, showWarning])
+
+  /** 輸入法暫停訊息按「切好了，繼續」 */
+  const resumeFromIme = useCallback(() => {
+    clearWarning()
+    resume()
+  }, [clearWarning, resume])
 
   // 切到別的分頁時自動暫停
   useEffect(() => {
@@ -141,24 +190,30 @@ export function useBattleSession(difficulty: Difficulty) {
         togglePause()
         return
       }
+      if (intent.type === 'ime') {
+        imeDetected()
+        return
+      }
       if (intent.type !== 'char') return
       e.preventDefault() // 避免空白鍵捲動頁面，也避免輸入框的 input 事件重複觸發
+      if (intent.capsLockOn && battleRef.current.phase === 'running') showWarning('capsLock', CAPS_WARNING_MS)
       typeChar(intent.char)
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [typeChar, togglePause])
+  }, [typeChar, togglePause, imeDetected, showWarning])
 
   /** 手機虛擬鍵盤常常只送出 input 事件（keydown 的 key 是 Unidentified） */
   const onInput = useCallback(
     (e: React.FormEvent<HTMLInputElement>) => {
       if ((e.nativeEvent as InputEvent).isComposing) return // 組字中先不處理
       const input = e.currentTarget
-      const { chars } = interpretText(input.value)
+      const { chars, ime } = interpretText(input.value)
       input.value = ''
       chars.forEach(typeChar)
+      if (ime) imeDetected()
     },
-    [typeChar],
+    [typeChar, imeDetected],
   )
 
   /** 開場訊息按「開打」 */
@@ -182,6 +237,10 @@ export function useBattleSession(difficulty: Difficulty) {
     onInput,
     onBlur: () => setFocusLost(!finished),
     onFocus: () => setFocusLost(false),
+    onCompositionStart: imeDetected,
+    onCompositionEnd: (e: React.CompositionEvent<HTMLInputElement>) => {
+      e.currentTarget.value = ''
+    },
   }
 
   return {
@@ -197,6 +256,9 @@ export function useBattleSession(difficulty: Difficulty) {
     pauseOpen: battle.paused ? pauseKind : null,
     togglePause,
     resume,
+    resumeFromIme,
+    /** 題目面板下方目前要顯示的提醒 */
+    warning,
     focusLost,
     focusInput,
     inputProps,
