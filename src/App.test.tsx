@@ -45,14 +45,13 @@ describe('主選單', () => {
     expect(screen.getAllByText('還沒有紀錄，來當第一次挑戰吧！')).toHaveLength(3)
   })
 
-  it('點難度進入戰鬥畫面，並可以回到選單', () => {
+  it('點難度進入戰鬥畫面，先看到第一隻怪物的開場訊息', () => {
     render(<App />)
     fireEvent.click(heroCard('柴柴'))
     fireEvent.click(screen.getByRole('button', { name: /困難/ }))
     expect(screen.getByText('第 1 / 3 關 ・ 困難')).toBeInTheDocument()
     expect(screen.getByText('🐾 柴柴勇者')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '小 Bug 蟲 出現了！' })).toBeInTheDocument()
     expect(screen.queryByText('🐾 選擇你的勇者')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /回選單/ }))
-    expect(heroCard('柴柴')).toHaveAttribute('aria-pressed', 'true')
   })
 })

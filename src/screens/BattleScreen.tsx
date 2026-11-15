@@ -1,5 +1,5 @@
-import { Button } from '../components/index.ts'
-import type { Difficulty, HeroId } from '../game/index.ts'
+import { CountdownOverlay, HeroAvatar, MessageDialog } from '../components/index.ts'
+import { currentMonster, finishMessage, HEROES, introMessage, stageClearMessage, type Difficulty, type HeroId } from '../game/index.ts'
 import styles from './BattleScreen.module.css'
 import { BattleView } from './BattleView.tsx'
 import { useBattleSession } from './useBattleSession.ts'
@@ -7,15 +7,50 @@ import { useBattleSession } from './useBattleSession.ts'
 export interface BattleScreenProps {
   hero: HeroId
   difficulty: Difficulty
+  /** 回主選單 */
   onExit: () => void
+  /** 同樣的難度再打一場 */
+  onRetry: () => void
 }
 
-/** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程 */
-export function BattleScreen({ hero, difficulty, onExit }: BattleScreenProps) {
+/** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程，這裡把訊息視窗接上去 */
+export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreenProps) {
   const session = useBattleSession(difficulty)
+  const { battle } = session
+  const heroName = HEROES[hero].name
+
+  let dialog = null
+  if (session.introOpen) {
+    dialog = (
+      <MessageDialog open {...introMessage(currentMonster(battle))} buttons={[{ label: '⚔️ 開打！（Enter）', primary: true, onClick: session.begin }]} />
+    )
+  } else if (session.stageClearOpen) {
+    dialog = (
+      <MessageDialog
+        open
+        {...stageClearMessage(battle, heroName)}
+        buttons={[{ label: '⚔️ 繼續戰鬥（Enter）', primary: true, onClick: session.continueToNextStage }]}
+      />
+    )
+  } else if (session.finishOpen) {
+    // 暫時用訊息視窗顯示結果，完整的結算畫面在 ROADMAP 1.16
+    const message = finishMessage(battle, heroName)
+    dialog = (
+      <MessageDialog
+        open
+        {...message}
+        emoji={<HeroAvatar hero={hero} expression={battle.phase === 'won' ? 'happy' : 'hurt'} className={styles.resultAvatar} />}
+        buttons={[
+          { label: '🔁 再挑戰一次', primary: true, onClick: onRetry },
+          { label: '🏠 回到選單', onClick: onExit },
+        ]}
+      />
+    )
+  }
+
   return (
     <main>
-      <BattleView state={session.battle} hero={hero} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
+      <BattleView state={battle} hero={hero} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
         {/* type=password：瀏覽器在密碼欄位會關閉中文輸入法，避免注音／拼音吃掉按鍵 */}
         <input
           {...session.inputProps}
@@ -30,12 +65,8 @@ export function BattleScreen({ hero, difficulty, onExit }: BattleScreenProps) {
           aria-label="打字輸入"
         />
       </BattleView>
-      {/* 暫時的出口，暫停視窗完成後（ROADMAP 1.13）拿掉 */}
-      <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <Button variant="ghost" size="small" onClick={onExit}>
-          ← 回選單
-        </Button>
-      </div>
+      {session.countdown !== null && <CountdownOverlay text={session.countdown} />}
+      {dialog}
     </main>
   )
 }

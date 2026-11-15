@@ -1,5 +1,6 @@
 export * from './Button.tsx'
 export * from './Card.tsx'
+export * from './CountdownOverlay.tsx'
 export * from './DifficultyCard.tsx'
 export * from './FighterInfo.tsx'
 export * from './HeroAvatar.tsx'
