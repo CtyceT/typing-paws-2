@@ -1,0 +1,9 @@
+/* 看不見但可以取得焦點的輸入框，用來叫出手機鍵盤 */
+.hiddenInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  left: -100px;
+  top: 0;
+}
