@@ -1,5 +1,6 @@
-import { CountdownOverlay, HeroAvatar, MessageDialog } from '../components/index.ts'
-import { currentMonster, finishMessage, HEROES, introMessage, stageClearMessage, type Difficulty, type HeroId } from '../game/index.ts'
+import { useEffect, useRef } from 'react'
+import { CountdownOverlay, MessageDialog } from '../components/index.ts'
+import { currentMonster, HEROES, introMessage, stageClearMessage, type BattleState, type Difficulty, type HeroId } from '../game/index.ts'
 import styles from './BattleScreen.module.css'
 import { BattleView } from './BattleView.tsx'
 import { useBattleEffects } from './useBattleEffects.ts'
@@ -8,18 +9,26 @@ import { useBattleSession } from './useBattleSession.ts'
 export interface BattleScreenProps {
   hero: HeroId
   difficulty: Difficulty
-  /** 回主選單 */
+  /** 放棄，回主選單（不記錄成績） */
   onExit: () => void
-  /** 同樣的難度再打一場 */
-  onRetry: () => void
+  /** 整場結束（通關或被打倒），帶著結束時的戰鬥狀態 */
+  onFinish: (state: BattleState) => void
 }
 
 /** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程，這裡把訊息視窗接上去 */
-export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreenProps) {
+export function BattleScreen({ hero, difficulty, onExit, onFinish }: BattleScreenProps) {
   const session = useBattleSession(difficulty)
   const { battle } = session
   const effects = useBattleEffects(session.eventLog, battle.stage)
   const heroName = HEROES[hero].name
+
+  // 結束的動畫播完後通知外面切到結算畫面（只通知一次）
+  const reported = useRef(false)
+  useEffect(() => {
+    if (!session.finishOpen || reported.current) return
+    reported.current = true
+    onFinish(battle)
+  }, [session.finishOpen, battle, onFinish])
 
   let dialog = null
   if (session.introOpen) {
@@ -55,20 +64,6 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
         open
         {...stageClearMessage(battle, heroName)}
         buttons={[{ label: '⚔️ 繼續戰鬥（Enter）', primary: true, onClick: session.continueToNextStage }]}
-      />
-    )
-  } else if (session.finishOpen) {
-    // 暫時用訊息視窗顯示結果，完整的結算畫面在 ROADMAP 1.16
-    const message = finishMessage(battle, heroName)
-    dialog = (
-      <MessageDialog
-        open
-        {...message}
-        emoji={<HeroAvatar hero={hero} expression={battle.phase === 'won' ? 'happy' : 'hurt'} className={styles.resultAvatar} />}
-        buttons={[
-          { label: '🔁 再挑戰一次', primary: true, onClick: onRetry },
-          { label: '🏠 回到選單', onClick: onExit },
-        ]}
       />
     )
   }

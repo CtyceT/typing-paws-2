@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createBattle, type BattleState } from './battle.ts'
-import { COUNTDOWN_STEPS, finishMessage, introMessage, stageClearMessage } from './flow.ts'
+import { COUNTDOWN_STEPS, introMessage, stageClearMessage } from './flow.ts'
 import { MONSTERS } from './monsters.ts'
 
 const state = (over: Partial<BattleState>): BattleState => ({ ...createBattle('normal'), ...over })
@@ -36,22 +36,5 @@ describe('stageClearMessage', () => {
   it('滿血時不提回血', () => {
     const m = stageClearMessage(state({ stage: 0, phase: 'stageClear', playerHp: 100 }), '喵喵')
     expect(m.text.split('\n')[0]).toBe('過關獎勵 +800 分。')
-  })
-})
-
-describe('finishMessage', () => {
-  it('通關', () => {
-    const m = finishMessage(
-      state({ stage: 2, phase: 'won', score: 4321, maxCombo: 33, correct: 200, typed: 208, activeMs: 60000 }),
-      '兔兔',
-    )
-    expect(m.title).toBe('🏆 通關成功！')
-    expect(m.text).toBe('普通模式 ・ 打倒了 Deadline 龍王！\nWPM 40 ・ 準確率 96.2% ・ 分數 4321\n最高 Combo 33 ・ 用時 60.0s')
-  })
-
-  it('被打倒', () => {
-    const m = finishMessage(state({ stage: 1, phase: 'lost', playerHp: 0 }), '熊熊')
-    expect(m.title).toBe('熊熊被打倒了…')
-    expect(m.text.split('\n')[0]).toBe('普通模式 ・ 止步於第 2 關（Typo 幽靈）')
   })
 })

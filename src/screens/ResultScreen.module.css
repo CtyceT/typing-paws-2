@@ -1,0 +1,119 @@
+/* 照 1.0 版的結算畫面。寫兩次 class 是為了蓋過 Card 本身的 padding */
+.result.result {
+  text-align: center;
+  padding: 26px 22px;
+}
+
+.mascot {
+  display: inline-block;
+  animation: bob 1.6s ease-in-out infinite;
+}
+
+.mascotSvg {
+  width: 120px;
+}
+
+.title {
+  font-size: 2.2rem;
+  margin: 6px 0 2px;
+}
+
+.subtitle {
+  color: var(--ink-soft);
+}
+
+.stars {
+  font-size: 2.6rem;
+  letter-spacing: 6px;
+  margin: 6px 0;
+}
+
+.stars span {
+  display: inline-block;
+  animation: popIn 0.4s backwards;
+}
+
+.stars .off {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+.newRecord {
+  display: inline-block;
+  background: var(--pink);
+  color: #fff;
+  border: var(--line);
+  border-radius: 999px;
+  padding: 4px 16px;
+  font-weight: 700;
+  margin: 6px 0;
+  transform: rotate(-3deg);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.stat {
+  background: #fdf6fa;
+  border: var(--line);
+  border-radius: 16px;
+  padding: 12px 6px;
+}
+
+.value {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.comment {
+  background: #fff8de;
+  border: 2px dashed #e6c86a;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin: 0 auto 18px;
+  max-width: 520px;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

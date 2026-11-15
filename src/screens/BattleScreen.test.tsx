@@ -20,9 +20,9 @@ const dialog = () => screen.queryByRole('dialog')
 
 const setup = (difficulty: 'easy' | 'normal' | 'hard' = 'easy') => {
   const onExit = vi.fn()
-  const onRetry = vi.fn()
-  render(<BattleScreen hero="cat" difficulty={difficulty} onExit={onExit} onRetry={onRetry} />)
-  return { onExit, onRetry }
+  const onFinish = vi.fn()
+  render(<BattleScreen hero="cat" difficulty={difficulty} onExit={onExit} onFinish={onFinish} />)
+  return { onExit, onFinish }
 }
 
 /** 關掉開場訊息並等倒數結束 */
@@ -151,7 +151,7 @@ describe('遊戲迴圈', () => {
   })
 
   it('可以從第一關一路打到通關', () => {
-    const { onRetry, onExit } = setup()
+    const { onFinish, onExit } = setup()
     startBattle()
     for (let stage = 1; stage <= 3; stage++) {
       expect(screen.getByText(`第 ${stage} / 3 關 ・ 簡單`)).toBeInTheDocument()
@@ -165,25 +165,23 @@ describe('遊戲迴圈', () => {
         advance(COUNTDOWN_MS)
       }
     }
-    expect(dialog()).not.toBeInTheDocument()
+    expect(onFinish).not.toHaveBeenCalled() // 先讓最後一擊的動畫播完
     advance(1100)
-    expect(dialog()).toHaveAccessibleName('🏆 通關成功！')
-    expect(dialog()).toHaveTextContent('簡單模式 ・ 打倒了 Deadline 龍王！')
-    expect(dialog()).toHaveTextContent('準確率 100%')
-    fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
-    expect(onExit).toHaveBeenCalledTimes(1)
-    pressEnter()
-    expect(onRetry).toHaveBeenCalledTimes(1)
+    expect(onFinish).toHaveBeenCalledTimes(1)
+    expect(onFinish.mock.calls[0][0]).toMatchObject({ phase: 'won', stage: 2, monsterHp: 0, wrong: 0 })
+    advance(5000)
+    expect(onFinish).toHaveBeenCalledTimes(1)
+    expect(onExit).not.toHaveBeenCalled()
   })
 
   it('一直不打字會被打倒', () => {
-    setup()
+    const { onFinish } = setup()
     startBattle()
     for (let i = 0; i < 95; i++) advance(1000) // 每 7 秒被打 8 滴血，13 下倒地
     expect(screen.getByText('0/100')).toBeInTheDocument()
     advance(1300)
-    expect(dialog()).toHaveAccessibleName('喵喵被打倒了…')
-    expect(dialog()).toHaveTextContent('止步於第 1 關（小 Bug 蟲）')
+    expect(onFinish).toHaveBeenCalledTimes(1)
+    expect(onFinish.mock.calls[0][0]).toMatchObject({ phase: 'lost', stage: 0, playerHp: 0 })
     const time = statValue('時間')
     advance(3000)
     expect(statValue('時間')).toBe(time) // 結束後不再計時
@@ -309,7 +307,7 @@ describe('輸入法防呆與 Caps Lock 提醒', () => {
       () => fireEvent.compositionStart(screen.getByLabelText('打字輸入')),
       () => fireEvent.input(screen.getByLabelText('打字輸入'), { target: { value: '喵' } }),
     ]) {
-      const { unmount } = render(<BattleScreen hero="cat" difficulty="easy" onExit={() => {}} onRetry={() => {}} />)
+      const { unmount } = render(<BattleScreen hero="cat" difficulty="easy" onExit={() => {}} onFinish={() => {}} />)
       startBattle()
       advance(2000) // 超過自動暫停的冷卻時間
       trigger()

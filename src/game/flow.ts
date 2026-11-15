@@ -1,6 +1,4 @@
 import { stageBonus, stageHealAmount, type BattleState } from './battle.ts'
-import { DIFFICULTIES } from './difficulty.ts'
-import { battleHud } from './hud.ts'
 import { MONSTERS, type Monster } from './monsters.ts'
 
 /** 開打前的倒數：每一步顯示的文字與停留的毫秒數 */
@@ -44,19 +42,5 @@ export function stageClearMessage(state: BattleState, heroName: string): FlowMes
     emoji: '🎉',
     title: `第 ${state.stage + 1} 關 CLEAR！`,
     text: `過關獎勵 +${bonus} 分${heal}。\n下一個對手：${next.emoji} ${next.name}\n「${next.line}」`,
-  }
-}
-
-/** 整場結束的訊息（通關或被打倒），含這一場的主要數據 */
-export function finishMessage(state: BattleState, heroName: string): FlowMessage {
-  const win = state.phase === 'won'
-  const label = DIFFICULTIES[state.difficulty].label
-  const hud = battleHud(state)
-  const monster = MONSTERS[state.stage]
-  const summary = win ? `${label}模式 ・ 打倒了 ${monster.name}！` : `${label}模式 ・ 止步於第 ${state.stage + 1} 關（${monster.name}）`
-  return {
-    emoji: win ? '🏆' : '💀',
-    title: win ? '🏆 通關成功！' : `${heroName}被打倒了…`,
-    text: `${summary}\nWPM ${hud.wpm} ・ 準確率 ${hud.accuracyText} ・ 分數 ${state.score}\n最高 Combo ${state.maxCombo} ・ 用時 ${hud.timeText}`,
   }
 }
