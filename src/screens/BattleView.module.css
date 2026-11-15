@@ -63,11 +63,104 @@
   animation: bob 1.4s ease-in-out infinite;
 }
 
+.attack {
+  animation: lungeRight 0.35s ease;
+}
+
+.hit {
+  animation: hit 0.4s ease;
+}
+
+.ko {
+  animation: ko 0.8s ease forwards;
+}
+
+/* 角色和它身上的傷害數字、粒子 */
+.spriteBox {
+  position: relative;
+  display: inline-block;
+}
+
+.float {
+  position: absolute;
+  top: 4px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 5;
+  font-size: 1.7rem;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow:
+    -2px -2px 0 var(--ink),
+    2px -2px 0 var(--ink),
+    -2px 2px 0 var(--ink),
+    2px 2px 0 var(--ink);
+  animation: floatUp 1s ease-out forwards;
+}
+
+.float.crit {
+  color: var(--yellow);
+  font-size: 2.2rem;
+}
+
+.float.ouch {
+  color: var(--red);
+}
+
+.particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  z-index: 4;
+  font-size: 20px;
+  animation: burst 0.8s ease-out forwards;
+}
+
+.shakeA {
+  animation: screenShakeA 0.35s;
+}
+
+.shakeB {
+  animation: screenShakeB 0.35s;
+}
+
+.bumpA {
+  animation: bumpA 0.18s ease;
+}
+
+.bumpB {
+  animation: bumpB 0.18s ease;
+}
+
+.wordShakeA {
+  animation: wordShakeA 0.3s;
+}
+
+.wordShakeB {
+  animation: wordShakeB 0.3s;
+}
+
+/* 減少動態效果：不顯示傷害數字與粒子，倒地直接變淡變灰（其餘動畫由全站規則縮到幾乎為零） */
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .particle {
+    display: none;
+  }
+
+  .ko {
+    animation: none;
+    opacity: 0.25;
+    filter: grayscale(1);
+  }
+}
+
 .heroSvg {
   width: clamp(92px, 15vw, 136px);
 }
 
 .vs {
+  position: relative;
   align-self: center;
   text-align: center;
   z-index: 1;
@@ -179,6 +272,144 @@
   }
   50% {
     transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes lungeRight {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(60px) scale(1.15);
+  }
+}
+
+@keyframes hit {
+  0% {
+    transform: translateX(0);
+    filter: brightness(1);
+  }
+  25% {
+    transform: translateX(14px) rotate(8deg);
+    filter: brightness(2.2);
+  }
+  50% {
+    transform: translateX(-8px) rotate(-5deg);
+  }
+  100% {
+    transform: translateX(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes ko {
+  to {
+    transform: rotate(160deg) translateY(30px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -10px) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -80px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes burst {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(200deg);
+    opacity: 0;
+  }
+}
+
+/* A、B 兩組內容相同，交替使用才能重播（見 BattleView.tsx 的 replay） */
+@keyframes screenShakeA {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-6px, 3px);
+  }
+  40% {
+    transform: translate(6px, -3px);
+  }
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  80% {
+    transform: translate(4px, -1px);
+  }
+}
+
+@keyframes screenShakeB {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-6px, 3px);
+  }
+  40% {
+    transform: translate(6px, -3px);
+  }
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  80% {
+    transform: translate(4px, -1px);
+  }
+}
+
+@keyframes wordShakeA {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes wordShakeB {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes bumpA {
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes bumpB {
+  50% {
+    transform: scale(1.3);
   }
 }
 

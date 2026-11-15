@@ -2,6 +2,7 @@ import { CountdownOverlay, HeroAvatar, MessageDialog } from '../components/index
 import { currentMonster, finishMessage, HEROES, introMessage, stageClearMessage, type Difficulty, type HeroId } from '../game/index.ts'
 import styles from './BattleScreen.module.css'
 import { BattleView } from './BattleView.tsx'
+import { useBattleEffects } from './useBattleEffects.ts'
 import { useBattleSession } from './useBattleSession.ts'
 
 export interface BattleScreenProps {
@@ -17,6 +18,7 @@ export interface BattleScreenProps {
 export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreenProps) {
   const session = useBattleSession(difficulty)
   const { battle } = session
+  const effects = useBattleEffects(session.eventLog, battle.stage)
   const heroName = HEROES[hero].name
 
   let dialog = null
@@ -84,7 +86,7 @@ export function BattleScreen({ hero, difficulty, onExit, onRetry }: BattleScreen
 
   return (
     <main>
-      <BattleView state={battle} hero={hero} onPause={session.togglePause} warning={warning} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
+      <BattleView state={battle} hero={hero} effects={effects} onPause={session.togglePause} warning={warning} focusLost={session.focusLost} onRequestFocus={session.focusInput}>
         {/* type=password：瀏覽器在密碼欄位會關閉中文輸入法，避免注音／拼音吃掉按鍵 */}
         <input
           {...session.inputProps}

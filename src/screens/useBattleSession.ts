@@ -8,6 +8,8 @@ import {
   interpretText,
   STAGE_CLEAR_DELAY_MS,
   VICTORY_DELAY_MS,
+  type BattleAction,
+  type BattleEvent,
   type BattlePhase,
   type BattleState,
   type Difficulty,
@@ -33,6 +35,23 @@ const CAPS_WARNING_MS = 3000
 /** 兩次「因為輸入法而自動暫停」至少間隔多久，避免剛按繼續又馬上被暫停 */
 const IME_PAUSE_COOLDOWN_MS = 1500
 
+/** 戰鬥狀態加上整場累積的事件紀錄（給特效用） */
+interface SessionState {
+  battle: BattleState
+  /**
+   * 這一場到目前為止發生過的所有事件。battle.events 只保留「上一個動作」的事件，
+   * 兩個動作如果在同一次畫面更新前連續發生（例如打完字緊接著一個 tick），前一個的事件會被蓋掉，
+   * 所以另外累積一份。
+   */
+  eventLog: readonly BattleEvent[]
+}
+
+function sessionReducer(state: SessionState, action: BattleAction): SessionState {
+  const battle = battleReducer(state.battle, action)
+  if (battle === state.battle) return state
+  return { battle, eventLog: battle.events.length > 0 ? [...state.eventLog, ...battle.events] : state.eventLog }
+}
+
 const isActive = (b: BattleState) => b.phase === 'running' && !b.paused
 
 /**
@@ -40,7 +59,7 @@ const isActive = (b: BattleState) => b.phase === 'running' && !b.paused
  * 規則都在 src/game 的純函式裡，這裡只負責計時、接瀏覽器事件、管理輸入框焦點。
  */
 export function useBattleSession(difficulty: Difficulty) {
-  const [battle, dispatch] = useReducer(battleReducer, difficulty, (d) => createBattle(d))
+  const [{ battle, eventLog }, dispatch] = useReducer(sessionReducer, difficulty, (d) => ({ battle: createBattle(d), eventLog: [] }))
   /** 第一關的開場訊息是否還開著 */
   const [introOpen, setIntroOpen] = useState(true)
   /** 倒數中顯示的字；null 表示沒有在倒數 */
@@ -245,6 +264,8 @@ export function useBattleSession(difficulty: Difficulty) {
 
   return {
     battle,
+    /** 整場累積的事件，給特效用 */
+    eventLog,
     /** 是否顯示第一關的開場訊息 */
     introOpen,
     countdown,

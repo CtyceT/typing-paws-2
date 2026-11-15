@@ -13,10 +13,60 @@
   animation: bobMonster 1.2s ease-in-out infinite;
 }
 
-/* 被打倒：先用變淡表示，倒地動畫在 ROADMAP 1.15 */
-.defeated {
-  opacity: 0.25;
-  filter: grayscale(1);
+.attack {
+  animation: lungeLeft 0.4s ease;
+}
+
+.hit {
+  animation: hit 0.4s ease;
+}
+
+.ko {
+  animation: ko 0.8s ease forwards;
+}
+
+/* 減少動態效果：不播倒地動畫，直接變淡變灰 */
+@media (prefers-reduced-motion: reduce) {
+  .ko {
+    animation: none;
+    opacity: 0.25;
+    filter: grayscale(1);
+  }
+}
+
+@keyframes lungeLeft {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(-70px) scale(1.2);
+  }
+}
+
+@keyframes hit {
+  0% {
+    transform: translateX(0);
+    filter: brightness(1);
+  }
+  25% {
+    transform: translateX(14px) rotate(8deg);
+    filter: brightness(2.2);
+  }
+  50% {
+    transform: translateX(-8px) rotate(-5deg);
+  }
+  100% {
+    transform: translateX(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes ko {
+  to {
+    transform: rotate(160deg) translateY(30px) scale(0.4);
+    opacity: 0;
+  }
 }
 
 @keyframes bobMonster {

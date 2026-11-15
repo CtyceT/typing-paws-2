@@ -368,3 +368,76 @@ describe('輸入法防呆與 Caps Lock 提醒', () => {
     expect(warning()).not.toBeInTheDocument()
   })
 })
+
+describe('動畫與特效', () => {
+  const anims = () => [...document.querySelectorAll('[data-battle=arena] [data-anim]')].map((el) => el.getAttribute('data-anim'))
+  const arena = () => document.querySelector('[data-battle=arena]')!
+
+  it('打完一個字：勇者衝出去並變開心，0.12 秒後怪物被打到、跳出傷害數字，之後恢復', () => {
+    setup()
+    startBattle()
+    const word = currentWord()
+    typeWord(word)
+    advance(20)
+    expect(anims()).toEqual(['attack', 'idle'])
+    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'happy')
+    advance(120)
+    expect(anims()).toEqual(['attack', 'hit'])
+    expect(screen.getByText(`-${word.length * 3}`)).toBeInTheDocument()
+    advance(600)
+    expect(anims()).toEqual(['idle', 'idle'])
+    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'normal')
+    advance(600)
+    expect(screen.queryByText(`-${word.length * 3}`)).not.toBeInTheDocument()
+  })
+
+  it('怪物攻擊：怪物衝過來，勇者被打到變受傷表情並跳出紅色數字', () => {
+    setup()
+    startBattle()
+    advance(7100)
+    advance(20) // 測試裡畫面要等 advance 結束才更新，特效在下一次 advance 才開始播
+    expect(anims()[1]).toBe('attack')
+    advance(200)
+    expect(anims()[0]).toBe('hit')
+    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'hurt')
+    expect(screen.getByText('-8')).toBeInTheDocument()
+    expect(arena().className).toMatch(/shake/)
+  })
+
+  it('打倒怪物：怪物倒地到換關為止，下一關的怪物恢復待機', () => {
+    setup()
+    startBattle()
+    while (!screen.queryByText('0/60')) typeWord(currentWord())
+    advance(500)
+    expect(anims()[1]).toBe('ko')
+    advance(400)
+    expect(anims()[1]).toBe('ko')
+    pressEnter()
+    advance(50)
+    expect(anims()[1]).toBe('idle')
+  })
+
+  it('被打倒：勇者倒地', () => {
+    setup()
+    startBattle()
+    for (let i = 0; i < 95; i++) advance(1000)
+    expect(anims()[0]).toBe('ko')
+    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'ko')
+  })
+
+  it('打錯：題目晃一下', () => {
+    setup()
+    startBattle()
+    typeKey('#')
+    advance(20)
+    expect(document.querySelector('[data-word]')!.parentElement!.className).toMatch(/wordShake/)
+  })
+
+  it('每 10 Combo 跳出提示', () => {
+    setup('normal')
+    startBattle()
+    while (Number(screen.getByText('COMBO').previousElementSibling!.textContent) < 10) typeKey(currentWord()[document.querySelectorAll('[data-word] span[class*=done]').length])
+    advance(20)
+    expect(screen.getByText('10 COMBO!')).toBeInTheDocument()
+  })
+})
