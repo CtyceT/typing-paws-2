@@ -1,0 +1,146 @@
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 34px;
+}
+
+/* 登入按鈕的佔位：灰色、不能點 */
+.guest {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 14px;
+  border: 2px solid #b9aebd;
+  border-radius: 999px;
+  background: #f1ecef;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.hero {
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+.mascot {
+  display: inline-block;
+  animation: bob 1.6s ease-in-out infinite;
+}
+
+.mascotSvg {
+  width: 120px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 6px 0 4px;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+}
+
+.title span {
+  color: var(--pink-deep);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 26px 0 12px;
+}
+
+.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.howGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* 多加一層選擇器，確保蓋得過 Card 本身的 padding（CSS Modules 不保證載入順序） */
+.howGrid .how {
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.how .e {
+  font-size: 30px;
+}
+
+.how b {
+  display: block;
+  margin: 4px 0 2px;
+}
+
+.how small {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  display: block;
+}
+
+.historyWrap {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sparkLabel {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.empty {
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 30px 0;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 30px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .grid4,
+  .howGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid3,
+  .historyWrap {
+    grid-template-columns: 1fr;
+  }
+}

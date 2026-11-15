@@ -1,0 +1,22 @@
+/* 多加一層選擇器，確保蓋得過 Card 本身的樣式 */
+main .card {
+  max-width: 460px;
+  margin: 60px auto 0;
+  text-align: center;
+  padding: 24px 20px 28px;
+}
+
+.avatar {
+  width: 120px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 10px 0 6px;
+  font-size: 1.8rem;
+}
+
+.text {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+}

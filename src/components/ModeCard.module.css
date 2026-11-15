@@ -1,0 +1,68 @@
+.card {
+  background: #fff;
+  border: var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--pop);
+  padding: 14px 10px 12px;
+  text-align: center;
+  position: relative;
+}
+
+.card.selected {
+  background: #fff0c4;
+}
+
+.card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  line-height: 23px;
+  background: var(--mint);
+  border: var(--line);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.icon {
+  font-size: 30px;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 4px 0 2px;
+}
+
+.desc {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+/* 即將推出：整張變灰、沒有立體陰影 */
+.card.soon {
+  background: #f1ecef;
+  border-color: #b9aebd;
+  box-shadow: 4px 4px 0 #d9d0dc;
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+.soon .icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 1px 10px;
+  border: 2px dashed #b9aebd;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fff;
+}

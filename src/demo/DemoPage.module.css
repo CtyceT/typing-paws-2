@@ -57,62 +57,11 @@
   font-size: 0.9rem;
 }
 
-/* 以下照 1.0 版的 .avatar-grid／.av-card */
+/* 照 1.0 版的 .avatar-grid */
 .avatarGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-}
-
-.avCard {
-  background: #fff;
-  border: var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--pop);
-  padding: 12px 8px 10px;
-  text-align: center;
-  position: relative;
-  transition:
-    transform 0.1s,
-    box-shadow 0.1s,
-    background 0.15s;
-}
-
-.avCard:hover {
-  transform: translateY(-3px);
-}
-
-.avCard.selected {
-  background: #fff0c4;
-}
-
-.avCard.selected::after {
-  content: '✓';
-  position: absolute;
-  top: -10px;
-  right: -8px;
-  width: 28px;
-  height: 28px;
-  line-height: 23px;
-  background: var(--mint);
-  border: var(--line);
-  border-radius: 50%;
-  font-weight: 700;
-}
-
-.avCardSvg {
-  width: 82px;
-  margin: 0 auto;
-}
-
-.nm {
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.sub {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
 }
 
 /* 大圖：寬度與 1.0 版戰鬥畫面的勇者相同 */

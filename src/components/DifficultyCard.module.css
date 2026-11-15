@@ -1,0 +1,58 @@
+/* 照 1.0 版的 .diff-card */
+.card {
+  text-align: left;
+  border: var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--pop);
+  padding: 16px;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.card:hover {
+  transform: translate(-2px, -3px) rotate(-1deg);
+  box-shadow: 6px 7px 0 var(--ink);
+}
+
+.card:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.easy {
+  background: #d9f7ea;
+}
+
+.normal {
+  background: #fff0c4;
+}
+
+.hard {
+  background: #ffd9e3;
+}
+
+.icon {
+  font-size: 34px;
+}
+
+.name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 4px 0 2px;
+}
+
+.desc {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  min-height: 2.6em;
+}
+
+.best {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-weight: 500;
+}

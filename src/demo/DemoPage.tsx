@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   HeroAvatar,
+  HeroCard,
   MessageDialog,
   ProgressBar,
   Tag,
@@ -14,7 +15,6 @@ import {
   DIFFICULTY_ORDER,
   HERO_EXPRESSIONS,
   HERO_ORDER,
-  HEROES,
   MONSTERS,
   type HeroExpression,
   type HeroId,
@@ -44,7 +44,6 @@ export default function DemoPage() {
   const [value, setValue] = useState(0.64)
   const [hero, setHero] = useState<HeroId>(DEFAULT_HERO)
   const [expression, setExpression] = useState<HeroExpression>('normal')
-  const [hovered, setHovered] = useState<HeroId | null>(null)
   const close = () => setDialog(null)
   const first = MONSTERS[0]
 
@@ -117,23 +116,10 @@ export default function DemoPage() {
       </label>
 
       <div className={styles.title}>勇者 HeroAvatar</div>
-      {/* 卡片樣式照 1.0 版的勇者選擇卡片：滑過會浮起並變成開心表情 */}
+      {/* 勇者選擇卡片 HeroCard：滑過會浮起並變成開心表情 */}
       <div className={styles.avatarGrid} data-demo="heroes">
         {HERO_ORDER.map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={[styles.avCard, id === hero && styles.selected].filter(Boolean).join(' ')}
-            aria-pressed={id === hero}
-            data-demo={`hero-${id}`}
-            onClick={() => setHero(id)}
-            onMouseEnter={() => setHovered(id)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <HeroAvatar hero={id} expression={hovered === id ? 'happy' : 'normal'} className={styles.avCardSvg} />
-            <div className={styles.nm}>{HEROES[id].name}勇者</div>
-            <div className={styles.sub}>{HEROES[id].sub}</div>
-          </button>
+          <HeroCard key={id} hero={id} selected={id === hero} data-demo={`hero-${id}`} onClick={() => setHero(id)} />
         ))}
       </div>
       <div className={styles.row} style={{ marginTop: 18 }}>
