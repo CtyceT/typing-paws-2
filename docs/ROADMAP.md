@@ -15,7 +15,7 @@
   完成條件：`npm run dev` 看得到佔位首頁，`npm run lint`、`npm run test`、`npm run build` 都成功。
 - [x] 0.2 GitHub Pages 部署設定（`base: /typing-paws-2/` 與 GitHub Actions workflow）
   完成條件：`dist/index.html` 的資源路徑都以 `/typing-paws-2/` 開頭，repo 內有 `.github/workflows/deploy.yml`。
-- [ ] 0.3 第一次線上部署成功
+- [x] 0.3 第一次線上部署成功
   完成條件：push 到 `main` 後 Actions 全綠，https://ctycet.github.io/typing-paws-2/ 打得開佔位首頁。
 
 ## 階段 1：把作業五搬進 React
