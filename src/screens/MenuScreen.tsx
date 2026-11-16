@@ -30,6 +30,8 @@ export interface MenuScreenProps {
   hero: HeroId
   /** 最佳紀錄與歷史戰績 */
   records: Records
+  /** 是否已登入；訪客（預設）會看到「紀錄只存在這個瀏覽器」的說明 */
+  signedIn?: boolean
   /** 右上角的帳號列；沒給就只顯示訪客標示 */
   accountBar?: ReactNode
   onSelectHero: (hero: HeroId) => void
@@ -54,7 +56,7 @@ function bestLines(best: BestRecord | undefined) {
 }
 
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
-export function MenuScreen({ hero, records, accountBar, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
+export function MenuScreen({ hero, records, signedIn = false, accountBar, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
   const [confirmingClear, setConfirmingClear] = useState(false)
   const trend = wpmTrend(records.history)
   const recent = recentHistory(records.history)
@@ -166,7 +168,7 @@ export function MenuScreen({ hero, records, accountBar, onSelectHero, onStart, o
       </div>
 
       <footer className={styles.footer}>
-        小提示：戰鬥中按 <b>Esc</b> 可以暫停 ・ 紀錄只存在你自己的瀏覽器
+        小提示：戰鬥中按 <b>Esc</b> 可以暫停 ・ {signedIn ? '紀錄會同步到你的帳號' : '目前是訪客模式，紀錄只存在這個瀏覽器'}
       </footer>
 
       <MessageDialog

@@ -19,11 +19,13 @@ export interface DashboardScreenProps {
   records: Records
   /** 最近幾場的按鍵統計 */
   keyStats: readonly KeyStatRow[]
+  /** 是否已登入；訪客（預設）會看到「資料只存在這個瀏覽器」的說明 */
+  signedIn?: boolean
   onBack: () => void
 }
 
 /** 數據儀表板：總覽、鍵盤熱力圖、趨勢圖、弱點排行 */
-export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenProps) {
+export function DashboardScreen({ records, keyStats, signedIn = false, onBack }: DashboardScreenProps) {
   const aggregates = useMemo(() => aggregateKeyStats(keyStats), [keyStats])
   const summary = dashboardSummary(records.history, aggregates)
   const hasKeyStats = summary.keyCount > 0
@@ -46,7 +48,7 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
 
       {hasDashboardData(records.history, aggregates) ? (
         <>
-          <p className={styles.note}>統計最近 {summary.games} 場的表現（最多保留 30 場）・資料只存在你自己的瀏覽器</p>
+          <p className={styles.note}>統計最近 {summary.games} 場的表現（最多顯示 30 場）・{signedIn ? '資料會同步到你的帳號' : '訪客模式：資料只存在這個瀏覽器'}</p>
           <div className={styles.summary}>
             {summaryStats(summary).map((s) => (
               <div key={s.label} className={styles.stat}>

@@ -64,3 +64,26 @@ describe('按鍵統計的儲存（localStorage）', () => {
     expect(() => store.clear()).not.toThrow()
   })
 })
+
+describe('不同身分各自一份', () => {
+  it('帳號的統計存在自己的鍵底下，和訪客的互不影響', async () => {
+    const { createLocalKeyStatsStore } = await import('./keyStats.ts')
+    const account = createLocalKeyStatsStore('user-1')
+    store.saveSession([row('guest-game', 1)])
+    account.saveSession([row('account-game', 2)])
+    expect(store.load().map((r) => r.sessionId)).toEqual(['guest-game'])
+    expect(account.load().map((r) => r.sessionId)).toEqual(['account-game'])
+    expect(Object.keys(localStorage).sort()).toEqual(['typingPaws2.keyStats', 'typingPaws2.u.user-1.keyStats'])
+    account.clear()
+    expect(store.load()).toHaveLength(1)
+  })
+
+  it('replaceAll 整份換掉，而且一樣只保留最近幾場', async () => {
+    const { createLocalKeyStatsStore } = await import('./keyStats.ts')
+    const account = createLocalKeyStatsStore('user-1')
+    account.saveSession([row('old', 1)])
+    const many = Array.from({ length: KEY_STATS_SESSION_LIMIT + 2 }, (_, i) => row(`s${i}`, 100 + i))
+    expect(account.replaceAll(many)).toHaveLength(KEY_STATS_SESSION_LIMIT)
+    expect(account.load().some((r) => r.sessionId === 'old' || r.sessionId === 's0')).toBe(false)
+  })
+})

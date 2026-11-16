@@ -52,3 +52,14 @@ describe('勇者選擇的儲存', () => {
     expect(() => saveHero('bunny')).not.toThrow()
   })
 })
+
+describe('不同身分各自一份', () => {
+  it('帳號還沒選過時沿用訪客選的勇者；選了之後各自記住', () => {
+    localStorage.clear()
+    saveHero('panda')
+    expect(loadHero('user-1')).toBe('panda')
+    saveHero('bunny', 'user-1')
+    expect(loadHero('user-1')).toBe('bunny')
+    expect(loadHero()).toBe('panda')
+  })
+})

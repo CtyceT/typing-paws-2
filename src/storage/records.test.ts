@@ -53,3 +53,17 @@ describe('戰績的儲存', () => {
     expect(clearRecords()).toEqual(EMPTY_RECORDS)
   })
 })
+
+describe('不同身分各自一份', () => {
+  it('帳號的戰績和訪客的分開存、分開清', () => {
+    saveRecords(sample)
+    saveRecords(addResult(sample, result, { id: 'b', playedAt: 1790000001000 }), 'user-1')
+    expect(loadRecords().history).toHaveLength(1)
+    expect(loadRecords('user-1').history).toHaveLength(2)
+    expect(loadRecords('user-2')).toEqual(EMPTY_RECORDS)
+    expect(Object.keys(localStorage).sort()).toEqual(['typingPaws2.best', 'typingPaws2.history', 'typingPaws2.u.user-1.best', 'typingPaws2.u.user-1.history'])
+    clearRecords('user-1')
+    expect(loadRecords('user-1')).toEqual(EMPTY_RECORDS)
+    expect(loadRecords()).toEqual(sample)
+  })
+})

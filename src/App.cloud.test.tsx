@@ -94,3 +94,34 @@ describe('登入與登出', () => {
     expect(screen.getByText('alice')).toBeInTheDocument()
   })
 })
+
+describe('訪客模式與帳號各自的紀錄', () => {
+  const guestHistory = [{ id: 'g1', playedAt: 1790000000000, mode: 'classic', difficulty: 'easy', win: true, wpm: 31, accuracy: 95, maxCombo: 12, score: 1500, damage: 290, durationMs: 60000, stage: 3 }]
+
+  it('訪客的畫面清楚標示是訪客模式、紀錄只存在這個瀏覽器', () => {
+    const { cloud } = fakeCloud()
+    render(<App cloud={cloud} />)
+    expect(screen.getByText('👤 訪客')).toBeInTheDocument()
+    expect(screen.getByText(/目前是訪客模式，紀錄只存在這個瀏覽器/)).toBeInTheDocument()
+  })
+
+  it('訪客的紀錄不會因為登入就變成帳號的；登出後訪客的紀錄還在', () => {
+    localStorage.setItem('typingPaws2.history', JSON.stringify(guestHistory))
+    const { cloud, auth } = fakeCloud()
+    render(<App cloud={cloud} />)
+    expect(screen.getByRole('table')).toHaveTextContent('31')
+    act(() => auth.setUser(ALICE))
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByText(/紀錄會同步到你的帳號/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '登出' }))
+    expect(screen.getByRole('table')).toHaveTextContent('31')
+  })
+
+  it('登入後選的勇者記在帳號底下，不會改到訪客的選擇', () => {
+    const { cloud } = fakeCloud(ALICE)
+    render(<App cloud={cloud} />)
+    fireEvent.click(screen.getByRole('button', { name: /熊熊勇者/ }))
+    expect(localStorage.getItem('typingPaws2.u.user-alice.hero')).toBe('panda')
+    expect(localStorage.getItem('typingPaws2.hero')).toBeNull()
+  })
+})

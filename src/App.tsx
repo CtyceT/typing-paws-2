@@ -24,7 +24,7 @@ import { DashboardScreen } from './screens/DashboardScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
 import { loadHero, saveHero } from './storage/hero.ts'
-import { localKeyStatsStore as keyStatsStore } from './storage/keyStats.ts'
+import { createLocalKeyStatsStore } from './storage/keyStats.ts'
 import { findLegacyImport, markLegacyAsked } from './storage/legacy.ts'
 import { clearRecords, loadRecords, saveRecords } from './storage/records.ts'
 
@@ -70,8 +70,11 @@ interface GameProps {
 }
 
 function Game({ user, cloud }: GameProps) {
-  const [hero, setHero] = useState<HeroId>(loadHero)
-  const [records, setRecords] = useState<Records>(loadRecords)
+  /** 這份資料屬於誰：訪客和每個帳號在這個瀏覽器裡各有一份，互不混用 */
+  const scope = user?.id ?? null
+  const [keyStatsStore] = useState(() => createLocalKeyStatsStore(scope))
+  const [hero, setHero] = useState<HeroId>(() => loadHero(scope))
+  const [records, setRecords] = useState<Records>(() => loadRecords(scope))
   const [keyStats, setKeyStats] = useState<KeyStatRow[]>(() => keyStatsStore.load())
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
@@ -101,14 +104,14 @@ function Game({ user, cloud }: GameProps) {
 
   const selectHero = (next: HeroId) => {
     setHero(next)
-    saveHero(next)
+    saveHero(next, scope)
   }
   const goMenu = () => setScreen({ name: 'menu' })
   const answerLegacy = (answer: 'imported' | 'skipped') => {
     if (legacy && answer === 'imported') {
       const next = mergeRecords(records, legacy.records)
       setRecords(next)
-      saveRecords(next)
+      saveRecords(next, scope)
       if (legacy.hero) selectHero(legacy.hero)
     }
     markLegacyAsked(answer)
@@ -122,7 +125,7 @@ function Game({ user, cloud }: GameProps) {
       const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`
       const next = addResult(records, result, { id, playedAt })
       setRecords(next)
-      saveRecords(next)
+      saveRecords(next, scope)
       const sessionStats = summarizeSession(state.keyLog, { sessionId: id, playedAt })
       setKeyStats(keyStatsStore.saveSession(sessionStats))
       setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), misses: sessionMisses(sessionStats), run: screen.run })
@@ -144,19 +147,20 @@ function Game({ user, cloud }: GameProps) {
     )
   }
   if (screen.name === 'dashboard') {
-    return <DashboardScreen records={records} keyStats={keyStats} onBack={goMenu} />
+    return <DashboardScreen records={records} keyStats={keyStats} signedIn={user !== null} onBack={goMenu} />
   }
   return (
     <>
       <MenuScreen
         hero={hero}
         records={records}
+        signedIn={user !== null}
         onSelectHero={selectHero}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
         onOpenDashboard={() => setScreen({ name: 'dashboard' })}
         accountBar={<AccountBar user={user} onSignIn={cloud ? () => setSignIn('open') : undefined} onSignOut={signOut} />}
         onClearRecords={() => {
-          setRecords(clearRecords())
+          setRecords(clearRecords(scope))
           keyStatsStore.clear()
           setKeyStats([])
         }}
