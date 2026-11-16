@@ -9,7 +9,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    // supabase/functions/_shared 是 Edge Function 和前端共用的純函式，也在這裡測試
+    include: ['src/**/*.test.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
     // 測試不連真的 Supabase：就算本機有 .env.local 也當作沒設定
     env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
   },
