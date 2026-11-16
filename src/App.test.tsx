@@ -4,8 +4,13 @@ import App from './App.tsx'
 
 // jsdom 沒有 canvas，走勢圖用假的 Line 代替，只檢查交給 Chart.js 的資料
 vi.mock('react-chartjs-2', () => ({
-  Line: ({ data }: { data: { datasets: { data: number[]; pointBackgroundColor: string[] }[] } }) => (
-    <div data-testid="wpm-chart" data-values={JSON.stringify(data.datasets[0].data)} data-colors={JSON.stringify(data.datasets[0].pointBackgroundColor)} />
+  Line: ({ data, ...rest }: { data: { datasets: { data: number[]; pointBackgroundColor: string[] }[] }; 'aria-label'?: string }) => (
+    <div
+      data-testid="wpm-chart"
+      data-chart={rest['aria-label']}
+      data-values={JSON.stringify(data.datasets[0].data)}
+      data-colors={JSON.stringify(data.datasets[0].pointBackgroundColor)}
+    />
   ),
 }))
 
@@ -283,6 +288,26 @@ describe('數據儀表板', () => {
     expect(screen.getByText(/把滑鼠移到按鍵上/)).toBeInTheDocument()
     fireEvent.focus(heatKey('z'))
     expect(screen.getByText('Z：還沒有資料')).toBeInTheDocument()
+  })
+
+  it('趨勢圖：畫出 WPM 與準確率，可以切換最近 10 場與全部', () => {
+    const history = Array.from({ length: 12 }, (_, i) => ({
+      id: `g${i}`, playedAt: i + 1, mode: 'classic', difficulty: 'easy', win: i % 2 === 0, wpm: 30 + i, accuracy: 90 + i * 0.5, maxCombo: 5, score: 100, damage: 50, durationMs: 30000, stage: 3,
+    }))
+    localStorage.setItem('typingPaws2.history', JSON.stringify(history))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    const values = (name: string) => JSON.parse(document.querySelector(`[data-chart="${name} 趨勢"]`)!.getAttribute('data-values')!)
+    expect(screen.getByRole('button', { name: '最近 10 場' })).toHaveAttribute('aria-pressed', 'true')
+    expect(values('WPM')).toEqual([32, 33, 34, 35, 36, 37, 38, 39, 40, 41])
+    expect(values('準確率')).toEqual([91, 91.5, 92, 92.5, 93, 93.5, 94, 94.5, 95, 95.5])
+
+    fireEvent.click(screen.getByRole('button', { name: '全部（12 場）' }))
+    expect(screen.getByRole('button', { name: '全部（12 場）' })).toHaveAttribute('aria-pressed', 'true')
+    expect(values('WPM')).toHaveLength(12)
+    expect(values('WPM')[0]).toBe(30)
+    // 表格檢視的列數和圖上的點一樣多
+    expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(13)
   })
 
   it('只有從 1.0 匯入的戰績、沒有按鍵統計時，熱力圖顯示說明', () => {

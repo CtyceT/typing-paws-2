@@ -121,11 +121,58 @@ check('熱力圖：顏色真的不同', (await bg(WEAK_KEY)) !== (await bg('a'))
 await page.locator(`[data-key="${WEAK_KEY}"]`).hover()
 const info = await page.getByText(/^E：打了 \d+ 次・錯 \d+ 次/).textContent()
 check('熱力圖：滑鼠移上去看得到數字', Boolean(info), info ?? '')
+
+// 趨勢圖：兩張圖（WPM、準確率）都真的畫出東西
+const painted = (label) =>
+  page.locator(`canvas[aria-label="${label}"]`).evaluate((c) => {
+    const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height)
+    for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return true
+    return false
+  })
+check('趨勢圖：WPM 有畫出來', await painted('WPM 趨勢'))
+check('趨勢圖：準確率有畫出來', await painted('準確率 趨勢'))
+await page.getByRole('button', { name: '全部（2 場）' }).click()
+check('趨勢圖：可以切換到全部', (await page.getByRole('button', { name: '全部（2 場）' }).getAttribute('aria-pressed')) === 'true')
+await page.getByRole('button', { name: /最近 10 場/ }).click()
+await page.mouse.move(1, 1)
+await page.waitForTimeout(500)
 await shot('03-dashboard-desktop')
 await page.setViewportSize({ width: 390, height: 800 })
 await shot('03-dashboard-mobile')
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 check('手機寬度：沒有水平捲動', overflow <= 0, `超出 ${overflow}px`)
+await page.setViewportSize({ width: 960, height: 800 })
+
+// ---- 4. 塞 14 場假戰績，看場次多的時候趨勢圖的樣子（只為了截圖，按鍵統計維持真的那兩場） ----
+await page.evaluate(() => {
+  const real = JSON.parse(localStorage.getItem('typingPaws2.history'))
+  const fake = Array.from({ length: 14 }, (_, i) => ({
+    id: `fake-${i}`,
+    playedAt: real[0].playedAt - (14 - i) * 3600000,
+    mode: 'classic',
+    difficulty: ['easy', 'normal', 'hard'][i % 3],
+    win: i % 4 !== 3,
+    wpm: Math.round(28 + i * 2.2 + (i % 3) * 4),
+    accuracy: Math.round((86 + i * 0.7 + (i % 2) * 2) * 10) / 10,
+    maxCombo: 20,
+    score: 2000,
+    damage: 300,
+    durationMs: 60000,
+    stage: i % 4 !== 3 ? 3 : 2,
+  }))
+  localStorage.setItem('typingPaws2.history', JSON.stringify([...fake, ...real]))
+})
+await page.reload({ waitUntil: 'networkidle' })
+await page.getByRole('button', { name: /數據儀表板/ }).click()
+await page.getByRole('button', { name: '全部（16 場）' }).click()
+await page.waitForTimeout(600)
+const wpmBox = await page.locator('canvas[aria-label="WPM 趨勢"]').boundingBox()
+await page.mouse.move(wpmBox.x + wpmBox.width * 0.6, wpmBox.y + wpmBox.height * 0.5)
+await page.waitForTimeout(400)
+await shot('04-trend-16-games-desktop')
+await page.setViewportSize({ width: 390, height: 800 })
+await page.waitForTimeout(400)
+await shot('04-trend-16-games-mobile')
 await page.setViewportSize({ width: 960, height: 800 })
 
 check('瀏覽器沒有錯誤訊息', errors.length === 0, errors.join(' | '))

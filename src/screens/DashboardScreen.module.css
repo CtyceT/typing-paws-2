@@ -72,6 +72,50 @@
   margin: 26px 0 12px;
 }
 
+.sectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 26px 0 12px;
+}
+
+.sectionRow .sectionTitle {
+  margin: 0;
+}
+
+/* 兩段式切換：外框是一顆膠囊，選中的那一段是黃色 */
+.toggle {
+  display: inline-flex;
+  border: var(--line);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ink);
+  overflow: hidden;
+  background: #fff;
+}
+
+.toggleBtn {
+  border: 0;
+  background: transparent;
+  padding: 5px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.toggleBtn + .toggleBtn {
+  border-left: var(--line);
+}
+
+.toggleBtn[aria-pressed='true'] {
+  background: var(--yellow);
+}
+
+.toggleBtn:focus-visible {
+  outline: 3px solid var(--purple);
+  outline-offset: -3px;
+}
+
 .empty {
   color: var(--ink-soft);
   text-align: center;

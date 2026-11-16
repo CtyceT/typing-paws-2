@@ -1,6 +1,17 @@
-import { useMemo } from 'react'
-import { Button, Card, KeyboardHeatmap } from '../components/index.ts'
-import { aggregateKeyStats, dashboardSummary, hasDashboardData, heatmapRows, summaryStats, type KeyStatRow, type Records } from '../game/index.ts'
+import { useMemo, useState } from 'react'
+import { Button, Card, KeyboardHeatmap, PerformanceTrendChart } from '../components/index.ts'
+import {
+  aggregateKeyStats,
+  dashboardSummary,
+  hasDashboardData,
+  heatmapRows,
+  performanceTrend,
+  summaryStats,
+  TREND_COUNT,
+  type KeyStatRow,
+  type Records,
+  type TrendRange,
+} from '../game/index.ts'
 import styles from './DashboardScreen.module.css'
 
 export interface DashboardScreenProps {
@@ -15,6 +26,12 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
   const aggregates = useMemo(() => aggregateKeyStats(keyStats), [keyStats])
   const summary = dashboardSummary(records.history, aggregates)
   const hasKeyStats = summary.keyCount > 0
+  const [range, setRange] = useState<TrendRange>('recent')
+  const trend = performanceTrend(records.history, range)
+  const ranges: { id: TrendRange; label: string }[] = [
+    { id: 'recent', label: `最近 ${TREND_COUNT} 場` },
+    { id: 'all', label: `全部（${records.history.length} 場）` },
+  ]
 
   return (
     <main>
@@ -49,6 +66,18 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
               </div>
             )}
           </Card>
+
+          <div className={styles.sectionRow}>
+            <h2 className={styles.sectionTitle}>📈 WPM／準確率趨勢</h2>
+            <div className={styles.toggle} role="group" aria-label="趨勢圖的範圍">
+              {ranges.map((r) => (
+                <button key={r.id} type="button" className={styles.toggleBtn} aria-pressed={range === r.id} onClick={() => setRange(r.id)}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Card>{trend ? <PerformanceTrendChart trend={trend} /> : <div className={styles.empty}>還沒有戰績 🐾</div>}</Card>
         </>
       ) : (
         <Card className={styles.guide}>
