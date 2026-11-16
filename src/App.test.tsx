@@ -254,6 +254,48 @@ describe('數據儀表板', () => {
     const stat = (label: string) => screen.getByText(label).previousElementSibling!.textContent
     expect([stat('場數'), stat('通關'), stat('平均 WPM'), stat('平均準確率'), stat('統計按鍵數')]).toEqual(['2', '1', '35', '93%', '25'])
   })
+
+  const seedKeyStats = (rows: [key: string, attempts: number, errors: number][], kind = 'char') =>
+    localStorage.setItem(
+      'typingPaws2.keyStats',
+      JSON.stringify(rows.map(([key, attempts, errors]) => ({ id: `a:${kind}:${key}`, sessionId: 'a', playedAt: 1, kind, key, attempts, errors, timedCount: attempts - errors, totalMs: (attempts - errors) * 200 }))),
+    )
+  const heatKey = (key: string) => document.querySelector(`[data-key="${key}"]`)!
+
+  it('鍵盤熱力圖：常打錯的鍵等級比較高，移到按鍵上看得到數字', () => {
+    seedKeyStats([
+      ['e', 40, 10],
+      ['a', 40, 0],
+      ['!', 6, 3],
+    ])
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByRole('group', { name: '鍵盤熱力圖' })).toBeInTheDocument()
+    expect(heatKey('e')).toHaveAttribute('data-level', '5')
+    expect(heatKey('a')).toHaveAttribute('data-level', '1')
+    expect(heatKey('1')).toHaveAttribute('data-level', '5') // ! 併到 1 那顆鍵
+    expect(heatKey('z')).toHaveAttribute('data-level', '0')
+
+    expect(screen.getByText(/把滑鼠移到按鍵上/)).toBeInTheDocument()
+    fireEvent.mouseEnter(heatKey('e'))
+    expect(screen.getByText('E：打了 40 次・錯 10 次（25%）・平均 200 ms')).toBeInTheDocument()
+    fireEvent.mouseLeave(screen.getByRole('group', { name: '鍵盤熱力圖' }))
+    expect(screen.getByText(/把滑鼠移到按鍵上/)).toBeInTheDocument()
+    fireEvent.focus(heatKey('z'))
+    expect(screen.getByText('Z：還沒有資料')).toBeInTheDocument()
+  })
+
+  it('只有從 1.0 匯入的戰績、沒有按鍵統計時，熱力圖顯示說明', () => {
+    localStorage.setItem(
+      'typingPaws2.history',
+      JSON.stringify([{ id: 'v1-1-0', playedAt: 1, mode: 'classic', difficulty: 'easy', win: true, wpm: 40, accuracy: 96, maxCombo: 20, score: 3000, damage: null, durationMs: null, stage: 3 }]),
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByText('場數')).toBeInTheDocument()
+    expect(screen.getByText(/還沒有按鍵統計/)).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '鍵盤熱力圖' })).not.toBeInTheDocument()
+  })
 })
 
 describe('匯入 1.0 舊紀錄', () => {

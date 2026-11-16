@@ -109,6 +109,18 @@ check('有資料：不再顯示引導文字', !(await page.getByText('還沒有�
 const statValue = (label) => page.getByText(label, { exact: true }).locator('xpath=preceding-sibling::*[1]').textContent()
 check('總覽：場數是 2', (await statValue('場數')) === '2')
 check('總覽：統計按鍵數 = 兩場按鍵數', (await statValue('統計按鍵數')) === String(sum(rows2.filter((r) => r.kind === 'char'), 'attempts')))
+
+// 熱力圖：刻意一直打錯的鍵顏色要明顯比其他鍵深
+const level = (key) => page.locator(`[data-key="${key}"]`).getAttribute('data-level').then(Number)
+const weakLevel = await level(WEAK_KEY)
+const otherLevels = await page.locator(`[data-key]:not([data-key="${WEAK_KEY}"])`).evaluateAll((els) => els.map((el) => Number(el.dataset.level)))
+check(`熱力圖：${WEAK_KEY} 是最深的等級`, weakLevel === 5, `等級 ${weakLevel}`)
+check('熱力圖：其他鍵都沒有上到深色', Math.max(...otherLevels) <= 1, `其他鍵最高等級 ${Math.max(...otherLevels)}`)
+const bg = (key) => page.locator(`[data-key="${key}"]`).evaluate((el) => getComputedStyle(el).backgroundColor)
+check('熱力圖：顏色真的不同', (await bg(WEAK_KEY)) !== (await bg('a')), `${await bg(WEAK_KEY)} vs ${await bg('a')}`)
+await page.locator(`[data-key="${WEAK_KEY}"]`).hover()
+const info = await page.getByText(/^E：打了 \d+ 次・錯 \d+ 次/).textContent()
+check('熱力圖：滑鼠移上去看得到數字', Boolean(info), info ?? '')
 await shot('03-dashboard-desktop')
 await page.setViewportSize({ width: 390, height: 800 })
 await shot('03-dashboard-mobile')

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { Button, Card } from '../components/index.ts'
-import { aggregateKeyStats, dashboardSummary, hasDashboardData, summaryStats, type KeyStatRow, type Records } from '../game/index.ts'
+import { Button, Card, KeyboardHeatmap } from '../components/index.ts'
+import { aggregateKeyStats, dashboardSummary, hasDashboardData, heatmapRows, summaryStats, type KeyStatRow, type Records } from '../game/index.ts'
 import styles from './DashboardScreen.module.css'
 
 export interface DashboardScreenProps {
@@ -14,6 +14,7 @@ export interface DashboardScreenProps {
 export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenProps) {
   const aggregates = useMemo(() => aggregateKeyStats(keyStats), [keyStats])
   const summary = dashboardSummary(records.history, aggregates)
+  const hasKeyStats = summary.keyCount > 0
 
   return (
     <main>
@@ -35,6 +36,19 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
               </div>
             ))}
           </div>
+
+          <h2 className={styles.sectionTitle}>⌨️ 鍵盤熱力圖</h2>
+          <Card>
+            {hasKeyStats ? (
+              <KeyboardHeatmap rows={heatmapRows(aggregates)} />
+            ) : (
+              <div className={styles.empty}>
+                還沒有按鍵統計 🐾
+                <br />
+                在 2.0 打完一場戰鬥後，這裡會標出你常打錯的鍵
+              </div>
+            )}
+          </Card>
         </>
       ) : (
         <Card className={styles.guide}>

@@ -1,0 +1,118 @@
+.keyboard {
+  --gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: var(--gap);
+}
+
+/* 最長的一排有 13 顆鍵：每顆鍵佔 1/13 的寬度，所以每一排的鍵都一樣大，手機上也塞得下 */
+.key {
+  flex: 0 0 calc((100% - 12 * var(--gap)) / 13);
+  max-width: 54px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid var(--ink);
+  /* 手機上鍵很小，圓角要跟著縮，不然會變成圓形 */
+  border-radius: clamp(5px, 1.6vw, 10px);
+  font-weight: 600;
+  font-size: clamp(0.65rem, 2.6vw, 1rem);
+  color: var(--ink);
+  cursor: default;
+  transition: transform 0.08s;
+}
+
+.space {
+  flex-basis: 46%;
+  max-width: 320px;
+  aspect-ratio: auto;
+  height: clamp(24px, 6vw, 40px);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.key:hover,
+.key:focus-visible,
+.active {
+  transform: translateY(-2px);
+  box-shadow: 2px 3px 0 var(--ink);
+  outline: none;
+}
+
+/* 顏色等級：綠（幾乎不會錯）→ 黃 → 粉紅（很常錯），和難度標籤的綠、黃、粉同一組色 */
+.l0 {
+  background: #f1ecef;
+  border-style: dashed;
+  border-color: #b9aebd;
+  color: var(--ink-soft);
+}
+
+.l1 {
+  background: #d9f7ea;
+}
+
+.l2 {
+  background: #fff0c4;
+}
+
+.l3 {
+  background: #ffd166;
+}
+
+.l4 {
+  background: #ff8fab;
+}
+
+.l5 {
+  background: #e8456f;
+  color: #fff;
+}
+
+.info {
+  margin-top: 12px;
+  min-height: 2.6em;
+  padding: 8px 12px;
+  background: #fdf6fa;
+  border: 2px dashed #e3cfe0;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.legendTitle {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+.swatch.l0 {
+  border-style: dashed;
+  border-color: #b9aebd;
+}
