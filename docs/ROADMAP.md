@@ -98,8 +98,8 @@
   完成條件：`.env.local` 放 URL 與 publishable key（新版的 anon key，`sb_publishable_` 開頭；不進版控），有 `.env.example`，前端可成功連線。
 - [x] 3.2 資料表與 RLS：玩家資料、場次成績、按鍵統計
   完成條件：migration 檔進版控，每張表都開 RLS，用另一個帳號查不到別人的資料。
-- [ ] 3.3 Google 登入與登出
-  完成條件：本機與線上網址都能用 Google 登入，重新整理後維持登入狀態。
+- [x] 3.3 登入與登出（先開 GitHub；Google 在 Supabase 後台設定好之後，把 `'google'` 加進 `src/cloud/auth.ts` 的 `AUTH_PROVIDERS` 就會出現按鈕）
+  完成條件：本機與線上網址都能用 GitHub 登入，重新整理後維持登入狀態。
 - [ ] 3.4 訪客模式
   完成條件：不登入也能完整遊玩，資料只存本機，畫面清楚標示目前是訪客。
 - [ ] 3.5 儲存層的 Supabase 實作：成績與按鍵統計上傳

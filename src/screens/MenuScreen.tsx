@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, WpmTrendChart } from '../components/index.ts'
+import { useState, type ReactNode } from 'react'
+import { AccountBar, Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, WpmTrendChart } from '../components/index.ts'
 import {
   bestSummary,
   DIFFICULTIES,
@@ -30,6 +30,8 @@ export interface MenuScreenProps {
   hero: HeroId
   /** 最佳紀錄與歷史戰績 */
   records: Records
+  /** 右上角的帳號列；沒給就只顯示訪客標示 */
+  accountBar?: ReactNode
   onSelectHero: (hero: HeroId) => void
   /** 點難度卡片：用經典闖關模式開始戰鬥 */
   onStart: (difficulty: Difficulty) => void
@@ -52,18 +54,13 @@ function bestLines(best: BestRecord | undefined) {
 }
 
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
-export function MenuScreen({ hero, records, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
+export function MenuScreen({ hero, records, accountBar, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
   const [confirmingClear, setConfirmingClear] = useState(false)
   const trend = wpmTrend(records.history)
   const recent = recentHistory(records.history)
   return (
     <main>
-      <div className={styles.topbar}>
-        {/* 登入按鈕的位置；帳號功能完成前先顯示訪客 */}
-        <span className={styles.guest} title="登入功能即將推出">
-          👤 訪客
-        </span>
-      </div>
+      {accountBar ?? <AccountBar user={null} />}
 
       <header className={styles.hero}>
         <div className={styles.mascot}>

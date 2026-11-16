@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   addResult,
   battleResult,
@@ -17,7 +17,8 @@ import {
   type Records,
   type SessionMiss,
 } from './game/index.ts'
-import { MessageDialog } from './components/index.ts'
+import { AUTH_PROVIDERS, authErrorFromUrl, authRedirectUrl, defaultCloud, PROVIDER_LABELS, useAuth, type AuthProvider, type AuthUser, type Cloud } from './cloud/index.ts'
+import { AccountBar, MessageDialog } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
 import { DashboardScreen } from './screens/DashboardScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
@@ -44,13 +45,59 @@ function legacySummary(legacy: LegacyImport): string {
   return `找到 ${found.join('、')}，\n要匯入到 2.0 嗎？1.0 的紀錄不會被更動。`
 }
 
-function App() {
+export interface AppProps {
+  /** 雲端功能（登入）；沒給就用環境變數設定的 Supabase 專案，null 表示只有訪客模式。測試時可以換成假的 */
+  cloud?: Cloud | null
+}
+
+/** 最外層：先確定登入狀態，再顯示遊戲。換帳號（登入、登出）時整個遊戲重新建立，回到主選單 */
+function App({ cloud = defaultCloud }: AppProps) {
+  const auth = useAuth(cloud?.auth ?? null)
+  if (auth.status === 'loading') {
+    return (
+      <main className="app-loading" role="status">
+        🐾 載入中…
+      </main>
+    )
+  }
+  return <Game key={auth.user?.id ?? 'guest'} user={auth.user} cloud={cloud} />
+}
+
+interface GameProps {
+  /** 登入的人；null 是訪客 */
+  user: AuthUser | null
+  cloud: Cloud | null
+}
+
+function Game({ user, cloud }: GameProps) {
   const [hero, setHero] = useState<HeroId>(loadHero)
   const [records, setRecords] = useState<Records>(loadRecords)
   const [keyStats, setKeyStats] = useState<KeyStatRow[]>(() => keyStatsStore.load())
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
   const [legacy, setLegacy] = useState<LegacyImport | null>(findLegacyImport)
+  /** 登入視窗：closed 關著、open 開著、其他字串是要顯示的錯誤說明 */
+  const [signIn, setSignIn] = useState<'closed' | 'open' | { error: string }>(() => {
+    const error = user ? null : authErrorFromUrl(window.location.search, window.location.hash)
+    return error ? { error } : 'closed'
+  })
+
+  // 登入失敗被導回來時，網址上會留著 error 參數：顯示過一次就清掉，重新整理才不會再跳出來
+  useEffect(() => {
+    if (authErrorFromUrl(window.location.search, window.location.hash)) window.history.replaceState(null, '', window.location.pathname)
+  }, [])
+
+  const startSignIn = (provider: AuthProvider) => {
+    if (!cloud) return
+    cloud.auth.signIn(provider, authRedirectUrl(window.location.origin, import.meta.env.BASE_URL)).catch(() => {
+      setSignIn({ error: '連不上登入服務，請確認網路後再試一次。' })
+    })
+  }
+  const signOut = () => {
+    cloud?.auth.signOut().catch(() => {
+      // 登出失敗（極少見）：維持登入狀態，玩家可以再按一次
+    })
+  }
 
   const selectHero = (next: HeroId) => {
     setHero(next)
@@ -107,13 +154,32 @@ function App() {
         onSelectHero={selectHero}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
         onOpenDashboard={() => setScreen({ name: 'dashboard' })}
+        accountBar={<AccountBar user={user} onSignIn={cloud ? () => setSignIn('open') : undefined} onSignOut={signOut} />}
         onClearRecords={() => {
           setRecords(clearRecords())
           keyStatsStore.clear()
           setKeyStats([])
         }}
       />
-      {legacy && (
+      <MessageDialog
+        open={signIn !== 'closed'}
+        emoji={signIn === 'open' ? '🔑' : '😿'}
+        title={signIn === 'open' ? '登入喵喵打字' : '登入沒有成功'}
+        text={
+          signIn === 'open' || signIn === 'closed'
+            ? '登入後，戰績和按鍵統計會存到雲端，\n換一台裝置也看得到。\n不登入也可以完整遊玩，紀錄只存在這個瀏覽器。'
+            : `${signIn.error}\n可以再試一次，或先用訪客身分玩。`
+        }
+        buttons={[
+          ...AUTH_PROVIDERS.map((provider, i) => ({
+            label: `用 ${PROVIDER_LABELS[provider]} 登入${i === 0 ? '（Enter）' : ''}`,
+            primary: i === 0,
+            onClick: () => startSignIn(provider),
+          })),
+          { label: '先當訪客', onClick: () => setSignIn('closed') },
+        ]}
+      />
+      {legacy && signIn === 'closed' && (
         <MessageDialog
           open
           emoji="📦"

@@ -58,3 +58,12 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* 還在確認登入狀態時的畫面（通常一閃而過） */
+.app-loading {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  color: var(--ink-soft);
+  font-weight: 600;
+}

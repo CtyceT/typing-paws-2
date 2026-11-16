@@ -1,0 +1,95 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  min-height: 34px;
+}
+
+/* 訪客標示：灰色、不能點 */
+.guest {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 14px;
+  border: 2px solid #b9aebd;
+  border-radius: 999px;
+  background: #f1ecef;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* 登入者：白底膠囊，和按鈕同高但沒有陰影（不能點） */
+.user {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 14px 3px 5px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.user > span[aria-hidden] {
+  padding-left: 6px;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--bg);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12em;
+}
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ok {
+  background: #d9f7ea;
+}
+
+.busy {
+  background: #ece4fb;
+}
+
+.warn {
+  background: #fff0c4;
+  border: 2px dashed var(--ink);
+}
+
+.retry {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--yellow);
+}
