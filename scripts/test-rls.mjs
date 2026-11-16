@@ -14,12 +14,13 @@ const db = new PGlite()
 await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
+  create role service_role nologin bypassrls;
   create schema auth;
   create table auth.users (id uuid primary key, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema auth to anon, authenticated;
-  grant usage on schema public to anon, authenticated;
+  grant usage on schema public to anon, authenticated, service_role;
 `)
 
 const ALICE = '00000000-0000-0000-0000-00000000000a'
@@ -50,9 +51,20 @@ async function as(uid, sql, params = []) {
   }
 }
 const denied = (r) => r.error !== null
+/** 用 Edge Function 的身分（service_role）跑一段 SQL */
+async function service(sql, params = []) {
+  await db.exec(`set role service_role`)
+  try {
+    return { rows: (await db.query(sql, params)).rows, error: null }
+  } catch (error) {
+    return { rows: [], error }
+  } finally {
+    await db.exec(`reset role`)
+  }
+}
 
 // ---- 每張表都開了 RLS ----
-const tables = ['profiles', 'game_records', 'best_records', 'key_stats']
+const tables = ['profiles', 'game_records', 'best_records', 'key_stats', 'ai_usage', 'training_cache']
 const rls = await db.query(`select relname, relrowsecurity from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r'`)
 for (const t of tables) check(`${t} 開啟 RLS`, rls.rows.find((r) => r.relname === t)?.relrowsecurity === true)
 check('public 裡沒有沒開 RLS 的表', rls.rows.every((r) => r.relrowsecurity), JSON.stringify(rls.rows))
@@ -103,13 +115,61 @@ check('best_records：另一個帳號查不到', (await as(BOB, `select * from p
 for (const t of tables) check(`${t}：沒登入不能讀`, denied(await as(null, `select * from public.${t}`)))
 check('沒登入不能新增場次', denied(await as(null, `insert into public.game_records ${cols} values ${game('g9')}`)))
 
+// ---- AI 用量紀錄與題庫快取（階段 4）：只有 Edge Function（service_role）能碰 ----
+const req = JSON.stringify({ difficulty: 'normal', theme: 'space', weaknesses: ['q', 'th'] })
+for (const t of ['ai_usage', 'training_cache']) {
+  check(`${t}：登入的人不能讀`, denied(await as(ALICE, `select * from public.${t}`)))
+  check(`${t}：登入的人不能寫`, denied(await as(ALICE, `delete from public.${t}`)))
+}
+check('登入的人不能自己呼叫 ai_usage_begin', denied(await as(ALICE, `select public.ai_usage_begin($1, 'training', 10, null)`, [ALICE])))
+check('登入的人不能自己退還次數（ai_usage_finish）', denied(await as(ALICE, `select public.ai_usage_finish(1, '{"source":"failed","counted":false}')`)))
+check('登入的人不能自己寫快取', denied(await as(ALICE, `select public.training_cache_put('k', 'v1', 'easy', 'daily', '{q}', '["quiz"]', 'x', 'x', 24)`)))
+check('登入的人不能自己讀快取', denied(await as(ALICE, `select public.training_cache_get('k')`)))
+check('沒登入不能呼叫 ai_usage_begin', denied(await as(null, `select public.ai_usage_begin($1, 'training', 10, null)`, [ALICE])))
+
+const begin = async (uid, limit = 3) => (await service(`select public.ai_usage_begin($1, 'training', $2, $3::jsonb) as r`, [uid, limit, req])).rows[0]?.r
+const b1 = await begin(ALICE)
+const b2 = await begin(ALICE)
+const b3 = await begin(ALICE)
+check('每日上限：前 3 次允許，used 依序是 1、2、3', b1?.allowed && b2?.allowed && b3?.allowed && b1.used === 1 && b3.used === 3 && typeof b1.id === 'number', JSON.stringify([b1, b2, b3]))
+const b4 = await begin(ALICE)
+check('每日上限：第 4 次被拒絕，而且不會多一列', b4?.allowed === false && b4.id === null && b4.used === 3 && Number((await db.query(`select count(*) n from public.ai_usage`)).rows[0].n) === 3, JSON.stringify(b4))
+check('每日上限：別人不受影響', (await begin(BOB))?.allowed === true)
+const quality = { source: 'groq', counted: true, prompt_version: 'v1', model: 'openai/gpt-oss-120b', latency_ms: 812, raw_count: 30, valid_count: 27, reject_reason: 'length', attempts: [{ provider: 'gemini', ok: false, reason: 'http_429' }, { provider: 'groq', ok: true }] }
+await service(`select public.ai_usage_finish($1, $2::jsonb)`, [b1.id, JSON.stringify(quality)])
+const logged = (await db.query(`select * from public.ai_usage where id = $1`, [b1.id])).rows[0]
+check('用量紀錄記下 prompt 版本、模型、延遲、題數與不合格原因', logged?.source === 'groq' && logged.prompt_version === 'v1' && logged.model === 'openai/gpt-oss-120b' && logged.latency_ms === 812 && logged.raw_count === 30 && logged.valid_count === 27 && logged.reject_reason === 'length' && logged.attempts.length === 2 && logged.request.theme === 'space', JSON.stringify(logged))
+await service(`select public.ai_usage_finish($1, $2::jsonb)`, [b2.id, JSON.stringify({ ...quality, source: 'failed', counted: false })])
+const b5 = await begin(ALICE)
+check('生成失敗退還次數之後可以再用一次', b5?.allowed === true && b5.used === 3, JSON.stringify(b5))
+const hit = (await service(`select public.ai_usage_cache_hit($1, 'training', $2::jsonb, $3::jsonb) as used`, [ALICE, req, JSON.stringify({ prompt_version: 'v1', model: 'm', valid_count: 20 })])).rows[0]?.used
+check('快取命中會留紀錄但不計入上限', hit === 3 && (await db.query(`select count(*) n from public.ai_usage where user_id = $1 and source = 'cache' and not counted`, [ALICE])).rows[0].n == 1, String(hit))
+await db.query(`update public.ai_usage set usage_day = usage_day - 1 where user_id = $1`, [ALICE])
+const next = await begin(ALICE)
+check('隔天自動恢復：昨天的用量不算', next?.allowed === true && next.used === 1, JSON.stringify(next))
+const day = (await db.query(`select usage_day::text d, ((now() at time zone 'utc') + interval '8 hours')::date::text today from public.ai_usage where id = $1`, [next.id])).rows[0]
+check('用量算在台灣時間的日期', day?.d === day?.today, JSON.stringify(day))
+check('功能名稱有格式限制', denied(await service(`select public.ai_usage_begin($1, 'DROP TABLE', 10, null)`, [ALICE])))
+
+const put = (key, ttl) => service(`select public.training_cache_put($1, 'v1', 'normal', 'space', '{q,th}', '["quartz","thrust"]'::jsonb, 'gemini', 'gemini-3.5-flash-lite', $2)`, [key, ttl])
+check('service_role 可以寫快取', !denied(await put('v1|normal|space|q+th', 24)))
+const got = (await service(`select public.training_cache_get('v1|normal|space|q+th') as c`)).rows[0]?.c
+check('快取讀得回來（題目、來源、模型）', got?.items?.length === 2 && got.provider === 'gemini' && got.model === 'gemini-3.5-flash-lite', JSON.stringify(got))
+check('沒有的鍵讀到 null', (await service(`select public.training_cache_get('nope') as c`)).rows[0]?.c === null)
+await db.query(`update public.training_cache set expires_at = now() - interval '1 minute'`)
+check('過期的快取讀不到', (await service(`select public.training_cache_get('v1|normal|space|q+th') as c`)).rows[0]?.c === null)
+await put('other', 24)
+check('寫入時順手清掉過期的快取', Number((await db.query(`select count(*) n from public.training_cache`)).rows[0].n) === 1)
+check('同一個鍵重複寫入只會有一筆', !denied(await put('other', 24)) && Number((await db.query(`select count(*) n from public.training_cache`)).rows[0].n) === 1)
+check('題目一定要是陣列', denied(await service(`select public.training_cache_put('bad', 'v1', 'normal', 'space', '{q}', '"oops"'::jsonb, 'x', 'x', 24)`)))
+
 // ---- 刪除 ----
 await as(ALICE, `delete from public.game_records where id = 'g1'`)
 check('刪除場次時，底下的按鍵統計一起刪掉', (await as(ALICE, `select * from public.key_stats`)).rows.length === 0)
 check('刪除不會影響別人的場次', (await as(BOB, `select * from public.game_records`)).rows.length === 1)
 await db.query(`delete from auth.users where id = $1`, [BOB])
-const left = await db.query(`select (select count(*) from public.profiles where id = $1) + (select count(*) from public.game_records where user_id = $1) as n`, [BOB])
-check('刪除帳號時，玩家資料與場次一起刪掉', Number(left.rows[0].n) === 0)
+const left = await db.query(`select (select count(*) from public.profiles where id = $1) + (select count(*) from public.game_records where user_id = $1) + (select count(*) from public.ai_usage where user_id = $1) as n`, [BOB])
+check('刪除帳號時，玩家資料、場次與 AI 用量紀錄一起刪掉', Number(left.rows[0].n) === 0)
 
 console.log(failed === 0 ? '\n全部通過 🎉' : `\n${failed} 項沒通過`)
 process.exit(failed === 0 ? 0 : 1)
