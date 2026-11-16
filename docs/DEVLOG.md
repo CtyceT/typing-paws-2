@@ -194,3 +194,50 @@
 
 ## 版本
 - `v2.0-alpha`（2026-11-16）：階段 0 與階段 1 的 1.1～1.18 完成，剩 1.19 與線上 1.0 版對照驗收。
+
+## 階段 4：弱點特訓（LLM）（2026-11-16）
+
+在「自主模式」下連續做完，決定記在 `docs/DECISIONS.md`（D55～D71）。
+
+**做了什麼**
+- 4.1 LLM 決定：主力 Gemini `gemini-3.5-flash-lite`，備援 Groq `openai/gpt-oss-120b`，金鑰只在 Supabase secrets。
+- 4.2～4.7 Edge Function `training-words`：驗證登入、CORS、每人每日 10 次、Gemini → Groq 備援、輸出驗證、24 小時題庫快取。
+  新 migration：`ai_usage`（用量與生成品質）、`training_cache`，都只有 Edge Function 能碰。
+- 4.4 prompt 有版本號（`supabase/functions/_shared/training/prompts/v1.ts`）。
+- 4.8 前端出題服務：失敗或逾時退回內建字庫並顯示說明。
+- 4.9 主選單的弱點特訓入口、主題選擇、出題中畫面、用 AI 題目戰鬥；訪客看到「登入後即可使用」。
+- 4.10 結算畫面列出特訓的鍵、這場的錯誤率和之前平均的比較。
+- `scripts/try-llm.mjs`：本機直接呼叫兩家 LLM；`--eval` 跑固定的 12 個案例並產生 `docs/llm-eval.md`。
+
+**遇到的問題與解法**
+- **沒有 Docker 和 Deno，跑不了 `supabase functions serve`**：把流程寫成不依賴 Deno 的純 TypeScript（資料庫和 LLM 都從外面傳進來），
+  在 Vitest 裡用假的資料庫和假的 LLM 測完整流程；真的 API 用 `scripts/try-llm.mjs` 在 Node 裡打。
+- **簡單難度配罕見字母湊不到題目**：長度放寬到 3～6、門檻降到 10 題、prompt 允許罕見字母少一點。實測 q／x／z 兩家都給了 29～30 題。
+- **Gemini 偶爾回 503（high demand）**：第一次評估 12 個案例裡有 3 次。這不是題目品質的問題，流程會改用 Groq。
+- **困難難度配數字、符號的弱點，Gemini 的題目常常太長**（`4 ; th` 那一組 30 題只有 7 題合格）。Groq 同一組是 27 題。
+  目前靠備援接住；要改善的話是調整 prompt（做成 v2 再用 `--eval` 比較）。
+- **同時送很多請求可能超過每日上限**：檢查和佔用寫在同一個資料庫函式裡，用 advisory lock 讓同一個人的請求排隊。
+- **React 的 StrictMode 在開發模式會把 effect 跑兩次**：出題的請求如果寫在畫面的 effect 裡會送兩次、扣兩次額度，
+  所以改成在按下難度卡片的當下送出，畫面只負責等結果。
+
+**實機驗證（部署之後）**
+1. 沒帶 JWT 呼叫：`curl -i -X POST https://<專案>.supabase.co/functions/v1/training-words -d '{}'` → 401，訊息是「登入後即可使用 AI 出題。」
+2. 登入後在主選單點「弱點特訓」→ 選主題 → 點難度：幾秒內進入戰鬥，題目明顯含「要練的鍵」。
+3. 同一個主題和難度再開始一次：很快就開始（快取）。在 Supabase 後台看 `ai_usage`：第二筆的 `source` 是 `cache`、`counted` 是 false。
+4. 登出後點「弱點特訓」：看到「登入後即可使用」。
+5. 開發者工具把網路設成離線再開始特訓：跳出「這場先用內建字庫」，按開始後可以正常打完。
+6. 打完一場特訓：結算畫面有「🎯 這次特訓的弱點」，主選單戰績多一場，最佳紀錄沒有變。
+
+**期末報告可以用的查詢（在 Supabase 後台的 SQL Editor）**
+```sql
+-- 各模型的案例合格率、題目合格率、平均延遲
+select a ->> 'model' as model, count(*) as attempts,
+       round(avg((a ->> 'ok')::boolean::int) * 100, 1) as pass_pct,
+       round(sum((a ->> 'valid_count')::int)::numeric / nullif(sum((a ->> 'raw_count')::int), 0) * 100, 1) as item_pass_pct,
+       round(avg((a ->> 'latency_ms')::int)) as avg_ms
+from public.ai_usage, jsonb_array_elements(attempts) a
+group by 1;
+
+-- 快取命中率
+select source, count(*) from public.ai_usage group by 1;
+```
