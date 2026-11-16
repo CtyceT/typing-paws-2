@@ -1,5 +1,17 @@
-import { Card, DifficultyCard, HeroAvatar, HeroCard, ModeCard } from '../components/index.ts'
-import { DIFFICULTY_ORDER, HERO_ORDER, MODE_ORDER, MODES, type Difficulty, type HeroId } from '../game/index.ts'
+import { useState } from 'react'
+import { Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard } from '../components/index.ts'
+import {
+  bestSummary,
+  DIFFICULTY_ORDER,
+  hasRecords,
+  HERO_ORDER,
+  MODE_ORDER,
+  MODES,
+  type BestRecord,
+  type Difficulty,
+  type HeroId,
+  type Records,
+} from '../game/index.ts'
 import styles from './MenuScreen.module.css'
 
 const HOW = [
@@ -11,13 +23,30 @@ const HOW = [
 
 export interface MenuScreenProps {
   hero: HeroId
+  /** 最佳紀錄與歷史戰績 */
+  records: Records
   onSelectHero: (hero: HeroId) => void
   /** 點難度卡片：用經典闖關模式開始戰鬥 */
   onStart: (difficulty: Difficulty) => void
+  /** 確認清除所有紀錄之後呼叫 */
+  onClearRecords: () => void
+}
+
+/** 難度卡片上的最佳紀錄：兩行文字；沒有紀錄時交給卡片顯示預設文字 */
+function bestLines(best: BestRecord | undefined) {
+  const lines = bestSummary(best)
+  return lines ? (
+    <>
+      {lines[0]}
+      <br />
+      {lines[1]}
+    </>
+  ) : undefined
 }
 
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
-export function MenuScreen({ hero, onSelectHero, onStart }: MenuScreenProps) {
+export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecords }: MenuScreenProps) {
+  const [confirmingClear, setConfirmingClear] = useState(false)
   return (
     <main>
       <div className={styles.topbar}>
@@ -56,7 +85,7 @@ export function MenuScreen({ hero, onSelectHero, onStart }: MenuScreenProps) {
       </h2>
       <div className={styles.grid3}>
         {DIFFICULTY_ORDER.map((d) => (
-          <DifficultyCard key={d} difficulty={d} onClick={() => onStart(d)} />
+          <DifficultyCard key={d} difficulty={d} best={bestLines(records.best[d])} onClick={() => onStart(d)} />
         ))}
       </div>
 
@@ -73,7 +102,7 @@ export function MenuScreen({ hero, onSelectHero, onStart }: MenuScreenProps) {
         ))}
       </div>
 
-      {/* 戰績的內容在 ROADMAP 1.17、1.18 才會接上，這裡先放外框和空狀態 */}
+      {/* 戰績表與走勢圖在 ROADMAP 1.18 才會接上，這裡先放外框和空狀態 */}
       <h2 className={styles.sectionTitle}>📈 我的戰績</h2>
       <div className={styles.historyWrap}>
         <Card>
@@ -86,12 +115,34 @@ export function MenuScreen({ hero, onSelectHero, onStart }: MenuScreenProps) {
             <br />
             完成一場戰鬥後會出現在這裡
           </div>
+          <div className={styles.rowEnd}>
+            <Button variant="ghost" size="small" onClick={() => hasRecords(records) && setConfirmingClear(true)}>
+              🧹 清除紀錄
+            </Button>
+          </div>
         </Card>
       </div>
 
       <footer className={styles.footer}>
         小提示：戰鬥中按 <b>Esc</b> 可以暫停 ・ 紀錄只存在你自己的瀏覽器
       </footer>
+
+      <MessageDialog
+        open={confirmingClear}
+        emoji="🧹"
+        title="清除所有紀錄？"
+        text={'最佳紀錄和歷史戰績都會被刪除，\n這個動作無法復原。'}
+        buttons={[
+          { label: '先不要（Enter）', primary: true, onClick: () => setConfirmingClear(false) },
+          {
+            label: '🧹 確定清除',
+            onClick: () => {
+              setConfirmingClear(false)
+              onClearRecords()
+            },
+          },
+        ]}
+      />
     </main>
   )
 }

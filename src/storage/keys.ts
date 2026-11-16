@@ -8,4 +8,13 @@ export const STORAGE_PREFIX = 'typingPaws2.'
 export const STORAGE_KEYS = {
   /** 選中的勇者代號（字串） */
   hero: `${STORAGE_PREFIX}hero`,
+  /** 各難度的最佳紀錄（BestRecords 的 JSON） */
+  best: `${STORAGE_PREFIX}best`,
+  /** 最近 30 場戰績（GameRecord 陣列的 JSON） */
+  history: `${STORAGE_PREFIX}history`,
+  /** 是否已經問過要不要匯入 1.0 的舊紀錄：'imported' 或 'skipped' */
+  legacyImport: `${STORAGE_PREFIX}legacyImport`,
 } as const
+
+/** 1.0 版（作業五）的紀錄。只能在「匯入舊紀錄」時讀取，絕對不能寫入或刪除 */
+export const LEGACY_STORAGE_KEY = 'typingPaws.v1'
