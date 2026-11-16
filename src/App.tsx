@@ -5,6 +5,7 @@ import {
   HEROES,
   mergeRecords,
   newRecordKind,
+  summarizeSession,
   type BattleResult,
   type BattleState,
   type Difficulty,
@@ -18,6 +19,7 @@ import { BattleScreen } from './screens/BattleScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
 import { loadHero, saveHero } from './storage/hero.ts'
+import { localKeyStatsStore as keyStatsStore } from './storage/keyStats.ts'
 import { findLegacyImport, markLegacyAsked } from './storage/legacy.ts'
 import { clearRecords, loadRecords, saveRecords } from './storage/records.ts'
 
@@ -64,9 +66,11 @@ function App() {
     const finish = (state: BattleState) => {
       const result = battleResult(state)
       const playedAt = Date.now()
-      const next = addResult(records, result, { id: `${playedAt}-${Math.random().toString(36).slice(2, 8)}`, playedAt })
+      const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`
+      const next = addResult(records, result, { id, playedAt })
       setRecords(next)
       saveRecords(next)
+      keyStatsStore.saveSession(summarizeSession(state.keyLog, { sessionId: id, playedAt }))
       setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), run: screen.run })
     }
     return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} onExit={goMenu} onFinish={finish} />
@@ -82,7 +86,10 @@ function App() {
         records={records}
         onSelectHero={selectHero}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
-        onClearRecords={() => setRecords(clearRecords())}
+        onClearRecords={() => {
+          setRecords(clearRecords())
+          keyStatsStore.clear()
+        }}
       />
       {legacy && (
         <MessageDialog

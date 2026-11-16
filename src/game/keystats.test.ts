@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appendSessionStats, isStatKey, parseKeyStats, type KeyStatRow } from './keystats.ts'
+import { appendSessionStats, isStatKey, parseKeyStats, statKey, summarizeSession, type KeyEvent, type KeyStatRow } from './keystats.ts'
 
 const row = (sessionId: string, playedAt: number, key = 'a', over: Partial<KeyStatRow> = {}): KeyStatRow => ({
   id: `${sessionId}:char:${key}`,
@@ -78,5 +78,60 @@ describe('parseKeyStats', () => {
       { ...good, totalMs: '1600' },
     ]
     expect(parseKeyStats([...bad, good])).toEqual([good])
+  })
+})
+
+describe('summarizeSession', () => {
+  const meta = { sessionId: 's1', playedAt: 1790000000000 }
+  const ok = (expected: string, prev: string | null, intervalMs: number | null): KeyEvent => ({ expected, actual: expected, correct: true, prev, intervalMs })
+  const miss = (expected: string, actual: string, prev: string | null, intervalMs: number | null): KeyEvent => ({ expected, actual, correct: false, prev, intervalMs })
+  const find = (rows: KeyStatRow[], kind: string, key: string) => rows.find((r) => r.kind === kind && r.key === key)
+
+  it('沒有按鍵就沒有統計', () => {
+    expect(summarizeSession([], meta)).toEqual([])
+  })
+
+  it('每個鍵、每個字母組合各一列，帶著場次與時間', () => {
+    // 打 "the"：t(第一鍵沒有間隔) h(200) e(150)
+    const rows = summarizeSession([ok('t', null, null), ok('h', 't', 200), ok('e', 'h', 150)], meta)
+    expect(rows.map((r) => r.id).sort()).toEqual(['s1:bigram:he', 's1:bigram:th', 's1:char:e', 's1:char:h', 's1:char:t'])
+    expect(rows.every((r) => r.sessionId === 's1' && r.playedAt === 1790000000000)).toBe(true)
+    expect(find(rows, 'char', 't')).toMatchObject({ attempts: 1, errors: 0, timedCount: 0, totalMs: 0 })
+    expect(find(rows, 'char', 'h')).toMatchObject({ attempts: 1, errors: 0, timedCount: 1, totalMs: 200 })
+    expect(find(rows, 'bigram', 'th')).toMatchObject({ attempts: 1, errors: 0, timedCount: 1, totalMs: 200 })
+    expect(find(rows, 'bigram', 'he')).toMatchObject({ attempts: 1, errors: 0, timedCount: 1, totalMs: 150 })
+  })
+
+  it('打錯算一次錯誤；改對的那一鍵不算反應時間', () => {
+    // 打 "th"：t，h 先打成 j（180），再打對（300）
+    const rows = summarizeSession([ok('t', null, 250), miss('h', 'j', 't', 180), ok('h', 't', 300)], meta)
+    expect(find(rows, 'char', 'h')).toMatchObject({ attempts: 2, errors: 1, timedCount: 0, totalMs: 0 })
+    expect(find(rows, 'bigram', 'th')).toMatchObject({ attempts: 2, errors: 1, timedCount: 0, totalMs: 0 })
+    expect(find(rows, 'char', 'j')).toBeUndefined() // 統計記在「應該打的鍵」上
+  })
+
+  it('大寫字母併到小寫；數字、標點、空白各自統計，但不組成字母組合', () => {
+    // 打 "Hi 1!"
+    const rows = summarizeSession([ok('H', null, null), ok('i', 'H', 100), ok(' ', 'i', 100), ok('1', ' ', 100), ok('!', '1', 100)], meta)
+    expect(rows.filter((r) => r.kind === 'char').map((r) => r.key).sort()).toEqual([' ', '!', '1', 'h', 'i'])
+    expect(rows.filter((r) => r.kind === 'bigram').map((r) => r.key)).toEqual(['hi'])
+    expect(statKey('Q')).toBe('q')
+    expect(statKey(';')).toBe(';')
+  })
+
+  it('間隔太長（發呆）或沒有間隔的按鍵不算反應時間，但仍算次數', () => {
+    const rows = summarizeSession([ok('a', null, 100), ok('a', 'a', 2001), ok('a', 'a', null), ok('a', 'a', 2000)], meta)
+    expect(find(rows, 'char', 'a')).toMatchObject({ attempts: 4, errors: 0, timedCount: 1, totalMs: 2000 })
+  })
+
+  it('同一個鍵的次數與時間會累加，時間總和取整數', () => {
+    const rows = summarizeSession([ok('a', null, null), ok('a', 'a', 100.4), ok('a', 'a', 100.4), miss('a', 's', 'a', 90)], meta)
+    expect(find(rows, 'char', 'a')).toMatchObject({ attempts: 4, errors: 1, timedCount: 2, totalMs: 201 })
+    expect(find(rows, 'bigram', 'aa')).toMatchObject({ attempts: 3, errors: 1, timedCount: 2, totalMs: 201 })
+  })
+
+  it('產生的列都通得過讀取時的驗證', () => {
+    const rows = summarizeSession([ok('T', null, null), ok('h', 'T', 120), miss('e', 'r', 'h', 90), ok('e', 'h', 200), ok('!', 'e', 300)], meta)
+    expect(parseKeyStats(JSON.parse(JSON.stringify(rows)))).toEqual(rows)
   })
 })

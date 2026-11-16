@@ -100,3 +100,50 @@ export function parseKeyStats(value: unknown): KeyStatRow[] {
   if (!Array.isArray(value)) return []
   return value.map(parseKeyStatRow).filter((r): r is KeyStatRow => r !== null)
 }
+
+// ---- 一場結束時：把按鍵紀錄彙整成統計列（ROADMAP 2.2） ----
+
+/** 間隔超過這個毫秒數就不算反應時間（多半是分心或停下來看畫面，不是打字速度） */
+export const REACTION_MAX_MS = 2000
+
+/** 統計用的鍵：英文字母轉小寫，其他字元原樣 */
+export function statKey(char: string): string {
+  return /^[A-Z]$/.test(char) ? char.toLowerCase() : char
+}
+
+const isLetter = (char: string) => /^[a-z]$/i.test(char)
+
+/**
+ * 把一場的按鍵紀錄彙整成統計列（每個鍵一列、每個字母組合一列）。
+ * - 次數與錯誤：輪到要打某個鍵時的每一次按鍵都算一次，打錯就算一次錯誤。
+ * - 反應時間：只算「打對、有間隔、上一鍵也打對、間隔不超過 REACTION_MAX_MS」的按鍵，
+ *   這樣量到的才是正常連續打字的速度，不會被改錯字或發呆拉高。
+ * - 字母組合：只算同一個單字裡相鄰的兩個英文字母；錯誤記在「打第二個字母時打錯」。
+ */
+export function summarizeSession(events: readonly KeyEvent[], meta: { sessionId: string; playedAt: number }): KeyStatRow[] {
+  const rows = new Map<string, KeyStatRow>()
+  const rowFor = (kind: KeyStatKind, key: string): KeyStatRow => {
+    const id = `${meta.sessionId}:${kind}:${key}`
+    let row = rows.get(id)
+    if (!row) {
+      row = { id, sessionId: meta.sessionId, playedAt: meta.playedAt, kind, key, attempts: 0, errors: 0, timedCount: 0, totalMs: 0 }
+      rows.set(id, row)
+    }
+    return row
+  }
+
+  events.forEach((e, i) => {
+    const targets = [rowFor('char', statKey(e.expected))]
+    if (e.prev !== null && isLetter(e.prev) && isLetter(e.expected)) targets.push(rowFor('bigram', statKey(e.prev) + statKey(e.expected)))
+    const timed = e.correct && e.intervalMs !== null && e.intervalMs <= REACTION_MAX_MS && i > 0 && events[i - 1].correct
+    for (const row of targets) {
+      row.attempts += 1
+      if (!e.correct) row.errors += 1
+      if (timed) {
+        row.timedCount += 1
+        row.totalMs += e.intervalMs as number
+      }
+    }
+  })
+  return [...rows.values()].map((r) => ({ ...r, totalMs: Math.round(r.totalMs) }))
+}

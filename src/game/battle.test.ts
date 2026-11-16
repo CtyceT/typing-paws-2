@@ -355,3 +355,47 @@ describe('完整三關', () => {
     expect(s.score).toBe(s.damage * 10 + 300 + 92 * 5)
   })
 })
+
+describe('按鍵紀錄', () => {
+  it('記錄預期字元、實際字元、對錯、同一個字裡的前一個字元', () => {
+    const s0 = started('easy', ['cat'])
+    const s = run(s0, char('c'), char('x'), char('a'), char('t'))
+    expect(s.keyLog.map(({ expected, actual, correct, prev }) => ({ expected, actual, correct, prev }))).toEqual([
+      { expected: 'c', actual: 'c', correct: true, prev: null },
+      { expected: 'a', actual: 'x', correct: false, prev: 'c' },
+      { expected: 'a', actual: 'a', correct: true, prev: 'c' },
+      { expected: 't', actual: 't', correct: true, prev: 'a' },
+    ])
+    // 換下一個字之後，第一個字元沒有前一個字元
+    expect(run(s, char('c')).keyLog[4].prev).toBeNull()
+  })
+
+  it('間隔是和上一鍵之間實際戰鬥的時間；開始後的第一鍵沒有間隔', () => {
+    const s = run(started('easy', ['cat']), tick(100), char('c'), tick(100), tick(50), char('a'), char('t'))
+    expect(s.keyLog.map((k) => k.intervalMs)).toEqual([null, 150, 0])
+  })
+
+  it('暫停期間的時間不算進間隔，暫停後的第一鍵不算間隔', () => {
+    let s = run(started('easy', ['cat']), char('c'), tick(100), { type: 'pause' })
+    for (let i = 0; i < 100; i++) s = battleReducer(s, tick(100)) // 暫停 10 秒
+    s = run(s, { type: 'resume' }, tick(80), char('a'), tick(60), char('t'))
+    expect(s.activeMs).toBe(240)
+    expect(s.keyLog.map((k) => k.intervalMs)).toEqual([null, null, 60])
+  })
+
+  it('不合時機的按鍵（暫停中、還沒開始）不會被記錄', () => {
+    const ready = createBattle('easy', { words: ['cat'], rng: createSeededRng(1) })
+    expect(run(ready, char('c')).keyLog).toEqual([])
+    expect(run(started('easy', ['cat']), { type: 'pause' }, char('c')).keyLog).toEqual([])
+  })
+
+  it('進入下一關後的第一鍵沒有間隔，紀錄會延續整場', () => {
+    let s = started('easy', ['cat'])
+    while (s.phase === 'running') s = run(typeWord(s), tick(50))
+    expect(s.phase).toBe('stageClear')
+    const before = s.keyLog.length
+    s = run(s, { type: 'nextStage', roll: 0.5 }, { type: 'start' }, tick(100), char('c'))
+    expect(s.keyLog).toHaveLength(before + 1)
+    expect(s.keyLog[before].intervalMs).toBeNull()
+  })
+})

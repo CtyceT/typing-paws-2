@@ -169,7 +169,7 @@ export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecord
         open={confirmingClear}
         emoji="🧹"
         title="清除所有紀錄？"
-        text={'最佳紀錄和歷史戰績都會被刪除，\n這個動作無法復原。'}
+        text={'最佳紀錄、歷史戰績和按鍵統計都會被刪除，\n這個動作無法復原。'}
         buttons={[
           { label: '先不要（Enter）', primary: true, onClick: () => setConfirmingClear(false) },
           {

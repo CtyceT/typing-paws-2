@@ -1,6 +1,7 @@
 import { comboMultiplier, COMBO_STEP, isCrit, wordDamage } from './combo.ts'
 import { CHARGE_PUSHBACK, MISS_PENALTY, PLAYER_MAX_HP, STAGE_HEAL } from './constants.ts'
 import { DIFFICULTIES, type Difficulty } from './difficulty.ts'
+import type { KeyEvent } from './keystats.ts'
 import { MONSTERS, type Monster } from './monsters.ts'
 import { advanceQueue, createQueue, type WordQueue } from './queue.ts'
 import type { Rng } from './rng.ts'
@@ -59,6 +60,10 @@ export interface BattleState {
   /** 實際戰鬥的毫秒數（暫停、倒數、過關訊息都不算） */
   activeMs: number
   events: readonly BattleEvent[]
+  /** 這一場到目前為止的每一次按鍵（結束後彙整成按鍵統計） */
+  keyLog: readonly KeyEvent[]
+  /** 上一次按鍵時的 activeMs；每一關開始、暫停後繼續時重設成 null（下一鍵不算間隔） */
+  lastKeyAtMs: number | null
 }
 
 export type BattleAction =
@@ -137,6 +142,8 @@ export function createBattle(difficulty: Difficulty, options: CreateBattleOption
     damage: 0,
     activeMs: 0,
     events: [],
+    keyLog: [],
+    lastKeyAtMs: null,
   }
 }
 
@@ -144,10 +151,20 @@ const isActive = (s: BattleState) => s.phase === 'running' && !s.paused
 
 function onChar(s: BattleState, char: string, roll: number): BattleState {
   const word = s.queue.current
+  const expected = word[s.index]
+  const key: KeyEvent = {
+    expected,
+    actual: char,
+    correct: char === expected,
+    prev: s.index > 0 ? word[s.index - 1] : null,
+    intervalMs: s.lastKeyAtMs === null ? null : s.activeMs - s.lastKeyAtMs,
+  }
+  const logged = { keyLog: [...s.keyLog, key], lastKeyAtMs: s.activeMs }
 
-  if (char !== word[s.index]) {
+  if (!key.correct) {
     return {
       ...s,
+      ...logged,
       typed: s.typed + 1,
       wrong: s.wrong + 1,
       combo: 0,
@@ -162,6 +179,7 @@ function onChar(s: BattleState, char: string, roll: number): BattleState {
   if (combo % COMBO_STEP === 0) events.push({ type: 'comboMilestone', combo })
   const typedOk: BattleState = {
     ...s,
+    ...logged,
     typed: s.typed + 1,
     correct: s.correct + 1,
     index: s.index + 1,
@@ -226,6 +244,7 @@ function onNextStage(s: BattleState, roll: number): BattleState {
     index: 0,
     errorFlash: false,
     events: [],
+    lastKeyAtMs: null,
   }
 }
 
@@ -236,7 +255,7 @@ function onNextStage(s: BattleState, roll: number): BattleState {
 export function battleReducer(state: BattleState, action: BattleAction): BattleState {
   switch (action.type) {
     case 'start':
-      return state.phase === 'ready' ? { ...state, phase: 'running', paused: false, events: [] } : state
+      return state.phase === 'ready' ? { ...state, phase: 'running', paused: false, events: [], lastKeyAtMs: null } : state
     case 'char':
       return isActive(state) ? onChar(state, action.char, action.roll) : state
     case 'tick':
@@ -246,7 +265,7 @@ export function battleReducer(state: BattleState, action: BattleAction): BattleS
     case 'pause':
       return isActive(state) ? { ...state, paused: true, events: [] } : state
     case 'resume':
-      return state.phase === 'running' && state.paused ? { ...state, paused: false, events: [] } : state
+      return state.phase === 'running' && state.paused ? { ...state, paused: false, events: [], lastKeyAtMs: null } : state
   }
 }
 

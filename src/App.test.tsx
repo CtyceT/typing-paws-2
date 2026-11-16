@@ -126,6 +126,20 @@ describe('打完一場的紀錄', () => {
     expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(1)
   })
 
+  it('打完一場後多一筆場次的按鍵統計，場次代號和戰績相同', () => {
+    render(<App />)
+    winEasy()
+    const [record] = JSON.parse(localStorage.getItem('typingPaws2.history')!)
+    const rows = JSON.parse(localStorage.getItem('typingPaws2.keyStats')!) as { sessionId: string; kind: string; attempts: number; errors: number; playedAt: number }[]
+    expect(new Set(rows.map((r) => r.sessionId))).toEqual(new Set([record.id]))
+    expect(rows.every((r) => r.playedAt === record.playedAt)).toBe(true)
+    const chars = rows.filter((r) => r.kind === 'char')
+    // 簡單難度三隻怪物的血量加起來要打掉 290 點，全部打對：按鍵數 = 各鍵次數的總和，沒有錯誤
+    expect(chars.reduce((n, r) => n + r.errors, 0)).toBe(0)
+    expect(chars.reduce((n, r) => n + r.attempts, 0)).toBeGreaterThan(20)
+    expect(rows.some((r) => r.kind === 'bigram')).toBe(true)
+  })
+
   it('被打倒也會記錄，但不算通關；0 分不算新紀錄', () => {
     render(<App />)
     loseEasy()
@@ -196,6 +210,7 @@ describe('打完一場的紀錄', () => {
     expect(diffCard('簡單')).toHaveTextContent('還沒有紀錄')
     expect(localStorage.getItem('typingPaws2.history')).toBeNull()
     expect(localStorage.getItem('typingPaws2.best')).toBeNull()
+    expect(localStorage.getItem('typingPaws2.keyStats')).toBeNull()
     expect(heroCard('兔兔')).toHaveAttribute('aria-pressed', 'true')
   })
 
