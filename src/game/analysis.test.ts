@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aggregateKeyStats, findWeaknesses, overallAvgMs, type KeyAggregate } from './analysis.ts'
+import { aggregateKeyStats, findWeaknesses, overallAvgMs, weaknessDetail, weaknessEmptyText, weaknessKindLabel, type KeyAggregate, type Weakness } from './analysis.ts'
 import { summarizeSession, type KeyEvent, type KeyStatKind, type KeyStatRow } from './keystats.ts'
 
 const row = (sessionId: string, kind: KeyStatKind, key: string, attempts: number, errors: number, timedCount: number, totalMs: number): KeyStatRow => ({
@@ -137,5 +137,29 @@ describe('findWeaknesses', () => {
     expect(findWeaknesses(data, { errorRateThreshold: 0.05 }).items.map((w) => w.key)).toEqual(['q'])
     expect(findWeaknesses(data, { minTotalAttempts: 1000 }).status).toBe('insufficient')
     expect(findWeaknesses([...fine(), agg('char', 'q', 20, 8), agg('char', 'z', 20, 8)], { limit: 1 }).items).toHaveLength(1)
+  })
+})
+
+describe('弱點排行榜的顯示文字', () => {
+  const weak = (over: Partial<Weakness>): Weakness => ({ kind: 'char', key: 'q', attempts: 40, errors: 10, errorRate: 0.25, timedCount: 30, avgMs: 320, reason: 'both', slowness: 0.42, score: 0.33, ...over })
+
+  it('種類標籤', () => {
+    expect(weaknessKindLabel({ kind: 'char', key: 'q' })).toBe('字母')
+    expect(weaknessKindLabel({ kind: 'char', key: '4' })).toBe('數字')
+    expect(weaknessKindLabel({ kind: 'char', key: ';' })).toBe('符號')
+    expect(weaknessKindLabel({ kind: 'bigram', key: 'th' })).toBe('組合')
+  })
+
+  it('兩行數字：錯誤率與反應時間', () => {
+    expect(weaknessDetail(weak({}))).toEqual({ errors: '錯誤率 25%（打 40 次、錯 10 次）', speed: '平均 320 ms（比平均慢 42%）' })
+    expect(weaknessDetail(weak({ slowness: 0.02 })).speed).toBe('平均 320 ms')
+    expect(weaknessDetail(weak({ avgMs: null, slowness: 0 })).speed).toBe('反應時間：資料不足')
+    expect(weaknessDetail(weak({ attempts: 9, errors: 1, errorRate: 1 / 9 })).errors).toBe('錯誤率 11.1%（打 9 次、錯 1 次）')
+  })
+
+  it('沒有弱點可列時的說明', () => {
+    expect(weaknessEmptyText({ status: 'insufficient', items: [], totalAttempts: 37 })).toBe('資料還不夠 🐾\n目前統計了 37 次按鍵，累積到 100 次就會開始分析弱點')
+    expect(weaknessEmptyText({ status: 'good', items: [], totalAttempts: 500 })).toMatch(/沒有明顯的弱點/)
+    expect(weaknessEmptyText({ status: 'weak', items: [weak({})], totalAttempts: 500 })).toBeNull()
   })
 })

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, KeyboardHeatmap, PerformanceTrendChart } from '../components/index.ts'
+import { Button, Card, KeyboardHeatmap, PerformanceTrendChart, WeaknessList } from '../components/index.ts'
 import {
   aggregateKeyStats,
   dashboardSummary,
+  findWeaknesses,
   hasDashboardData,
   heatmapRows,
   performanceTrend,
@@ -26,6 +27,7 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
   const aggregates = useMemo(() => aggregateKeyStats(keyStats), [keyStats])
   const summary = dashboardSummary(records.history, aggregates)
   const hasKeyStats = summary.keyCount > 0
+  const weaknesses = useMemo(() => findWeaknesses(aggregates), [aggregates])
   const [range, setRange] = useState<TrendRange>('recent')
   const trend = performanceTrend(records.history, range)
   const ranges: { id: TrendRange; label: string }[] = [
@@ -78,6 +80,14 @@ export function DashboardScreen({ records, keyStats, onBack }: DashboardScreenPr
             </div>
           </div>
           <Card>{trend ? <PerformanceTrendChart trend={trend} /> : <div className={styles.empty}>還沒有戰績 🐾</div>}</Card>
+
+          <h2 className={styles.sectionTitle}>🎯 弱點排行榜</h2>
+          <Card>
+            <WeaknessList report={weaknesses} />
+            <p className={styles.footnote}>
+              依最近的按鍵統計，列出最常打錯或打得特別慢的字母與字母組合（最多 5 個）。之後的「弱點特訓」會針對這些出題。
+            </p>
+          </Card>
         </>
       ) : (
         <Card className={styles.guide}>

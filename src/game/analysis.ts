@@ -135,3 +135,36 @@ export function findWeaknesses(aggregates: readonly KeyAggregate[], options: Par
   items.sort((x, y) => y.score - x.score || y.attempts - x.attempts || (x.key < y.key ? -1 : 1))
   return { status: items.length > 0 ? 'weak' : 'good', items: items.slice(0, o.limit), totalAttempts }
 }
+
+// ---- 弱點排行榜的顯示文字（ROADMAP 2.8） ----
+
+/** 弱點的種類標籤：字母、數字、符號、組合 */
+export function weaknessKindLabel(w: Pick<KeyAggregate, 'kind' | 'key'>): string {
+  if (w.kind === 'bigram') return '組合'
+  if (/^[a-z]$/.test(w.key)) return '字母'
+  return /^[0-9]$/.test(w.key) ? '數字' : '符號'
+}
+
+export const WEAKNESS_REASON_LABEL: Readonly<Record<WeaknessReason, string>> = {
+  errors: '常打錯',
+  slow: '打得慢',
+  both: '又慢又常錯',
+}
+
+const percent = (rate: number) => `${Math.round(rate * 1000) / 10}%`
+
+/** 排行榜上每個弱點的兩行數字 */
+export function weaknessDetail(w: Weakness): { errors: string; speed: string } {
+  return {
+    errors: `錯誤率 ${percent(w.errorRate)}（打 ${w.attempts} 次、錯 ${w.errors} 次）`,
+    speed: w.avgMs === null ? '反應時間：資料不足' : `平均 ${w.avgMs} ms${w.slowness >= 0.05 ? `（比平均慢 ${Math.round(w.slowness * 100)}%）` : ''}`,
+  }
+}
+
+/** 排行榜在沒有弱點可列時的說明文字 */
+export function weaknessEmptyText(report: WeaknessReport, options: Partial<WeaknessOptions> = {}): string | null {
+  const o = { ...WEAKNESS_DEFAULTS, ...options }
+  if (report.status === 'insufficient') return `資料還不夠 🐾\n目前統計了 ${report.totalAttempts} 次按鍵，累積到 ${o.minTotalAttempts} 次就會開始分析弱點`
+  if (report.status === 'good') return '🎉 目前沒有明顯的弱點！\n每個鍵的錯誤率和速度都在正常範圍，繼續保持'
+  return null
+}

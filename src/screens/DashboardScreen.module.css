@@ -116,6 +116,13 @@
   outline-offset: -3px;
 }
 
+.footnote {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
 .empty {
   color: var(--ink-soft);
   text-align: center;

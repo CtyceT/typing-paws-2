@@ -122,6 +122,14 @@ await page.locator(`[data-key="${WEAK_KEY}"]`).hover()
 const info = await page.getByText(/^E：打了 \d+ 次・錯 \d+ 次/).textContent()
 check('熱力圖：滑鼠移上去看得到數字', Boolean(info), info ?? '')
 
+// 弱點排行榜：刻意打錯的鍵排第一
+const weakItems = await page.locator('[data-weakness]').evaluateAll((els) => els.map((el) => el.dataset.weakness))
+check(`弱點排行榜：${WEAK_KEY} 排第一`, weakItems[0] === `char:${WEAK_KEY}`, weakItems.join(', '))
+check('弱點排行榜：最多 5 個', weakItems.length >= 1 && weakItems.length <= 5, `${weakItems.length} 個`)
+const firstText = await page.locator('[data-weakness]').first().textContent()
+const weakTotals = rows2.filter((r) => r.kind === 'char' && r.key === WEAK_KEY).reduce((t, r) => ({ a: t.a + r.attempts, e: t.e + r.errors }), { a: 0, e: 0 })
+check('弱點排行榜：數字和 localStorage 的統計一致', firstText.includes(`打 ${weakTotals.a} 次、錯 ${weakTotals.e} 次`), firstText)
+
 // 趨勢圖：兩張圖（WPM、準確率）都真的畫出東西
 const painted = (label) =>
   page.locator(`canvas[aria-label="${label}"]`).evaluate((c) => {

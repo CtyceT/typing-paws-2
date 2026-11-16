@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 
@@ -288,6 +288,34 @@ describe('數據儀表板', () => {
     expect(screen.getByText(/把滑鼠移到按鍵上/)).toBeInTheDocument()
     fireEvent.focus(heatKey('z'))
     expect(screen.getByText('Z：還沒有資料')).toBeInTheDocument()
+  })
+
+  it('弱點排行榜：內容和弱點分析的結果一致，最弱的排第一', () => {
+    const letters: [string, number, number][] = [...'abcdfghijk'].map((k) => [k, 30, 0])
+    seedKeyStats([...letters, ['q', 20, 8], ['z', 20, 4], ['e', 40, 2]])
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    const items = within(screen.getByRole('list', { name: '弱點排行榜' })).getAllByRole('listitem')
+    expect(items.map((li) => li.getAttribute('data-weakness'))).toEqual(['char:q', 'char:z'])
+    expect(items[0]).toHaveTextContent('字母')
+    expect(items[0]).toHaveTextContent('常打錯')
+    expect(items[0]).toHaveTextContent('錯誤率 40%（打 20 次、錯 8 次）')
+    expect(items[0]).toHaveTextContent('平均 200 ms')
+    expect(items[1]).toHaveTextContent('錯誤率 20%（打 20 次、錯 4 次）')
+  })
+
+  it('弱點排行榜：資料不足與沒有弱點時顯示說明', () => {
+    seedKeyStats([['q', 20, 8]])
+    const first = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByText(/目前統計了 20 次按鍵，累積到 100 次就會開始分析弱點/)).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: '弱點排行榜' })).not.toBeInTheDocument()
+    first.unmount()
+
+    seedKeyStats([...'abcdfghijk'].map((k) => [k, 30, 0]))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByText(/目前沒有明顯的弱點/)).toBeInTheDocument()
   })
 
   it('趨勢圖：畫出 WPM 與準確率，可以切換最近 10 場與全部', () => {
