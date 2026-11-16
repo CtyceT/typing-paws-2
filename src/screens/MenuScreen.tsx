@@ -1,12 +1,17 @@
 import { useState } from 'react'
-import { Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard } from '../components/index.ts'
+import { Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, WpmTrendChart } from '../components/index.ts'
 import {
   bestSummary,
+  DIFFICULTIES,
   DIFFICULTY_ORDER,
+  formatPlayedAt,
   hasRecords,
   HERO_ORDER,
   MODE_ORDER,
   MODES,
+  recentHistory,
+  recordOutcome,
+  wpmTrend,
   type BestRecord,
   type Difficulty,
   type HeroId,
@@ -47,6 +52,8 @@ function bestLines(best: BestRecord | undefined) {
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
 export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecords }: MenuScreenProps) {
   const [confirmingClear, setConfirmingClear] = useState(false)
+  const trend = wpmTrend(records.history)
+  const recent = recentHistory(records.history)
   return (
     <main>
       <div className={styles.topbar}>
@@ -102,19 +109,50 @@ export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecord
         ))}
       </div>
 
-      {/* 戰績表與走勢圖在 ROADMAP 1.18 才會接上，這裡先放外框和空狀態 */}
       <h2 className={styles.sectionTitle}>📈 我的戰績</h2>
       <div className={styles.historyWrap}>
         <Card>
-          <div className={styles.sparkLabel}>最近 10 場 WPM 走勢</div>
-          <div className={styles.empty}>玩 2 場以上就會畫出你的進步曲線 📈</div>
+          <div className={styles.sparkLabel}>
+            <span>最近 10 場 WPM 走勢</span>
+            {trend && <span>最高 {trend.best} ・ 綠點＝通關</span>}
+          </div>
+          {trend ? <WpmTrendChart trend={trend} /> : <div className={styles.empty}>玩 2 場以上就會畫出你的進步曲線 📈</div>}
         </Card>
         <Card>
-          <div className={styles.empty}>
-            還沒有戰績 🐾
-            <br />
-            完成一場戰鬥後會出現在這裡
-          </div>
+          {recent.length === 0 ? (
+            <div className={styles.empty}>
+              還沒有戰績 🐾
+              <br />
+              完成一場戰鬥後會出現在這裡
+            </div>
+          ) : (
+            <table className={styles.hist}>
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>難度</th>
+                  <th>結果</th>
+                  <th>WPM</th>
+                  <th>準確</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((r) => (
+                  <tr key={r.id}>
+                    <td>{formatPlayedAt(r.playedAt)}</td>
+                    <td>
+                      <Tag tone={r.difficulty}>{DIFFICULTIES[r.difficulty].label}</Tag>
+                    </td>
+                    <td>{recordOutcome(r)}</td>
+                    <td>
+                      <b>{r.wpm}</b>
+                    </td>
+                    <td>{r.accuracy}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
           <div className={styles.rowEnd}>
             <Button variant="ghost" size="small" onClick={() => hasRecords(records) && setConfirmingClear(true)}>
               🧹 清除紀錄

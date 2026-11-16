@@ -108,6 +108,26 @@
   font-size: 0.85rem;
   color: var(--ink-soft);
   margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hist {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.hist th,
+.hist td {
+  padding: 5px 4px;
+  text-align: left;
+  border-bottom: 2px dashed #f1e1d6;
+}
+
+.hist th {
+  color: var(--ink-soft);
+  font-weight: 500;
 }
 
 .empty {

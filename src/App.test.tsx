@@ -2,6 +2,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 
+// jsdom 沒有 canvas，走勢圖用假的 Line 代替，只檢查交給 Chart.js 的資料
+vi.mock('react-chartjs-2', () => ({
+  Line: ({ data }: { data: { datasets: { data: number[]; pointBackgroundColor: string[] }[] } }) => (
+    <div data-testid="wpm-chart" data-values={JSON.stringify(data.datasets[0].data)} data-colors={JSON.stringify(data.datasets[0].pointBackgroundColor)} />
+  ),
+}))
+
 beforeEach(() => localStorage.clear())
 
 const heroCard = (name: string) => screen.getByRole('button', { name: new RegExp(`${name}勇者`) })
@@ -127,6 +134,31 @@ describe('打完一場的紀錄', () => {
     const history = JSON.parse(localStorage.getItem('typingPaws2.history')!)
     expect(history).toHaveLength(1)
     expect(history[0]).toMatchObject({ win: false, stage: 1, difficulty: 'easy', mode: 'classic' })
+  })
+
+  it('玩 2 場後出現走勢圖，戰績表與結算數據一致（新的在前）', () => {
+    render(<App />)
+    winEasy()
+    const stat = (label: string) => screen.getByText(label).previousElementSibling!.textContent!
+    const [wpm, accuracy] = [stat('WPM'), stat('準確率')]
+    fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
+    expect(screen.queryByTestId('wpm-chart')).not.toBeInTheDocument()
+    expect(screen.getByText('玩 2 場以上就會畫出你的進步曲線 📈')).toBeInTheDocument()
+    let rows = screen.getAllByRole('row').slice(1)
+    expect(rows).toHaveLength(1)
+    expect([...rows[0].children].map((c) => c.textContent)).toEqual(['11/15 14:05', '簡單', '🏆', wpm, accuracy])
+
+    loseEasy()
+    fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
+    rows = screen.getAllByRole('row').slice(1)
+    expect(rows).toHaveLength(2)
+    expect(rows[0].children[2]).toHaveTextContent('💀 1關')
+    expect(rows[1].children[2]).toHaveTextContent('🏆')
+    const chart = screen.getByTestId('wpm-chart')
+    expect(JSON.parse(chart.getAttribute('data-values')!)).toEqual([Number(wpm), 0])
+    expect(JSON.parse(chart.getAttribute('data-colors')!)).toEqual(['#6fd6b0', '#ff8fab'])
+    expect(screen.getByText(`最高 ${wpm} ・ 綠點＝通關`)).toBeInTheDocument()
+    expect(screen.queryByText(/還沒有戰績/)).not.toBeInTheDocument()
   })
 
   it('再挑戰一次會用同樣的難度重新開始', () => {
