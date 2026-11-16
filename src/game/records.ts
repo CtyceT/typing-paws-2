@@ -127,14 +127,14 @@ const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isF
 const isDifficulty = (v: unknown): v is Difficulty => typeof v === 'string' && v in DIFFICULTIES
 const isNullableCount = (v: unknown): v is number | null => v === null || isCount(v)
 
-function parseBestRecord(v: unknown): BestRecord | null {
+export function parseBestRecord(v: unknown): BestRecord | null {
   if (!isObject(v)) return null
   const { score, wpm, maxCombo, accuracy, clears } = v
   if (!isCount(score) || !isCount(wpm) || !isCount(maxCombo) || !isCount(accuracy) || !isCount(clears)) return null
   return { score, wpm, maxCombo, accuracy, clears }
 }
 
-function parseGameRecord(v: unknown): GameRecord | null {
+export function parseGameRecord(v: unknown): GameRecord | null {
   if (!isObject(v)) return null
   const { id, playedAt, mode, difficulty, win, wpm, accuracy, maxCombo, score, damage, durationMs, stage } = v
   if (typeof id !== 'string' || id === '' || !isCount(playedAt) || !isDifficulty(difficulty) || typeof win !== 'boolean') return null

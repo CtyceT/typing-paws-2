@@ -1,12 +1,6 @@
+import type { SyncStatus } from '../game/index.ts'
 import { Button } from './Button.tsx'
 import styles from './AccountBar.module.css'
-
-/** 雲端同步狀態的顯示內容 */
-export interface SyncView {
-  /** ok：已同步；busy：同步中；warn：有資料還沒同步 */
-  tone: 'ok' | 'busy' | 'warn'
-  text: string
-}
 
 export interface AccountBarProps {
   /** 登入的人；null 是訪客 */
@@ -15,7 +9,7 @@ export interface AccountBarProps {
   onSignIn?: () => void
   onSignOut?: () => void
   /** 同步狀態；訪客沒有 */
-  sync?: SyncView
+  sync?: SyncStatus
   /** 有給而且狀態是 warn 時，顯示「重試」按鈕 */
   onRetrySync?: () => void
 }

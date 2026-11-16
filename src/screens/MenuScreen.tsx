@@ -175,7 +175,7 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
         open={confirmingClear}
         emoji="🧹"
         title="清除所有紀錄？"
-        text={'最佳紀錄、歷史戰績和按鍵統計都會被刪除，\n這個動作無法復原。'}
+        text={`最佳紀錄、歷史戰績和按鍵統計都會被刪除${signedIn ? '，\n包含已經存到雲端的資料' : ''}，\n這個動作無法復原。`}
         buttons={[
           { label: '先不要（Enter）', primary: true, onClick: () => setConfirmingClear(false) },
           {

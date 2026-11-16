@@ -169,3 +169,20 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* 這一場有沒有存到雲端（登入時才有） */
+.sync {
+  margin: 14px auto 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.syncWarn {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 2px dashed var(--ink);
+  border-radius: 14px;
+  background: #fff0c4;
+  color: var(--ink);
+}

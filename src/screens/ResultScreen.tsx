@@ -1,5 +1,5 @@
 import { Button, Card, HeroAvatar } from '../components/index.ts'
-import { HEROES, resultComment, resultStats, resultSubtitle, resultTitle, type BattleResult, type HeroId, type NewRecordKind, type SessionMiss } from '../game/index.ts'
+import { HEROES, resultComment, resultStats, resultSubtitle, resultTitle, type BattleResult, type HeroId, type NewRecordKind, type SessionMiss, type SyncStatus } from '../game/index.ts'
 import styles from './ResultScreen.module.css'
 
 export interface ResultScreenProps {
@@ -9,6 +9,8 @@ export interface ResultScreenProps {
   newRecord?: NewRecordKind
   /** 這一場最常打錯的鍵（錯最多的在前）；沒給就不顯示這一區 */
   misses?: readonly SessionMiss[]
+  /** 這一場有沒有存到雲端；訪客沒有這一行 */
+  sync?: SyncStatus
   /** 打開數據儀表板；沒給就不顯示按鈕 */
   onDashboard?: () => void
   onRetry: () => void
@@ -18,7 +20,7 @@ export interface ResultScreenProps {
 const NEW_RECORD_LABEL = { wpm: '最快 WPM', score: '最高分' } as const
 
 /** 結算畫面：星等、六項數據、評語、新紀錄標示、本場最常打錯的鍵 */
-export function ResultScreen({ hero, result, newRecord = null, misses, onDashboard, onRetry, onMenu }: ResultScreenProps) {
+export function ResultScreen({ hero, result, newRecord = null, misses, sync, onDashboard, onRetry, onMenu }: ResultScreenProps) {
   return (
     <main>
       <Card className={styles.result}>
@@ -61,6 +63,11 @@ export function ResultScreen({ hero, result, newRecord = null, misses, onDashboa
             ) : (
               <div className={styles.noMiss}>這場一個鍵都沒打錯 🎉</div>
             )}
+          </div>
+        )}
+        {sync && (
+          <div className={`${styles.sync} ${sync.tone === 'warn' ? styles.syncWarn : ''}`} role="status">
+            {sync.text}
           </div>
         )}
         <div className={styles.buttons}>

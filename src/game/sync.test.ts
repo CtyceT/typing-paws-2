@@ -1,0 +1,132 @@
+import { describe, expect, it } from 'vitest'
+import type { KeyStatRow } from './keystats.ts'
+import type { GameRecord, Records } from './records.ts'
+import { chunk, pendingUpload, resultSyncStatus, syncStatus, toBestRecordRows, toGameRecordRow, toIsoTime, toKeyStatDbRow } from './sync.ts'
+
+const record = (id: string, playedAt: number, extra: Partial<GameRecord> = {}): GameRecord => ({
+  id,
+  playedAt,
+  mode: 'classic',
+  difficulty: 'easy',
+  win: true,
+  wpm: 42,
+  accuracy: 96.5,
+  maxCombo: 30,
+  score: 3000,
+  damage: 290,
+  durationMs: 61234.5,
+  stage: 3,
+  ...extra,
+})
+const stat = (sessionId: string, key = 'e', extra: Partial<KeyStatRow> = {}): KeyStatRow => ({
+  id: `${sessionId}:char:${key}`,
+  sessionId,
+  playedAt: 1790000000000,
+  kind: 'char',
+  key,
+  attempts: 10,
+  errors: 2,
+  timedCount: 7,
+  totalMs: 1400,
+  ...extra,
+})
+
+describe('本機資料 → 資料表的列', () => {
+  it('場次：欄位改成蛇形命名、時間轉 ISO、小數的毫秒四捨五入', () => {
+    expect(toGameRecordRow(record('a', 1790000000000), 'u1')).toEqual({
+      user_id: 'u1',
+      id: 'a',
+      played_at: '2026-09-21T14:13:20.000Z',
+      mode: 'classic',
+      difficulty: 'easy',
+      win: true,
+      wpm: 42,
+      accuracy: 96.5,
+      max_combo: 30,
+      score: 3000,
+      damage: 290,
+      duration_ms: 61235,
+      stage: 3,
+    })
+  })
+
+  it('從 1.0 匯入的場次沒有傷害和時間，維持 null', () => {
+    const row = toGameRecordRow(record('v1-1-0', 1, { damage: null, durationMs: null }), 'u1')
+    expect(row.damage).toBeNull()
+    expect(row.duration_ms).toBeNull()
+  })
+
+  it('超出資料表限制的數字會夾到範圍內，不會讓上傳失敗', () => {
+    const row = toGameRecordRow(record('x', 1, { wpm: 9999, accuracy: 123.456, stage: 0, score: 1e12, maxCombo: -3 }), 'u1')
+    expect(row).toMatchObject({ wpm: 400, accuracy: 100, stage: 1, score: 2147483647, max_combo: 0 })
+    expect(toIsoTime(1e20)).toBe('+275760-09-13T00:00:00.000Z')
+  })
+
+  it('最佳紀錄：有紀錄的難度各一列', () => {
+    const rows = toBestRecordRows({ easy: { score: 3000, wpm: 42, maxCombo: 30, accuracy: 96.5, clears: 2 }, hard: { score: 10, wpm: 0, maxCombo: 3, accuracy: 0, clears: 0 } }, 'u1')
+    expect(rows).toEqual([
+      { user_id: 'u1', difficulty: 'easy', score: 3000, wpm: 42, max_combo: 30, accuracy: 96.5, clears: 2 },
+      { user_id: 'u1', difficulty: 'hard', score: 10, wpm: 0, max_combo: 3, accuracy: 0, clears: 0 },
+    ])
+  })
+
+  it('按鍵統計：錯誤數和計時次數不會超過次數', () => {
+    expect(toKeyStatDbRow(stat('a', 'e', { errors: 99, timedCount: 99 }), 'u1')).toEqual({
+      user_id: 'u1',
+      id: 'a:char:e',
+      session_id: 'a',
+      played_at: '2026-09-21T14:13:20.000Z',
+      kind: 'char',
+      key: 'e',
+      attempts: 10,
+      errors: 10,
+      timed_count: 10,
+      total_ms: 1400,
+    })
+  })
+})
+
+describe('還沒上傳的場次', () => {
+  const records: Records = { best: {}, history: [record('a', 1), record('b', 2), record('c', 3)] }
+  const keyStats = [stat('a'), stat('b'), stat('b', 't'), stat('c'), stat('orphan')]
+
+  it('只挑出待上傳的場次和它們的統計', () => {
+    const upload = pendingUpload(records, keyStats, ['b'])
+    expect(upload.records.map((r) => r.id)).toEqual(['b'])
+    expect(upload.keyStats.map((k) => k.id)).toEqual(['b:char:e', 'b:char:t'])
+    expect(upload.gone).toEqual([])
+  })
+
+  it('本機已經找不到的場次列在 gone，它的統計也不上傳', () => {
+    const upload = pendingUpload(records, keyStats, ['c', 'orphan', 'missing'])
+    expect(upload.records.map((r) => r.id)).toEqual(['c'])
+    expect(upload.keyStats.map((k) => k.sessionId)).toEqual(['c'])
+    expect(upload.gone).toEqual(['orphan', 'missing'])
+  })
+
+  it('沒有待上傳的場次時什麼都不傳', () => {
+    expect(pendingUpload(records, keyStats, [])).toEqual({ records: [], keyStats: [], gone: [] })
+  })
+
+  it('chunk 把列切成固定大小的批次', () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+    expect(chunk([], 2)).toEqual([])
+  })
+})
+
+describe('同步狀態的文字', () => {
+  it('帳號列', () => {
+    expect(syncStatus('idle', 0)).toEqual({ tone: 'ok', text: '☁️ 已同步' })
+    expect(syncStatus('syncing', 2)).toEqual({ tone: 'busy', text: '🔄 同步中…' })
+    expect(syncStatus('failed', 2)).toEqual({ tone: 'warn', text: '⚠️ 2 場尚未同步' })
+    expect(syncStatus('idle', 1)).toEqual({ tone: 'warn', text: '⚠️ 1 場尚未同步' })
+    expect(syncStatus('failed', 0)).toEqual({ tone: 'warn', text: '⚠️ 連不上雲端' })
+  })
+
+  it('結算畫面', () => {
+    expect(resultSyncStatus('idle', false).text).toBe('☁️ 這場已存到雲端')
+    expect(resultSyncStatus('syncing', true).tone).toBe('busy')
+    expect(resultSyncStatus('failed', true).text).toMatch(/尚未同步到雲端.*自動補傳/)
+    expect(resultSyncStatus('syncing', false).tone).toBe('ok')
+  })
+})

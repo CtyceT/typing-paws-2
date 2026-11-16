@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
 import {
-  addResult,
   battleResult,
   HEROES,
-  mergeRecords,
-  newRecordKind,
-  sessionMisses,
-  summarizeSession,
+  resultSyncStatus,
+  syncStatus,
   type BattleResult,
   type BattleState,
   type Difficulty,
-  type HeroId,
-  type KeyStatRow,
   type LegacyImport,
   type NewRecordKind,
-  type Records,
   type SessionMiss,
 } from './game/index.ts'
 import { AUTH_PROVIDERS, authErrorFromUrl, authRedirectUrl, defaultCloud, PROVIDER_LABELS, useAuth, type AuthProvider, type AuthUser, type Cloud } from './cloud/index.ts'
@@ -23,17 +17,15 @@ import { BattleScreen } from './screens/BattleScreen.tsx'
 import { DashboardScreen } from './screens/DashboardScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
-import { loadHero, saveHero } from './storage/hero.ts'
-import { createLocalKeyStatsStore } from './storage/keyStats.ts'
 import { findLegacyImport, markLegacyAsked } from './storage/legacy.ts'
-import { clearRecords, loadRecords, saveRecords } from './storage/records.ts'
+import { usePlayerData } from './sync/usePlayerData.ts'
 
 /** battle 的 run 每再挑戰一次就加一，用來重新建立整個戰鬥畫面 */
 type Screen =
   | { name: 'menu' }
   | { name: 'dashboard' }
   | { name: 'battle'; difficulty: Difficulty; run: number }
-  | { name: 'result'; result: BattleResult; newRecord: NewRecordKind; misses: SessionMiss[]; run: number }
+  | { name: 'result'; id: string; result: BattleResult; newRecord: NewRecordKind; misses: SessionMiss[]; run: number }
 
 /** 匯入詢問視窗的內文：列出找到了什麼 */
 function legacySummary(legacy: LegacyImport): string {
@@ -70,12 +62,14 @@ interface GameProps {
 }
 
 function Game({ user, cloud }: GameProps) {
-  /** 這份資料屬於誰：訪客和每個帳號在這個瀏覽器裡各有一份，互不混用 */
-  const scope = user?.id ?? null
-  const [keyStatsStore] = useState(() => createLocalKeyStatsStore(scope))
-  const [hero, setHero] = useState<HeroId>(() => loadHero(scope))
-  const [records, setRecords] = useState<Records>(() => loadRecords(scope))
-  const [keyStats, setKeyStats] = useState<KeyStatRow[]>(() => keyStatsStore.load())
+  /** 這個帳號的雲端資料；訪客或沒有雲端功能時是 null（換帳號時整個 Game 會重新建立，所以只需要建立一次） */
+  const [cloudData] = useState(() => (user && cloud ? cloud.data(user.id) : null))
+  // 訪客和每個帳號在這個瀏覽器裡各有一份資料，互不混用
+  const player = usePlayerData(user?.id ?? null, cloudData)
+  const { hero, records, keyStats } = player
+  const signedIn = user !== null
+  /** 清除紀錄時雲端刪除失敗 */
+  const [clearFailed, setClearFailed] = useState(false)
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
   const [legacy, setLegacy] = useState<LegacyImport | null>(findLegacyImport)
@@ -102,17 +96,11 @@ function Game({ user, cloud }: GameProps) {
     })
   }
 
-  const selectHero = (next: HeroId) => {
-    setHero(next)
-    saveHero(next, scope)
-  }
   const goMenu = () => setScreen({ name: 'menu' })
   const answerLegacy = (answer: 'imported' | 'skipped') => {
     if (legacy && answer === 'imported') {
-      const next = mergeRecords(records, legacy.records)
-      setRecords(next)
-      saveRecords(next, scope)
-      if (legacy.hero) selectHero(legacy.hero)
+      player.importRecords(legacy.records)
+      if (legacy.hero) player.selectHero(legacy.hero)
     }
     markLegacyAsked(answer)
     setLegacy(null)
@@ -121,14 +109,8 @@ function Game({ user, cloud }: GameProps) {
   if (screen.name === 'battle') {
     const finish = (state: BattleState) => {
       const result = battleResult(state)
-      const playedAt = Date.now()
-      const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`
-      const next = addResult(records, result, { id, playedAt })
-      setRecords(next)
-      saveRecords(next, scope)
-      const sessionStats = summarizeSession(state.keyLog, { sessionId: id, playedAt })
-      setKeyStats(keyStatsStore.saveSession(sessionStats))
-      setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), misses: sessionMisses(sessionStats), run: screen.run })
+      const saved = player.addGame(result, state.keyLog)
+      setScreen({ name: 'result', result, ...saved, run: screen.run })
     }
     return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} onExit={goMenu} onFinish={finish} />
   }
@@ -140,6 +122,7 @@ function Game({ user, cloud }: GameProps) {
         result={screen.result}
         newRecord={screen.newRecord}
         misses={screen.misses}
+        sync={cloudData ? resultSyncStatus(player.phase, player.pending.includes(screen.id)) : undefined}
         onDashboard={() => setScreen({ name: 'dashboard' })}
         onRetry={retry}
         onMenu={goMenu}
@@ -147,23 +130,27 @@ function Game({ user, cloud }: GameProps) {
     )
   }
   if (screen.name === 'dashboard') {
-    return <DashboardScreen records={records} keyStats={keyStats} signedIn={user !== null} onBack={goMenu} />
+    return <DashboardScreen records={records} keyStats={keyStats} signedIn={signedIn} onBack={goMenu} />
   }
   return (
     <>
       <MenuScreen
         hero={hero}
         records={records}
-        signedIn={user !== null}
-        onSelectHero={selectHero}
+        signedIn={signedIn}
+        onSelectHero={player.selectHero}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
         onOpenDashboard={() => setScreen({ name: 'dashboard' })}
-        accountBar={<AccountBar user={user} onSignIn={cloud ? () => setSignIn('open') : undefined} onSignOut={signOut} />}
-        onClearRecords={() => {
-          setRecords(clearRecords(scope))
-          keyStatsStore.clear()
-          setKeyStats([])
-        }}
+        accountBar={
+          <AccountBar
+            user={user}
+            onSignIn={cloud ? () => setSignIn('open') : undefined}
+            onSignOut={signOut}
+            sync={cloudData ? syncStatus(player.phase, player.pending.length) : undefined}
+            onRetrySync={player.retrySync}
+          />
+        }
+        onClearRecords={() => void player.clearAll().then((ok) => setClearFailed(!ok))}
       />
       <MessageDialog
         open={signIn !== 'closed'}
@@ -182,6 +169,13 @@ function Game({ user, cloud }: GameProps) {
           })),
           { label: '先當訪客', onClick: () => setSignIn('closed') },
         ]}
+      />
+      <MessageDialog
+        open={clearFailed}
+        emoji="😿"
+        title="清除沒有成功"
+        text={'連不上雲端，所以紀錄都還在。\n請確認網路後再試一次。'}
+        buttons={[{ label: '知道了（Enter）', primary: true, onClick: () => setClearFailed(false) }]}
       />
       {legacy && signIn === 'closed' && (
         <MessageDialog
