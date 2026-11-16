@@ -1,0 +1,83 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  line-height: 1.2;
+}
+
+.note {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* 總覽數字：沿用結算畫面的數據格子 */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.stat {
+  background: #fff;
+  border: var(--line);
+  border-radius: 16px;
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+/* 寫兩次 class 是為了蓋過 Card 本身的 padding */
+.guide.guide {
+  text-align: center;
+  padding: 36px 22px;
+  margin-top: 20px;
+}
+
+.guideEmoji {
+  font-size: 56px;
+}
+
+.guideTitle {
+  margin: 6px 0;
+  font-size: 1.6rem;
+}
+
+.guideText {
+  color: var(--ink-soft);
+  margin: 4px 0 18px;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 26px 0 12px;
+}
+
+@media (max-width: 720px) {
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .summary > :last-child {
+    grid-column: 1 / -1;
+  }
+}

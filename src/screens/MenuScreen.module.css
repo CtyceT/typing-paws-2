@@ -57,6 +57,20 @@
   margin: 26px 0 12px;
 }
 
+/* 區塊標題右邊放一顆按鈕（戰績區的「數據儀表板」） */
+.sectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 26px 0 12px;
+}
+
+.sectionRow .sectionTitle {
+  margin: 0;
+}
+
 .grid4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

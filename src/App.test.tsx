@@ -221,6 +221,41 @@ describe('打完一場的紀錄', () => {
   })
 })
 
+describe('數據儀表板', () => {
+  it('從主選單進入，沒有資料時顯示引導文字，可以返回', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
+    expect(screen.getByText('還沒有數據')).toBeInTheDocument()
+    expect(screen.queryByText('場數')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /去打一場/ }))
+    expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
+    expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
+  })
+
+  it('有戰績時顯示總覽數字', () => {
+    localStorage.setItem(
+      'typingPaws2.history',
+      JSON.stringify([
+        { id: 'a', playedAt: 1, mode: 'classic', difficulty: 'easy', win: true, wpm: 40, accuracy: 96, maxCombo: 20, score: 3000, damage: 290, durationMs: 60000, stage: 3 },
+        { id: 'b', playedAt: 2, mode: 'classic', difficulty: 'hard', win: false, wpm: 30, accuracy: 90, maxCombo: 9, score: 400, damage: 80, durationMs: 30000, stage: 1 },
+      ]),
+    )
+    localStorage.setItem(
+      'typingPaws2.keyStats',
+      JSON.stringify([{ id: 'a:char:e', sessionId: 'a', playedAt: 1, kind: 'char', key: 'e', attempts: 25, errors: 2, timedCount: 20, totalMs: 4000 }]),
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.queryByText('還沒有數據')).not.toBeInTheDocument()
+    const stat = (label: string) => screen.getByText(label).previousElementSibling!.textContent
+    expect([stat('場數'), stat('通關'), stat('平均 WPM'), stat('平均準確率'), stat('統計按鍵數')]).toEqual(['2', '1', '35', '93%', '25'])
+  })
+})
+
 describe('匯入 1.0 舊紀錄', () => {
   const LEGACY_KEY = 'typingPaws.v1'
   const LEGACY_RAW = JSON.stringify({

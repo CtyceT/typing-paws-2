@@ -10,12 +10,14 @@ import {
   type BattleState,
   type Difficulty,
   type HeroId,
+  type KeyStatRow,
   type LegacyImport,
   type NewRecordKind,
   type Records,
 } from './game/index.ts'
 import { MessageDialog } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
+import { DashboardScreen } from './screens/DashboardScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
 import { loadHero, saveHero } from './storage/hero.ts'
@@ -26,6 +28,7 @@ import { clearRecords, loadRecords, saveRecords } from './storage/records.ts'
 /** battle 的 run 每再挑戰一次就加一，用來重新建立整個戰鬥畫面 */
 type Screen =
   | { name: 'menu' }
+  | { name: 'dashboard' }
   | { name: 'battle'; difficulty: Difficulty; run: number }
   | { name: 'result'; result: BattleResult; newRecord: NewRecordKind; run: number }
 
@@ -42,6 +45,7 @@ function legacySummary(legacy: LegacyImport): string {
 function App() {
   const [hero, setHero] = useState<HeroId>(loadHero)
   const [records, setRecords] = useState<Records>(loadRecords)
+  const [keyStats, setKeyStats] = useState<KeyStatRow[]>(() => keyStatsStore.load())
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
   const [legacy, setLegacy] = useState<LegacyImport | null>(findLegacyImport)
@@ -70,7 +74,7 @@ function App() {
       const next = addResult(records, result, { id, playedAt })
       setRecords(next)
       saveRecords(next)
-      keyStatsStore.saveSession(summarizeSession(state.keyLog, { sessionId: id, playedAt }))
+      setKeyStats(keyStatsStore.saveSession(summarizeSession(state.keyLog, { sessionId: id, playedAt })))
       setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), run: screen.run })
     }
     return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} onExit={goMenu} onFinish={finish} />
@@ -79,6 +83,9 @@ function App() {
     const retry = () => setScreen({ name: 'battle', difficulty: screen.result.difficulty, run: screen.run + 1 })
     return <ResultScreen hero={hero} result={screen.result} newRecord={screen.newRecord} onRetry={retry} onMenu={goMenu} />
   }
+  if (screen.name === 'dashboard') {
+    return <DashboardScreen records={records} keyStats={keyStats} onBack={goMenu} />
+  }
   return (
     <>
       <MenuScreen
@@ -86,9 +93,11 @@ function App() {
         records={records}
         onSelectHero={selectHero}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
+        onOpenDashboard={() => setScreen({ name: 'dashboard' })}
         onClearRecords={() => {
           setRecords(clearRecords())
           keyStatsStore.clear()
+          setKeyStats([])
         }}
       />
       {legacy && (

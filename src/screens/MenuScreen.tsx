@@ -33,6 +33,8 @@ export interface MenuScreenProps {
   onSelectHero: (hero: HeroId) => void
   /** 點難度卡片：用經典闖關模式開始戰鬥 */
   onStart: (difficulty: Difficulty) => void
+  /** 打開數據儀表板 */
+  onOpenDashboard: () => void
   /** 確認清除所有紀錄之後呼叫 */
   onClearRecords: () => void
 }
@@ -50,7 +52,7 @@ function bestLines(best: BestRecord | undefined) {
 }
 
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
-export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecords }: MenuScreenProps) {
+export function MenuScreen({ hero, records, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
   const [confirmingClear, setConfirmingClear] = useState(false)
   const trend = wpmTrend(records.history)
   const recent = recentHistory(records.history)
@@ -109,7 +111,12 @@ export function MenuScreen({ hero, records, onSelectHero, onStart, onClearRecord
         ))}
       </div>
 
-      <h2 className={styles.sectionTitle}>📈 我的戰績</h2>
+      <div className={styles.sectionRow}>
+        <h2 className={styles.sectionTitle}>📈 我的戰績</h2>
+        <Button size="small" onClick={onOpenDashboard}>
+          📊 數據儀表板
+        </Button>
+      </div>
       <div className={styles.historyWrap}>
         <Card>
           <div className={styles.sparkLabel}>
