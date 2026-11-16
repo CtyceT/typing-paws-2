@@ -47,3 +47,91 @@ export function overallAvgMs(aggregates: readonly KeyAggregate[], kind: KeyStatK
   }
   return count > 0 ? Math.round(total / count) : null
 }
+
+// ---- 弱點分析（ROADMAP 2.4） ----
+
+export interface WeaknessOptions {
+  /** 全部單鍵的次數加起來不到這個數，就當作資料不足 */
+  minTotalAttempts: number
+  /** 單鍵至少要有這麼多次才列入 */
+  minCharAttempts: number
+  /** 字母組合至少要有這麼多次才列入 */
+  minBigramAttempts: number
+  /** 至少要有這麼多次計時，才判斷「慢」 */
+  minTimedCount: number
+  /** 錯誤率達到這個值算弱點 */
+  errorRateThreshold: number
+  /** 平均反應時間達到整體平均的這個倍數算弱點 */
+  slowRatio: number
+  /** 排序時「慢」佔的比重：比整體平均每慢 100%，等同多這麼多的錯誤率 */
+  slowWeight: number
+  /** 最多列出幾個 */
+  limit: number
+}
+
+export const WEAKNESS_DEFAULTS: WeaknessOptions = {
+  minTotalAttempts: 100,
+  minCharAttempts: 8,
+  minBigramAttempts: 5,
+  minTimedCount: 5,
+  errorRateThreshold: 0.08,
+  slowRatio: 1.35,
+  slowWeight: 0.2,
+  limit: 5,
+}
+
+/** 弱點的原因：常打錯、打得慢，或兩者都有 */
+export type WeaknessReason = 'errors' | 'slow' | 'both'
+
+export interface Weakness extends KeyAggregate {
+  reason: WeaknessReason
+  /** 比整體平均慢多少（0.4 表示慢 40%）；不慢或沒有時間資料是 0 */
+  slowness: number
+  /** 排序用的分數，越高越弱 */
+  score: number
+}
+
+export interface WeaknessReport {
+  /**
+   * - insufficient：資料不足，還不能判斷
+   * - good：資料夠，而且沒有明顯的弱點
+   * - weak：有弱點，列在 items
+   */
+  status: 'insufficient' | 'good' | 'weak'
+  /** 由弱到強（最弱的在前），最多 limit 個 */
+  items: Weakness[]
+  /** 全部單鍵的次數總和 */
+  totalAttempts: number
+}
+
+/**
+ * 從加總後的統計選出最弱的幾個字母或字母組合。
+ * 弱點的條件（符合其一）：錯誤率 ≥ errorRateThreshold，或平均反應時間 ≥ 同類整體平均 × slowRatio。
+ * 樣本太少的不列入；空白鍵不列入（沒辦法針對空白出題）。
+ */
+export function findWeaknesses(aggregates: readonly KeyAggregate[], options: Partial<WeaknessOptions> = {}): WeaknessReport {
+  const o = { ...WEAKNESS_DEFAULTS, ...options }
+  const totalAttempts = aggregates.reduce((n, a) => n + (a.kind === 'char' ? a.attempts : 0), 0)
+  if (totalAttempts < o.minTotalAttempts) return { status: 'insufficient', items: [], totalAttempts }
+
+  const baseline = { char: overallAvgMs(aggregates, 'char'), bigram: overallAvgMs(aggregates, 'bigram') }
+  const items: Weakness[] = []
+  for (const a of aggregates) {
+    if (a.key === ' ') continue
+    if (a.attempts < (a.kind === 'char' ? o.minCharAttempts : o.minBigramAttempts)) continue
+    const base = baseline[a.kind]
+    const ratio = a.avgMs !== null && base !== null && base > 0 && a.timedCount >= o.minTimedCount ? a.avgMs / base : 1
+    const manyErrors = a.errorRate >= o.errorRateThreshold
+    const slow = ratio >= o.slowRatio
+    if (!manyErrors && !slow) continue
+    const slowness = Math.max(0, ratio - 1)
+    items.push({
+      ...a,
+      reason: manyErrors && slow ? 'both' : manyErrors ? 'errors' : 'slow',
+      slowness,
+      score: a.errorRate + o.slowWeight * slowness,
+    })
+  }
+  items.sort((x, y) => y.score - x.score || y.attempts - x.attempts || (x.key < y.key ? -1 : 1))
+  return { status: items.length > 0 ? 'weak' : 'good', items: items.slice(0, o.limit), totalAttempts }
+}

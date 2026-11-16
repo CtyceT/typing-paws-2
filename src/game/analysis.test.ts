@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aggregateKeyStats, overallAvgMs } from './analysis.ts'
+import { aggregateKeyStats, findWeaknesses, overallAvgMs, type KeyAggregate } from './analysis.ts'
 import { summarizeSession, type KeyEvent, type KeyStatKind, type KeyStatRow } from './keystats.ts'
 
 const row = (sessionId: string, kind: KeyStatKind, key: string, attempts: number, errors: number, timedCount: number, totalMs: number): KeyStatRow => ({
@@ -66,5 +66,76 @@ describe('overallAvgMs', () => {
     expect(overallAvgMs(out, 'char')).toBe(250)
     expect(overallAvgMs(out, 'bigram')).toBe(1000)
     expect(overallAvgMs([], 'char')).toBeNull()
+  })
+})
+
+describe('findWeaknesses', () => {
+  const agg = (kind: KeyStatKind, key: string, attempts: number, errors: number, avgMs: number | null = 200): KeyAggregate => ({
+    kind,
+    key,
+    attempts,
+    errors,
+    errorRate: attempts > 0 ? errors / attempts : 0,
+    timedCount: avgMs === null ? 0 : attempts - errors,
+    avgMs,
+  })
+  /** 一批表現正常的字母，湊足樣本數 */
+  const fine = (keys = 'abcdefghij') => [...keys].map((k) => agg('char', k, 30, 0))
+
+  it('資料不足：總次數太少時不判斷，即使錯誤率很高', () => {
+    const report = findWeaknesses([agg('char', 'q', 20, 10), agg('char', 'a', 30, 0)])
+    expect(report).toEqual({ status: 'insufficient', items: [], totalAttempts: 50 })
+    expect(findWeaknesses([]).status).toBe('insufficient')
+  })
+
+  it('全部都很好：資料夠而且沒有弱點', () => {
+    const report = findWeaknesses([...fine(), agg('bigram', 'ab', 20, 1)])
+    expect(report.status).toBe('good')
+    expect(report.items).toEqual([])
+    expect(report.totalAttempts).toBe(300)
+  })
+
+  it('明顯有弱點：依弱的程度排序，最多 5 個', () => {
+    const report = findWeaknesses([
+      ...fine(),
+      agg('char', 'q', 20, 8), // 40%
+      agg('char', 'z', 20, 4), // 20%
+      agg('char', 'x', 20, 2), // 10%
+      agg('char', 'p', 50, 5), // 10%，樣本比 x 多 → 排在 x 前面
+      agg('bigram', 'qu', 10, 5), // 50%
+      agg('bigram', 'th', 10, 3), // 30%
+      agg('char', 'k', 25, 1), // 4%：不算弱點
+    ])
+    expect(report.status).toBe('weak')
+    expect(report.items.map((w) => `${w.kind}:${w.key}`)).toEqual(['bigram:qu', 'char:q', 'bigram:th', 'char:z', 'char:p'])
+    expect(report.items.every((w) => w.reason === 'errors')).toBe(true)
+  })
+
+  it('樣本太少的鍵不列入', () => {
+    const report = findWeaknesses([...fine(), agg('char', 'q', 7, 7), agg('bigram', 'qu', 4, 4), agg('char', 'z', 8, 4), agg('bigram', 'zz', 5, 3)])
+    expect(report.items.map((w) => w.key)).toEqual(['zz', 'z'])
+  })
+
+  it('打得特別慢也算弱點；又慢又常錯標成 both', () => {
+    const report = findWeaknesses([...fine(), agg('char', 'y', 30, 0, 320), agg('char', 'q', 30, 6, 400), agg('char', 'w', 30, 0, 250)])
+    expect(report.items.map((w) => [w.key, w.reason])).toEqual([
+      ['q', 'both'],
+      ['y', 'slow'],
+    ])
+    expect(report.items[1].slowness).toBeGreaterThan(0.35)
+  })
+
+  it('計時次數太少的不判斷快慢；空白鍵不列入', () => {
+    const slowButFew: KeyAggregate = { kind: 'char', key: 'y', attempts: 30, errors: 0, errorRate: 0, timedCount: 4, avgMs: 900 }
+    const report = findWeaknesses([...fine(), slowButFew, agg('char', ' ', 40, 20)])
+    expect(report.status).toBe('good')
+  })
+
+  it('門檻可以調整', () => {
+    const data = [...fine(), agg('char', 'q', 20, 1)]
+    expect(findWeaknesses(data).status).toBe('good')
+    expect(findWeaknesses(data, { errorRateThreshold: 0.05 }).items.map((w) => w.key)).toEqual(['q'])
+    expect(findWeaknesses(data, { minTotalAttempts: 1000 }).status).toBe('insufficient')
+    expect(findWeaknesses([...fine(), agg('char', 'q', 20, 8), agg('char', 'z', 20, 8)], { limit: 1 }).items).toHaveLength(1)
   })
 })
