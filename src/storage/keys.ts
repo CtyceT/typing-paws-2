@@ -12,6 +12,8 @@ export const STORAGE_KEYS = {
   best: `${STORAGE_PREFIX}best`,
   /** 最近 30 場戰績（GameRecord 陣列的 JSON） */
   history: `${STORAGE_PREFIX}history`,
+  /** 最近 30 場的按鍵統計（KeyStatRow 陣列的 JSON） */
+  keyStats: `${STORAGE_PREFIX}keyStats`,
   /** 是否已經問過要不要匯入 1.0 的舊紀錄：'imported' 或 'skipped' */
   legacyImport: `${STORAGE_PREFIX}legacyImport`,
 } as const
