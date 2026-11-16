@@ -96,7 +96,7 @@
 
 - [x] 3.1 建立 Supabase 專案與本機環境設定
   完成條件：`.env.local` 放 URL 與 publishable key（新版的 anon key，`sb_publishable_` 開頭；不進版控），有 `.env.example`，前端可成功連線。
-- [ ] 3.2 資料表與 RLS：玩家資料、場次成績、按鍵統計
+- [x] 3.2 資料表與 RLS：玩家資料、場次成績、按鍵統計
   完成條件：migration 檔進版控，每張表都開 RLS，用另一個帳號查不到別人的資料。
 - [ ] 3.3 Google 登入與登出
   完成條件：本機與線上網址都能用 Google 登入，重新整理後維持登入狀態。
