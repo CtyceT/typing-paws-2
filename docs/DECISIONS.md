@@ -304,3 +304,10 @@
 - 做法：記下當時訪客最新一場的 id（`typingPaws2.u.<帳號>.guestSkip`），登入時比對。
 - 理由：每次登入都問很煩；但完全不再問的話，之後想併入就沒有入口了。目前沒有另外做「手動併入」的按鈕。
 - 訪客紀錄可能是別人的（共用電腦），所以預設不自動併入，一定要問。
+
+## 3.8 GitHub Actions
+
+**D52. 部署時從 repo 的 Actions 設定讀 `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`，放在 Variables 或 Secrets 都讀得到。**
+- 這兩個值本來就是公開的（會被打包進前端），所以建議放 Variables（之後看得到內容、好核對）；放 Secrets 也可以。
+- 沒設定時 build 一樣會成功，線上版只有訪客模式、不顯示登入按鈕。
+- build 之後多跑一步 `npm run check:bundle`：掃描 `dist/`，發現秘密金鑰（`sb_secret_`、service_role 的 JWT、常見的 LLM API 金鑰格式）就讓部署失敗。

@@ -94,6 +94,9 @@
 
 ## 必做：帳號與雲端紀錄
 
+> 程式與自動測試都完成了；需要真的 Supabase 專案與 GitHub 帳號的部分（推 migration、實際登入、兩個帳號互查、線上版）
+> 還沒有實機驗證，步驟在 `docs/DEVLOG.md` 的「階段 3」。
+
 - [x] 3.1 建立 Supabase 專案與本機環境設定
   完成條件：`.env.local` 放 URL 與 publishable key（新版的 anon key，`sb_publishable_` 開頭；不進版控），有 `.env.example`，前端可成功連線。
 - [x] 3.2 資料表與 RLS：玩家資料、場次成績、按鍵統計
@@ -108,7 +111,7 @@
   完成條件：換一個瀏覽器登入同一帳號，戰績與儀表板內容相同。
 - [x] 3.7 訪客資料併入帳號
   完成條件：訪客玩過幾場後登入，可以選擇把本機紀錄上傳，且不會重複上傳。
-- [ ] 3.8 GitHub Actions 帶入 Supabase 公開設定
+- [x] 3.8 GitHub Actions 帶入 Supabase 公開設定
   完成條件：線上版可以登入與同步，repo 裡找不到任何金鑰。
 
 ## 必做：弱點特訓（LLM）

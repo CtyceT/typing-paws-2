@@ -27,7 +27,14 @@ jobs:
       - run: npm run lint
       - run: npm run test
       - run: npm run test:db
+      # Supabase 的網址與 publishable key 都是公開的設定（會被打包進前端，資料靠 RLS 保護）。
+      # 在 repo 的 Settings → Secrets and variables → Actions 設定，放在 Variables 或 Secrets 都可以。
+      # 兩個都沒設定時仍然可以 build，只是線上版沒有登入功能（只有訪客模式）。
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - run: npm run check:bundle
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

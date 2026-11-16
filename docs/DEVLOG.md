@@ -95,5 +95,64 @@
 - 打包大小：JS 目前約 447 kB（gzip 149 kB），Chart.js 佔了大約 165 kB，ROADMAP 11.5 會改成動態載入。
 - 弱點分析的門檻（錯誤率 8%、比平均慢 35%）是先訂的起始值，還沒有用真人的資料校正。
 
+## 階段 3：帳號與雲端紀錄（2026-11-16）
+
+和階段 2 一樣在「自主模式」下連續做完，決定記在 `docs/DECISIONS.md`（D31～D52）。
+
+**做了什麼**
+- 3.1 Supabase 連線（`src/cloud/supabase.ts`）、`.env.example`；沒設定環境變數時遊戲照常可以玩（只有訪客模式）。
+- 3.2 migration：`profiles`、`game_records`、`best_records`、`key_stats` 四張表，全部開 RLS；`npm run test:db` 用內嵌的 Postgres 實測 38 項。
+- 3.3 GitHub 登入與登出，主選單右上角的帳號列。
+- 3.4 訪客模式：訪客和每個帳號在瀏覽器裡各有一份紀錄，畫面標示目前的身分。
+- 3.5 打完一場先存本機、背景上傳；斷網不卡住，顯示尚未同步並自動補傳。
+- 3.6 登入後讀取雲端紀錄併進本機（換裝置看得到同樣的戰績與儀表板）。
+- 3.7 登入後詢問要不要把訪客紀錄併入帳號。
+- 3.8 GitHub Actions 帶入 Supabase 公開設定，並檢查打包結果沒有秘密金鑰。
+
+**遇到的問題與解法**
+- **沒有 Docker，跑不了本機的 Supabase**：改用 PGlite（WebAssembly 版的 Postgres）在 Node 裡直接跑 migration，
+  再用 `set role` 模擬兩個登入帳號和沒登入的訪客來測 RLS。Supabase 專有的 `auth.users`、`auth.uid()` 用最小的替身代替。
+- **Supabase 預設的 localStorage 鍵不符合前綴規定**：登入狀態預設存在 `sb-<專案>-auth-token`，和 1.0 共用網域時不該這樣命名；
+  建立連線時指定 `storageKey: 'typingPaws2.auth'`，實際在瀏覽器確認過所有鍵都是 `typingPaws2.` 開頭。
+- **前端產生的場次 id 不保證唯一**：從 1.0 匯入的 id 是照時間組的，兩個人可能相同。主鍵改成 `(user_id, id)`。
+- **最佳紀錄沒辦法從場次算回來**（匯入的舊紀錄、超過 30 場的舊場次）：另外一張表，並用觸發器讓它只會變好。
+- **「清除紀錄」在兩台裝置之間會復活**：如果合併是「兩邊取聯集」，另一台裝置會把清掉的紀錄又傳回去。
+  改成「雲端說了算，但還沒上傳的留著」，並用待上傳清單和「最佳紀錄有變動」的記號分辨哪些是還沒上傳的。
+- **訪客併入帳號怎麼保證不重複、不遺失**：順序訂成「先上傳成功 → 才併進帳號的本機資料 → 才清掉訪客那一份」，
+  任何一步失敗都停在安全的狀態；資料庫的主鍵再擋一次重複。
+- **背景同步跑完時，畫面的資料可能已經變了**（例如同步到一半又打完一場）：同步一律排隊、一次一個，
+  而且合併時用「當下最新」的本機資料，不用開始同步時的那一份。
+- **一次請求最多回傳 1000 列**：30 場的按鍵統計有 2000 多列，要分頁讀。
+- **測試不能連到真的專案**：`vite.config.ts` 在測試時把兩個環境變數清空；App 的雲端功能可以整個換成假的（`src/test/fakeCloud.ts`，
+  一個存在記憶體裡、行為照資料表規則的假資料庫），登入、斷網、補傳、換裝置、併入都是用它測的。
+- **`.env.local` 是 Windows 換行（CRLF）**：Vite 讀得懂，但在 shell 裡 `source` 會把換行符號接在網址後面。只影響手動測試，沒有改檔案。
+
+**需要你操作的事**（帳號／後台操作）
+1. 把 migration 推到 Supabase 專案（在專案資料夾執行）：
+   1. `npx supabase login`（會開瀏覽器登入）
+   2. `npx supabase link --project-ref <專案代號>`（代號就是 `VITE_SUPABASE_URL` 裡 `https://` 和 `.supabase.co` 中間那一段；問資料庫密碼時輸入建立專案時設的密碼）
+   3. `npx supabase db push --dry-run` 確認只會套用 `20261116062403_create_player_tables.sql`，再執行 `npx supabase db push`
+   - 不想用 CLI 的話：把那個 `.sql` 檔的內容整份貼到後台的 SQL Editor 執行一次也可以（但之後 CLI 不會知道它已經套用過）。
+2. Supabase 後台 → Authentication → URL Configuration → Redirect URLs，確認有這兩條（網站在子路徑底下，要包含路徑）：
+   `http://localhost:5173/typing-paws-2/` 和 `https://ctycet.github.io/typing-paws-2/`。
+   沒對上的話，登入後會被導到 Site URL 而不是原本的網址。
+3. GitHub repo → Settings → Secrets and variables → Actions → **Variables** 分頁 → New repository variable，新增兩個：
+   `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`（值和 `.env.local` 相同；放 Secrets 分頁也讀得到）。
+   設好後到 Actions 重新執行一次 Deploy，線上版才會出現登入按鈕。
+
+**手動驗證**（上面三步做完之後）
+- 本機 `npm run dev` → 右上角「🔑 登入」→ GitHub 登入 → 回到遊戲看到自己的名稱和「☁️ 已同步」；重新整理後還是登入狀態。
+- 打完一場 → 結算畫面有「☁️ 這場已存到雲端」；後台 Table Editor 的 `game_records`、`key_stats`、`best_records` 有資料。
+- 開發者工具把網路切成 Offline 再打一場 → 照常結算、顯示尚未同步；切回 Online → 自動變成已同步。
+- 換一個瀏覽器（或無痕視窗）登入同一個帳號 → 戰績與儀表板相同。
+- 登出，用訪客玩一場再登入 → 被問要不要併入；併入後後台多一場，再重新整理不會再問、也沒有重複的列。
+- 用第二個 GitHub 帳號登入 → 看不到第一個帳號的任何資料（RLS）。
+- 線上版 https://ctycet.github.io/typing-paws-2/ 重複登入與同步的檢查。
+
+**還沒做、留給之後的**
+- Google 登入（後台設定好後，把 `'google'` 加進 `AUTH_PROVIDERS`）。
+- 打包大小：加入 supabase-js 後 JS 約 674 kB（gzip 209 kB），比階段 2 多了約 60 kB（gzip）。可以和 11.5 一起改成動態載入。
+- 雲端保留全部場次，但畫面仍然只用最近 30 場。
+
 ## 版本
 - `v2.0-alpha`（2026-11-16）：階段 0 與階段 1 的 1.1～1.18 完成，剩 1.19 與線上 1.0 版對照驗收。
