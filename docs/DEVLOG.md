@@ -131,7 +131,8 @@
 1. 把 migration 推到 Supabase 專案（在專案資料夾執行）：
    1. `npx supabase login`（會開瀏覽器登入）
    2. `npx supabase link --project-ref <專案代號>`（代號就是 `VITE_SUPABASE_URL` 裡 `https://` 和 `.supabase.co` 中間那一段；問資料庫密碼時輸入建立專案時設的密碼）
-   3. `npx supabase db push --dry-run` 確認只會套用 `20261116062403_create_player_tables.sql`，再執行 `npx supabase db push`
+   3. `npx supabase db push --remote --dry-run` 確認只會套用還沒推過的 migration，再執行 `npx supabase db push --remote`
+      （新版 CLI 的 `db push` 預設對象是本機資料庫，要加 `--remote` 才是連結的專案；舊的 `--linked` 之後會移除，不要再用）
    - 不想用 CLI 的話：把那個 `.sql` 檔的內容整份貼到後台的 SQL Editor 執行一次也可以（但之後 CLI 不會知道它已經套用過）。
 2. Supabase 後台 → Authentication → URL Configuration → Redirect URLs，確認有這兩條（網站在子路徑底下，要包含路徑）：
    `http://localhost:5173/typing-paws-2/` 和 `https://ctycet.github.io/typing-paws-2/`。
@@ -149,10 +150,47 @@
 - 用第二個 GitHub 帳號登入 → 看不到第一個帳號的任何資料（RLS）。
 - 線上版 https://ctycet.github.io/typing-paws-2/ 重複登入與同步的檢查。
 
+**實機驗證結果**（2026-11-16，由你回報）
+- ✅ migration 已用 CLI 推到專案。
+- ✅ 本機與線上版都能用 GitHub 登入，右上角顯示「已同步」和帳號。
+- ✅ 打完一場後 `game_records` 新增一列，資料正確。
+- ✅ 每張表都有 RLS policies。
+- ⬜ 手機登入同一帳號看得到戰績：還沒有回報結果。
+- ⬜ 訪客併入帳號：還沒有回報結果。
+- ⬜ 用第二個帳號確認看不到別人的資料：還沒有回報結果（本機的 `npm run test:db` 有測過）。
+
 **還沒做、留給之後的**
 - Google 登入（後台設定好後，把 `'google'` 加進 `AUTH_PROVIDERS`）。
 - 打包大小：加入 supabase-js 後 JS 約 674 kB（gzip 209 kB），比階段 2 多了約 60 kB（gzip）。可以和 11.5 一起改成動態載入。
 - 雲端保留全部場次，但畫面仍然只用最近 30 場。
+
+## 11.5 提前做：Chart.js 與 supabase-js 改成動態載入（2026-11-16）
+
+**結果**（`npm run build` 的數字，未壓縮／gzip）
+
+| | 改之前 | 改之後 |
+|---|---|---|
+| 首頁一定會下載的 JS | 674 kB／209 kB | 約 292 kB／96 kB（`index` 280 + `jsx-runtime` 8 + `records` 4） |
+| Chart.js（`ChartLine`） | 包在首頁裡 | 161 kB／56 kB，要畫圖時才下載 |
+| supabase-js（`supabase`） | 包在首頁裡 | 218 kB／56 kB，要登入或已登入時才下載 |
+| 儀表板（`DashboardScreen`） | 包在首頁裡 | 11 kB／5 kB，點進去才下載 |
+
+用正式 build 在真的瀏覽器確認過：訪客沒有戰績時只下載首頁那三個檔；有 2 場以上戰績時多下載 Chart.js；
+點儀表板才下載儀表板；按「GitHub 登入」才下載 supabase-js；localStorage 有登入狀態時一開始就會下載它。
+
+**怎麼做的**
+- Chart.js 只從 `src/components/ChartLine.tsx` 載入，兩個圖表元件用 `lazy()` 動態載入它。外框本來就有固定高度，載入前後版面不會跳。
+- supabase-js 只從 `src/cloud/supabase.ts` 載入，外面包一層 `lazyCloud`（`src/cloud/lazy.ts`），介面和原本的 `Cloud` 一樣，App 不用改。
+- 儀表板畫面也改成動態載入（見下面第二點）。
+
+**遇到的問題與解法**
+- **要先知道有沒有登入，才知道要不要下載 supabase-js，但問這件事本來就要靠 supabase-js**：
+  改成先看 localStorage 有沒有 `typingPaws2.auth`、網址有沒有導回來的 `?code=`。都沒有就一定是訪客，直接進遊戲。
+- **只搬 Chart.js 和 supabase-js 還差一點（302 kB）**：把儀表板畫面也改成點進去才下載。但一開始只少了 3 kB——
+  熱力圖、弱點排行等元件因為從 `components/index.ts` 統一匯出，還是被打包進首頁。把這三個只有儀表板用的元件從統一匯出拿掉、
+  在儀表板直接匯入之後才真的搬走。
+- **測試裡的圖表和儀表板變成非同步出現**：測試用了假計時器，`findBy…` 不好用；改成先 `await import()` 同一個模組再等一輪 React 更新。
+- **動態載入失敗（下載到一半斷網）**：supabase-js 載入失敗時先當訪客，下次用到再重試；資料請求會失敗而不是卡住，走原本「尚未同步」的流程。
 
 ## 版本
 - `v2.0-alpha`（2026-11-16）：階段 0 與階段 1 的 1.1～1.18 完成，剩 1.19 與線上 1.0 版對照驗收。

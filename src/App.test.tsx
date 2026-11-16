@@ -16,16 +16,29 @@ vi.mock('react-chartjs-2', () => ({
 
 beforeEach(() => localStorage.clear())
 
+/** 儀表板是動態載入的：點進去之後等它載入完 */
+const openDashboard = async () => {
+  fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+  await import('./screens/DashboardScreen.tsx')
+  await act(async () => {})
+}
+
+/** 圖表是動態載入的：等它載入並畫出來（搭配假計時器也能用，所以不用 findBy） */
+const chartsLoaded = async () => {
+  await import('./components/ChartLine.tsx')
+  await act(async () => {})
+}
+
 const heroCard = (name: string) => screen.getByRole('button', { name: new RegExp(`${name}勇者`) })
 
 describe('主選單', () => {
-  it('顯示遊戲標題與訪客標示', () => {
+  it('顯示遊戲標題與訪客標示', async () => {
     render(<App />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('喵喵打字大冒險 2.0')
     expect(screen.getByText('👤 訪客')).toBeInTheDocument()
   })
 
-  it('預設選中喵喵，點別的勇者會換過去', () => {
+  it('預設選中喵喵，點別的勇者會換過去', async () => {
     render(<App />)
     expect(heroCard('喵喵')).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(heroCard('兔兔'))
@@ -34,7 +47,7 @@ describe('主選單', () => {
     expect(document.querySelector('header svg')).toHaveAttribute('data-hero', 'bunny')
   })
 
-  it('重新整理後還記得選的勇者', () => {
+  it('重新整理後還記得選的勇者', async () => {
     const first = render(<App />)
     fireEvent.click(heroCard('熊熊'))
     first.unmount()
@@ -42,7 +55,7 @@ describe('主選單', () => {
     expect(heroCard('熊熊')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('經典闖關是選中的模式，其他三個模式標示即將推出', () => {
+  it('經典闖關是選中的模式，其他三個模式標示即將推出', async () => {
     render(<App />)
     expect(screen.getByText('經典闖關').parentElement).toHaveAttribute('aria-current', 'true')
     expect(screen.getAllByText('即將推出')).toHaveLength(3)
@@ -51,13 +64,13 @@ describe('主選單', () => {
     }
   })
 
-  it('戰績區在沒有紀錄時顯示空狀態', () => {
+  it('戰績區在沒有紀錄時顯示空狀態', async () => {
     render(<App />)
     expect(screen.getByText(/還沒有戰績/)).toBeInTheDocument()
     expect(screen.getAllByText('還沒有紀錄，來當第一次挑戰吧！')).toHaveLength(3)
   })
 
-  it('點難度進入戰鬥畫面，先看到第一隻怪物的開場訊息', () => {
+  it('點難度進入戰鬥畫面，先看到第一隻怪物的開場訊息', async () => {
     render(<App />)
     fireEvent.click(heroCard('柴柴'))
     fireEvent.click(screen.getByRole('button', { name: /困難/ }))
@@ -109,7 +122,7 @@ describe('打完一場的紀錄', () => {
     advance(1300)
   }
 
-  it('通關後進結算畫面：第一次通關是新紀錄', () => {
+  it('通關後進結算畫面：第一次通關是新紀錄', async () => {
     render(<App />)
     winEasy()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('🏆 通關成功！')
@@ -118,7 +131,7 @@ describe('打完一場的紀錄', () => {
     expect(screen.getByRole('img', { name: '3 顆星（滿分 3 顆）' })).toBeInTheDocument()
   })
 
-  it('回選單後難度卡片顯示最佳紀錄，重新整理後還在', () => {
+  it('回選單後難度卡片顯示最佳紀錄，重新整理後還在', async () => {
     const first = render(<App />)
     winEasy()
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
@@ -131,7 +144,7 @@ describe('打完一場的紀錄', () => {
     expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(1)
   })
 
-  it('打完一場後多一筆場次的按鍵統計，場次代號和戰績相同', () => {
+  it('打完一場後多一筆場次的按鍵統計，場次代號和戰績相同', async () => {
     render(<App />)
     winEasy()
     const [record] = JSON.parse(localStorage.getItem('typingPaws2.history')!)
@@ -145,7 +158,7 @@ describe('打完一場的紀錄', () => {
     expect(rows.some((r) => r.kind === 'bigram')).toBe(true)
   })
 
-  it('結算畫面顯示這場最常打錯的鍵，並可以連到儀表板', () => {
+  it('結算畫面顯示這場最常打錯的鍵，並可以連到儀表板', async () => {
     render(<App />)
     fireEvent.click(diffCard('簡單'))
     pressEnter()
@@ -168,12 +181,12 @@ describe('打完一場的紀錄', () => {
     expect(items).toHaveLength(1)
     expect(items[0]).toHaveTextContent(new RegExp(`^${target.toUpperCase()}錯 2 次／\\d+ 次$`))
 
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
     expect(screen.getByText('場數').previousElementSibling).toHaveTextContent('1')
   })
 
-  it('被打倒也會記錄，但不算通關；0 分不算新紀錄', () => {
+  it('被打倒也會記錄，但不算通關；0 分不算新紀錄', async () => {
     render(<App />)
     loseEasy()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('喵喵被打倒了…')
@@ -183,7 +196,7 @@ describe('打完一場的紀錄', () => {
     expect(history[0]).toMatchObject({ win: false, stage: 1, difficulty: 'easy', mode: 'classic' })
   })
 
-  it('玩 2 場後出現走勢圖，戰績表與結算數據一致（新的在前）', () => {
+  it('玩 2 場後出現走勢圖，戰績表與結算數據一致（新的在前）', async () => {
     render(<App />)
     winEasy()
     const stat = (label: string) => screen.getByText(label).previousElementSibling!.textContent!
@@ -201,6 +214,7 @@ describe('打完一場的紀錄', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0].children[2]).toHaveTextContent('💀 1關')
     expect(rows[1].children[2]).toHaveTextContent('🏆')
+    await chartsLoaded()
     const chart = screen.getByTestId('wpm-chart')
     expect(JSON.parse(chart.getAttribute('data-values')!)).toEqual([Number(wpm), 0])
     expect(JSON.parse(chart.getAttribute('data-colors')!)).toEqual(['#6fd6b0', '#ff8fab'])
@@ -208,7 +222,7 @@ describe('打完一場的紀錄', () => {
     expect(screen.queryByText(/還沒有戰績/)).not.toBeInTheDocument()
   })
 
-  it('再挑戰一次會用同樣的難度重新開始', () => {
+  it('再挑戰一次會用同樣的難度重新開始', async () => {
     render(<App />)
     loseEasy()
     fireEvent.click(screen.getByRole('button', { name: /再挑戰一次/ }))
@@ -217,7 +231,7 @@ describe('打完一場的紀錄', () => {
     expect(screen.getByRole('dialog', { name: '小 Bug 蟲 出現了！' })).toBeInTheDocument()
   })
 
-  it('放棄回選單不會記錄', () => {
+  it('放棄回選單不會記錄', async () => {
     render(<App />)
     fireEvent.click(diffCard('簡單'))
     pressEnter()
@@ -227,7 +241,7 @@ describe('打完一場的紀錄', () => {
     expect(localStorage.getItem('typingPaws2.history')).toBeNull()
   })
 
-  it('清除紀錄要先確認；取消不會清，確定後回到空狀態且勇者還在', () => {
+  it('清除紀錄要先確認；取消不會清，確定後回到空狀態且勇者還在', async () => {
     render(<App />)
     fireEvent.click(heroCard('兔兔'))
     winEasy()
@@ -247,7 +261,7 @@ describe('打完一場的紀錄', () => {
     expect(heroCard('兔兔')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('沒有紀錄時按清除不會跳確認', () => {
+  it('沒有紀錄時按清除不會跳確認', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /清除紀錄/ }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -255,21 +269,21 @@ describe('打完一場的紀錄', () => {
 })
 
 describe('數據儀表板', () => {
-  it('從主選單進入，沒有資料時顯示引導文字，可以返回', () => {
+  it('從主選單進入，沒有資料時顯示引導文字，可以返回', async () => {
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
     expect(screen.getByText('還沒有數據')).toBeInTheDocument()
     expect(screen.queryByText('場數')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /去打一場/ }))
     expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
     expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
   })
 
-  it('有戰績時顯示總覽數字', () => {
+  it('有戰績時顯示總覽數字', async () => {
     localStorage.setItem(
       'typingPaws2.history',
       JSON.stringify([
@@ -282,7 +296,7 @@ describe('數據儀表板', () => {
       JSON.stringify([{ id: 'a:char:e', sessionId: 'a', playedAt: 1, kind: 'char', key: 'e', attempts: 25, errors: 2, timedCount: 20, totalMs: 4000 }]),
     )
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.queryByText('還沒有數據')).not.toBeInTheDocument()
     const stat = (label: string) => screen.getByText(label).previousElementSibling!.textContent
     expect([stat('場數'), stat('通關'), stat('平均 WPM'), stat('平均準確率'), stat('統計按鍵數')]).toEqual(['2', '1', '35', '93%', '25'])
@@ -295,14 +309,14 @@ describe('數據儀表板', () => {
     )
   const heatKey = (key: string) => document.querySelector(`[data-key="${key}"]`)!
 
-  it('鍵盤熱力圖：常打錯的鍵等級比較高，移到按鍵上看得到數字', () => {
+  it('鍵盤熱力圖：常打錯的鍵等級比較高，移到按鍵上看得到數字', async () => {
     seedKeyStats([
       ['e', 40, 10],
       ['a', 40, 0],
       ['!', 6, 3],
     ])
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByRole('group', { name: '鍵盤熱力圖' })).toBeInTheDocument()
     expect(heatKey('e')).toHaveAttribute('data-level', '5')
     expect(heatKey('a')).toHaveAttribute('data-level', '1')
@@ -318,11 +332,11 @@ describe('數據儀表板', () => {
     expect(screen.getByText('Z：還沒有資料')).toBeInTheDocument()
   })
 
-  it('弱點排行榜：內容和弱點分析的結果一致，最弱的排第一', () => {
+  it('弱點排行榜：內容和弱點分析的結果一致，最弱的排第一', async () => {
     const letters: [string, number, number][] = [...'abcdfghijk'].map((k) => [k, 30, 0])
     seedKeyStats([...letters, ['q', 20, 8], ['z', 20, 4], ['e', 40, 2]])
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     const items = within(screen.getByRole('list', { name: '弱點排行榜' })).getAllByRole('listitem')
     expect(items.map((li) => li.getAttribute('data-weakness'))).toEqual(['char:q', 'char:z'])
     expect(items[0]).toHaveTextContent('字母')
@@ -332,27 +346,28 @@ describe('數據儀表板', () => {
     expect(items[1]).toHaveTextContent('錯誤率 20%（打 20 次、錯 4 次）')
   })
 
-  it('弱點排行榜：資料不足與沒有弱點時顯示說明', () => {
+  it('弱點排行榜：資料不足與沒有弱點時顯示說明', async () => {
     seedKeyStats([['q', 20, 8]])
     const first = render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByText(/目前統計了 20 次按鍵，累積到 100 次就會開始分析弱點/)).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: '弱點排行榜' })).not.toBeInTheDocument()
     first.unmount()
 
     seedKeyStats([...'abcdfghijk'].map((k) => [k, 30, 0]))
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByText(/目前沒有明顯的弱點/)).toBeInTheDocument()
   })
 
-  it('趨勢圖：畫出 WPM 與準確率，可以切換最近 10 場與全部', () => {
+  it('趨勢圖：畫出 WPM 與準確率，可以切換最近 10 場與全部', async () => {
     const history = Array.from({ length: 12 }, (_, i) => ({
       id: `g${i}`, playedAt: i + 1, mode: 'classic', difficulty: 'easy', win: i % 2 === 0, wpm: 30 + i, accuracy: 90 + i * 0.5, maxCombo: 5, score: 100, damage: 50, durationMs: 30000, stage: 3,
     }))
     localStorage.setItem('typingPaws2.history', JSON.stringify(history))
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
+    await chartsLoaded()
     const values = (name: string) => JSON.parse(document.querySelector(`[data-chart="${name} 趨勢"]`)!.getAttribute('data-values')!)
     expect(screen.getByRole('button', { name: '最近 10 場' })).toHaveAttribute('aria-pressed', 'true')
     expect(values('WPM')).toEqual([32, 33, 34, 35, 36, 37, 38, 39, 40, 41])
@@ -366,13 +381,13 @@ describe('數據儀表板', () => {
     expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(13)
   })
 
-  it('只有從 1.0 匯入的戰績、沒有按鍵統計時，熱力圖顯示說明', () => {
+  it('只有從 1.0 匯入的戰績、沒有按鍵統計時，熱力圖顯示說明', async () => {
     localStorage.setItem(
       'typingPaws2.history',
       JSON.stringify([{ id: 'v1-1-0', playedAt: 1, mode: 'classic', difficulty: 'easy', win: true, wpm: 40, accuracy: 96, maxCombo: 20, score: 3000, damage: null, durationMs: null, stage: 3 }]),
     )
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByText('場數')).toBeInTheDocument()
     expect(screen.getByText(/還沒有按鍵統計/)).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '鍵盤熱力圖' })).not.toBeInTheDocument()
@@ -391,13 +406,13 @@ describe('匯入 1.0 舊紀錄', () => {
   })
   const dialog = () => screen.queryByRole('dialog', { name: '發現 1.0 版的舊紀錄' })
 
-  it('沒有舊紀錄時不會詢問', () => {
+  it('沒有舊紀錄時不會詢問', async () => {
     render(<App />)
     expect(dialog()).not.toBeInTheDocument()
     expect(localStorage.getItem('typingPaws2.legacyImport')).toBeNull()
   })
 
-  it('選擇匯入後看得到舊的勇者與戰績，之後不再詢問，舊紀錄沒有被改動', () => {
+  it('選擇匯入後看得到舊的勇者與戰績，之後不再詢問，舊紀錄沒有被改動', async () => {
     localStorage.setItem(LEGACY_KEY, LEGACY_RAW)
     const first = render(<App />)
     expect(dialog()).toHaveTextContent('找到 勇者「熊熊」、2 場戰績、最佳紀錄')
@@ -416,7 +431,7 @@ describe('匯入 1.0 舊紀錄', () => {
     expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
   })
 
-  it('選擇略過就不匯入，之後也不再詢問，舊紀錄沒有被改動', () => {
+  it('選擇略過就不匯入，之後也不再詢問，舊紀錄沒有被改動', async () => {
     localStorage.setItem(LEGACY_KEY, LEGACY_RAW)
     const first = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '略過' }))

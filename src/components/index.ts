@@ -13,7 +13,6 @@ export * from './StatChip.tsx'
 export * from './Tag.tsx'
 export * from './WordDisplay.tsx'
 export * from './WpmTrendChart.tsx'
-export * from './KeyboardHeatmap.tsx'
-export * from './PerformanceTrendChart.tsx'
-export * from './WeaknessList.tsx'
 export * from './AccountBar.tsx'
+// KeyboardHeatmap、PerformanceTrendChart、WeaknessList 只有儀表板用到，刻意不從這裡匯出：
+// 從這裡匯出的話會被打包進首頁，儀表板就沒辦法點進去才下載（ROADMAP 11.5）。

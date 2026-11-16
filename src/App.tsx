@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   battleResult,
   HEROES,
@@ -14,11 +14,13 @@ import {
 import { AUTH_PROVIDERS, authErrorFromUrl, authRedirectUrl, defaultCloud, PROVIDER_LABELS, useAuth, type AuthProvider, type AuthUser, type Cloud } from './cloud/index.ts'
 import { AccountBar, MessageDialog } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
-import { DashboardScreen } from './screens/DashboardScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
 import { findLegacyImport, markLegacyAsked } from './storage/legacy.ts'
 import { usePlayerData } from './sync/usePlayerData.ts'
+
+/** 儀表板（熱力圖、趨勢圖、弱點排行）點進去才下載，首頁不用先載入（ROADMAP 11.5） */
+const DashboardScreen = lazy(() => import('./screens/DashboardScreen.tsx').then((m) => ({ default: m.DashboardScreen })))
 
 /** battle 的 run 每再挑戰一次就加一，用來重新建立整個戰鬥畫面 */
 type Screen =
@@ -133,7 +135,17 @@ function Game({ user, cloud }: GameProps) {
     )
   }
   if (screen.name === 'dashboard') {
-    return <DashboardScreen records={records} keyStats={keyStats} signedIn={signedIn} onBack={goMenu} />
+    return (
+      <Suspense
+        fallback={
+          <main className="app-loading" role="status">
+            🐾 載入中…
+          </main>
+        }
+      >
+        <DashboardScreen records={records} keyStats={keyStats} signedIn={signedIn} onBack={goMenu} />
+      </Suspense>
+    )
   }
   return (
     <>

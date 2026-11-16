@@ -311,3 +311,15 @@
 - 這兩個值本來就是公開的（會被打包進前端），所以建議放 Variables（之後看得到內容、好核對）；放 Secrets 也可以。
 - 沒設定時 build 一樣會成功，線上版只有訪客模式、不顯示登入按鈕。
 - build 之後多跑一步 `npm run check:bundle`：掃描 `dist/`，發現秘密金鑰（`sb_secret_`、service_role 的 JWT、常見的 LLM API 金鑰格式）就讓部署失敗。
+
+## 11.5 動態載入（提前做）
+
+**D53. 沒有登入過的人不下載 supabase-js：用「localStorage 有沒有登入狀態、網址有沒有 `?code=`」判斷可不可能是登入狀態。**
+- 訪客第一次按「用 GitHub 登入」時才下載，所以按下去到跳轉之間會多等一次下載（約 56 kB gzip）。
+- 已經登入的人每次開啟都會下載，但和首頁的程式平行下載，不會擋住畫面。
+
+**D54. 儀表板畫面也改成點進去才下載（原本的需求只提到 Chart.js 和 supabase-js）。**
+- 理由：只搬那兩個套件是 302 kB，差一點沒到 300 kB 的目標。儀表板不是每次都會開，搬走最自然。
+- 第一次點進儀表板會閃一下「🐾 載入中…」（11 kB，通常看不到）。
+- 連帶的規定：`KeyboardHeatmap`、`PerformanceTrendChart`、`WeaknessList` 不再從 `components/index.ts` 匯出，
+  要用的地方直接從檔案匯入，否則會被打包回首頁。

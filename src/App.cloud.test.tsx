@@ -6,6 +6,13 @@ import { ALICE, BOB, fakeCloud } from './test/fakeCloud.ts'
 
 vi.mock('react-chartjs-2', () => ({ Line: () => <div data-testid="chart" /> }))
 
+/** 儀表板是動態載入的：點進去之後等它載入完 */
+const openDashboard = async () => {
+  fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+  await import('./screens/DashboardScreen.tsx')
+  await act(async () => {})
+}
+
 beforeEach(() => {
   localStorage.clear()
   window.history.replaceState(null, '', '/typing-paws-2/')
@@ -13,13 +20,13 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 describe('登入與登出', () => {
-  it('沒有設定雲端功能時只有訪客標示，沒有登入按鈕', () => {
+  it('沒有設定雲端功能時只有訪客標示，沒有登入按鈕', async () => {
     render(<App cloud={null} />)
     expect(screen.getByText('👤 訪客')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /登入/ })).not.toBeInTheDocument()
   })
 
-  it('訪客看得到登入按鈕，點了會跳出登入視窗，可以選擇先當訪客', () => {
+  it('訪客看得到登入按鈕，點了會跳出登入視窗，可以選擇先當訪客', async () => {
     const { cloud } = fakeCloud()
     render(<App cloud={cloud} />)
     expect(screen.getByText('👤 訪客')).toBeInTheDocument()
@@ -29,7 +36,7 @@ describe('登入與登出', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('按 GitHub 登入會跳轉到供應商，導回的網址是網站首頁', () => {
+  it('按 GitHub 登入會跳轉到供應商，導回的網址是網站首頁', async () => {
     const { cloud, auth } = fakeCloud()
     render(<App cloud={cloud} />)
     fireEvent.click(screen.getByRole('button', { name: '🔑 登入' }))
@@ -48,7 +55,7 @@ describe('登入與登出', () => {
     expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
   })
 
-  it('已登入時顯示名稱與登出按鈕；登出後回到訪客', () => {
+  it('已登入時顯示名稱與登出按鈕；登出後回到訪客', async () => {
     const { cloud } = fakeCloud(BOB)
     render(<App cloud={cloud} />)
     expect(screen.getByText('bob')).toBeInTheDocument()
@@ -59,7 +66,7 @@ describe('登入與登出', () => {
     expect(screen.queryByText('bob')).not.toBeInTheDocument()
   })
 
-  it('登入完成（從供應商導回來）後畫面換成登入者', () => {
+  it('登入完成（從供應商導回來）後畫面換成登入者', async () => {
     const { cloud, auth } = fakeCloud()
     render(<App cloud={cloud} />)
     act(() => auth.setUser(ALICE))
@@ -67,7 +74,7 @@ describe('登入與登出', () => {
     expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument()
   })
 
-  it('供應商導回來時帶著錯誤：顯示一次說明，並把網址清乾淨', () => {
+  it('供應商導回來時帶著錯誤：顯示一次說明，並把網址清乾淨', async () => {
     window.history.replaceState(null, '', '/typing-paws-2/?error=access_denied&error_description=denied')
     const { cloud } = fakeCloud()
     render(<App cloud={cloud} />)
@@ -75,7 +82,7 @@ describe('登入與登出', () => {
     expect(window.location.search).toBe('')
   })
 
-  it('登入狀態還沒回來時顯示載入中；等太久就先當訪客，之後回來了再切換', () => {
+  it('登入狀態還沒回來時顯示載入中；等太久就先當訪客，之後回來了再切換', async () => {
     vi.useFakeTimers()
     let emit: (user: typeof ALICE | null) => void = () => {}
     const slow: AuthService = {
@@ -98,14 +105,14 @@ describe('登入與登出', () => {
 describe('訪客模式與帳號各自的紀錄', () => {
   const guestHistory = [{ id: 'g1', playedAt: 1790000000000, mode: 'classic', difficulty: 'easy', win: true, wpm: 31, accuracy: 95, maxCombo: 12, score: 1500, damage: 290, durationMs: 60000, stage: 3 }]
 
-  it('訪客的畫面清楚標示是訪客模式、紀錄只存在這個瀏覽器', () => {
+  it('訪客的畫面清楚標示是訪客模式、紀錄只存在這個瀏覽器', async () => {
     const { cloud } = fakeCloud()
     render(<App cloud={cloud} />)
     expect(screen.getByText('👤 訪客')).toBeInTheDocument()
     expect(screen.getByText(/目前是訪客模式，紀錄只存在這個瀏覽器/)).toBeInTheDocument()
   })
 
-  it('訪客的紀錄不會因為登入就變成帳號的；登出後訪客的紀錄還在', () => {
+  it('訪客的紀錄不會因為登入就變成帳號的；登出後訪客的紀錄還在', async () => {
     localStorage.setItem('typingPaws2.history', JSON.stringify(guestHistory))
     const { cloud, auth } = fakeCloud()
     render(<App cloud={cloud} />)
@@ -117,7 +124,7 @@ describe('訪客模式與帳號各自的紀錄', () => {
     expect(screen.getByRole('table')).toHaveTextContent('31')
   })
 
-  it('登入後選的勇者記在帳號底下，不會改到訪客的選擇', () => {
+  it('登入後選的勇者記在帳號底下，不會改到訪客的選擇', async () => {
     const { cloud } = fakeCloud(ALICE)
     render(<App cloud={cloud} />)
     fireEvent.click(screen.getByRole('button', { name: /熊熊勇者/ }))
@@ -296,7 +303,7 @@ describe('登入後讀取雲端紀錄', () => {
     expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 2 次')
     expect(screen.getByRole('button', { name: /熊熊勇者/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('status')).toHaveTextContent('☁️ 已同步')
-    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    await openDashboard()
     expect(screen.getByText(/統計最近 2 場的表現/)).toHaveTextContent('資料會同步到你的帳號')
     expect(JSON.parse(localStorage.getItem(`typingPaws2.u.${ALICE.id}.keyStats`)!)).toHaveLength(3)
   })

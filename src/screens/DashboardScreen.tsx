@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, KeyboardHeatmap, PerformanceTrendChart, WeaknessList } from '../components/index.ts'
+import { Button, Card } from '../components/index.ts'
+// 只有儀表板用到的元件直接從檔案匯入，才會跟著儀表板一起動態載入，不會被打包進首頁
+import { KeyboardHeatmap } from '../components/KeyboardHeatmap.tsx'
+import { PerformanceTrendChart } from '../components/PerformanceTrendChart.tsx'
+import { WeaknessList } from '../components/WeaknessList.tsx'
 import {
   aggregateKeyStats,
   dashboardSummary,

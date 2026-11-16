@@ -1,20 +1,10 @@
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-  type ChartData,
-  type ChartOptions,
-  type Plugin,
-} from 'chart.js'
-import { Line } from 'react-chartjs-2'
+import { lazy, Suspense } from 'react'
+import type { ChartData, ChartOptions, Plugin } from 'chart.js'
 import type { WpmTrend } from '../game/index.ts'
 import styles from './WpmTrendChart.module.css'
 
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip)
+/** Chart.js 用到的時候才下載；外框有固定高度，載入前後版面不會跳動 */
+const Line = lazy(() => import('./ChartLine.tsx'))
 
 const INK = '#4a3550'
 const MINT = '#6fd6b0'
@@ -103,7 +93,9 @@ export function WpmTrendChart({ trend }: { trend: WpmTrend }) {
   }
   return (
     <div className={styles.chart}>
-      <Line data={data} options={options} plugins={[decorations]} role="img" aria-label="WPM 走勢" />
+      <Suspense fallback={null}>
+        <Line data={data} options={options} plugins={[decorations]} role="img" aria-label="WPM 走勢" />
+      </Suspense>
     </div>
   )
 }

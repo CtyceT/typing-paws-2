@@ -1,9 +1,10 @@
-import { CategoryScale, Chart as ChartJS, Filler, LinearScale, LineElement, PointElement, Tooltip, type ChartData, type ChartOptions } from 'chart.js'
-import { Line } from 'react-chartjs-2'
+import { lazy, Suspense } from 'react'
+import type { ChartData, ChartOptions } from 'chart.js'
 import type { PerformancePoint, PerformanceTrend } from '../game/index.ts'
 import styles from './PerformanceTrendChart.module.css'
 
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip)
+/** Chart.js 用到的時候才下載；外框有固定高度，載入前後版面不會跳動 */
+const Line = lazy(() => import('./ChartLine.tsx'))
 
 const INK = '#4a3550'
 const INK_SOFT = '#8a7590'
@@ -93,7 +94,9 @@ function Panel({ title, unit, points, pick, fill, min, max, looseMax = false }: 
     <div className={styles.panel}>
       <div className={styles.panelTitle}>{title}</div>
       <div className={styles.canvas}>
-        <Line data={data} options={options} role="img" aria-label={`${title} 趨勢`} />
+        <Suspense fallback={null}>
+          <Line data={data} options={options} role="img" aria-label={`${title} 趨勢`} />
+        </Suspense>
       </div>
     </div>
   )
