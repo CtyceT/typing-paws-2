@@ -323,3 +323,23 @@
 - 第一次點進儀表板會閃一下「🐾 載入中…」（11 kB，通常看不到）。
 - 連帶的規定：`KeyboardHeatmap`、`PerformanceTrendChart`、`WeaknessList` 不再從 `components/index.ts` 匯出，
   要用的地方直接從檔案匯入，否則會被打包回首頁。
+
+---
+
+# 階段 4：弱點特訓（LLM）
+
+## 4.1 LLM 供應商與模型
+
+**D55. 主力用 Google Gemini 的 `gemini-3.5-flash-lite`，備援用 Groq 的 `gpt-oss-120b`（2026-11-16 由專案負責人決定）。**
+- Gemini 免費額度大約 15 RPM、500 次／天，而且是「整個專案」共用，不是每把金鑰各算一份。
+  所以一定要有題庫快取（4.7）和每人每日上限（4.3），不能讓少數人把全部人的額度用完。
+- Groq 是 OpenAI 相容的 API；模型在 API 裡的完整代號是 `openai/gpt-oss-120b`。
+- 不使用 `gemini-2.5` 系列（已淘汰）。
+- 失敗時的順序：Gemini（429、逾時、輸出不合格）→ Groq → 兩邊都失敗才用內建字庫。遊戲不會因為 AI 失敗而卡住。
+
+**D56. 兩把金鑰只存在 Supabase Edge Function secrets：`GEMINI_API_KEY`、`GROQ_API_KEY`。**
+- 不寫進任何檔案、不進版控、不出現在前端。前端只呼叫 Edge Function。
+- 本機要測試 Edge Function 時，金鑰放在 `supabase/functions/.env`（已經被根目錄 `.gitignore` 的 `.env*` 擋掉），由專案負責人自己貼。
+
+**D57. 訪客不能使用 AI 功能，畫面顯示「登入後即可使用」。**
+- 理由：免費額度是整個專案共用的，沒有登入就沒辦法限制每個人的用量。

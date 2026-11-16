@@ -4,7 +4,7 @@
 每次只做一個項目；每項的「完成條件」就是手動驗證的依據。完成後把 `- [ ]` 改成 `- [x]`。
 
 **待決定**（做到該區塊前要先定案）
-- LLM 用哪一家、哪個模型（弱點特訓開工前）
+- ~~LLM 用哪一家、哪個模型~~ → 已決定：主力 Google Gemini `gemini-3.5-flash-lite`，備援 Groq `gpt-oss-120b`（見 DECISIONS D55～D57）
 - text-to-image 用哪個模型或服務（AI 生成怪物開工前）
 
 **刻意與 1.0 版不同的地方**（1.19 驗收時對照）
@@ -117,7 +117,7 @@
 
 ## 必做：弱點特訓（LLM）
 
-- [ ] 4.1 決定 LLM 供應商與模型，金鑰存入 Supabase secrets
+- [x] 4.1 決定 LLM 供應商與模型，金鑰存入 Supabase secrets
   完成條件：ROADMAP 的「待決定」更新，金鑰只存在 Supabase secrets。
 - [ ] 4.2 Edge Function 骨架：驗證登入身分、CORS
   完成條件：未登入呼叫得到 401，登入後呼叫得到固定的測試回應。
