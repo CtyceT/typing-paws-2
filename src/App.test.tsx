@@ -145,6 +145,34 @@ describe('打完一場的紀錄', () => {
     expect(rows.some((r) => r.kind === 'bigram')).toBe(true)
   })
 
+  it('結算畫面顯示這場最常打錯的鍵，並可以連到儀表板', () => {
+    render(<App />)
+    fireEvent.click(diffCard('簡單'))
+    pressEnter()
+    advance(2450)
+    // 第一個字的第一個字元先打錯兩次（按一個一定不對的鍵）
+    const target = currentWord()[0]
+    fireEvent.keyDown(document, { key: '~' })
+    fireEvent.keyDown(document, { key: '~' })
+    advance(3000)
+    for (const hp of [60, 90, 140]) {
+      while (!screen.queryByText(`0/${hp}`)) typeWord()
+      advance(900)
+      if (hp !== 140) {
+        pressEnter()
+        advance(2450)
+      }
+    }
+    advance(300)
+    const items = within(screen.getByRole('list', { name: '這場最常打錯的鍵' })).getAllByRole('listitem')
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent(new RegExp(`^${target.toUpperCase()}錯 2 次／\\d+ 次$`))
+
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
+    expect(screen.getByText('場數').previousElementSibling).toHaveTextContent('1')
+  })
+
   it('被打倒也會記錄，但不算通關；0 分不算新紀錄', () => {
     render(<App />)
     loseEasy()

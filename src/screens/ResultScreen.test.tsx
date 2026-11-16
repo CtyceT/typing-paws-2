@@ -61,4 +61,28 @@ describe('結算畫面', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
     expect(onMenu).toHaveBeenCalledTimes(1)
   })
+
+  it('沒有給本場弱點時不顯示那一區，也沒有儀表板按鈕', () => {
+    render(<ResultScreen hero="cat" result={result()} onRetry={() => {}} onMenu={() => {}} />)
+    expect(screen.queryByText(/這場最常打錯的鍵/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /數據儀表板/ })).not.toBeInTheDocument()
+  })
+
+  it('顯示這場最常打錯的鍵，可以連到儀表板', () => {
+    const onDashboard = vi.fn()
+    const misses = [
+      { key: 'e', label: 'E', errors: 6, attempts: 30 },
+      { key: ' ', label: '空白', errors: 1, attempts: 10 },
+    ]
+    render(<ResultScreen hero="cat" result={result()} misses={misses} onDashboard={onDashboard} onRetry={() => {}} onMenu={() => {}} />)
+    const items = screen.getAllByRole('listitem')
+    expect(items.map((li) => li.textContent)).toEqual(['E錯 6 次／30 次', '空白錯 1 次／10 次'])
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(onDashboard).toHaveBeenCalledOnce()
+  })
+
+  it('這場沒有打錯時顯示鼓勵的文字', () => {
+    render(<ResultScreen hero="cat" result={result()} misses={[]} onRetry={() => {}} onMenu={() => {}} />)
+    expect(screen.getByText('這場一個鍵都沒打錯 🎉')).toBeInTheDocument()
+  })
 })

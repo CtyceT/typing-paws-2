@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aggregateKeyStats, findWeaknesses, overallAvgMs, weaknessDetail, weaknessEmptyText, weaknessKindLabel, type KeyAggregate, type Weakness } from './analysis.ts'
+import { aggregateKeyStats, findWeaknesses, overallAvgMs, sessionMisses, weaknessDetail, weaknessEmptyText, weaknessKindLabel, type KeyAggregate, type Weakness } from './analysis.ts'
 import { summarizeSession, type KeyEvent, type KeyStatKind, type KeyStatRow } from './keystats.ts'
 
 const row = (sessionId: string, kind: KeyStatKind, key: string, attempts: number, errors: number, timedCount: number, totalMs: number): KeyStatRow => ({
@@ -161,5 +161,29 @@ describe('弱點排行榜的顯示文字', () => {
     expect(weaknessEmptyText({ status: 'insufficient', items: [], totalAttempts: 37 })).toBe('資料還不夠 🐾\n目前統計了 37 次按鍵，累積到 100 次就會開始分析弱點')
     expect(weaknessEmptyText({ status: 'good', items: [], totalAttempts: 500 })).toMatch(/沒有明顯的弱點/)
     expect(weaknessEmptyText({ status: 'weak', items: [weak({})], totalAttempts: 500 })).toBeNull()
+  })
+})
+
+describe('sessionMisses', () => {
+  it('沒有打錯就是空的', () => {
+    expect(sessionMisses([])).toEqual([])
+    expect(sessionMisses([row('s1', 'char', 'a', 10, 0, 9, 1800)])).toEqual([])
+  })
+
+  it('列出錯最多次的 3 個鍵；次數相同時錯誤率高的在前；不看字母組合', () => {
+    const rows = [
+      row('s1', 'char', 'a', 20, 2, 0, 0),
+      row('s1', 'char', 'e', 30, 6, 0, 0),
+      row('s1', 'char', 'q', 4, 2, 0, 0),
+      row('s1', 'char', ' ', 10, 1, 0, 0),
+      row('s1', 'char', 't', 10, 0, 0, 0),
+      row('s1', 'bigram', 'th', 9, 9, 0, 0),
+    ]
+    expect(sessionMisses(rows)).toEqual([
+      { key: 'e', label: 'E', errors: 6, attempts: 30 },
+      { key: 'q', label: 'Q', errors: 2, attempts: 4 },
+      { key: 'a', label: 'A', errors: 2, attempts: 20 },
+    ])
+    expect(sessionMisses(rows, 4)[3]).toEqual({ key: ' ', label: '空白', errors: 1, attempts: 10 })
   })
 })

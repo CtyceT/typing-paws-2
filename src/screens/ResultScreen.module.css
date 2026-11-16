@@ -84,6 +84,58 @@
   max-width: 520px;
 }
 
+/* 本場弱點摘要（2.0 新增，1.0 沒有） */
+.misses {
+  margin: 0 auto 18px;
+  max-width: 520px;
+}
+
+.missesTitle {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.missList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.miss {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.miss small {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.keycap {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 6px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: #ffd9e3;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.noMiss {
+  color: var(--ink-soft);
+}
+
 .buttons {
   display: flex;
   gap: 12px;

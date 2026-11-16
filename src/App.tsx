@@ -5,6 +5,7 @@ import {
   HEROES,
   mergeRecords,
   newRecordKind,
+  sessionMisses,
   summarizeSession,
   type BattleResult,
   type BattleState,
@@ -14,6 +15,7 @@ import {
   type LegacyImport,
   type NewRecordKind,
   type Records,
+  type SessionMiss,
 } from './game/index.ts'
 import { MessageDialog } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
@@ -30,7 +32,7 @@ type Screen =
   | { name: 'menu' }
   | { name: 'dashboard' }
   | { name: 'battle'; difficulty: Difficulty; run: number }
-  | { name: 'result'; result: BattleResult; newRecord: NewRecordKind; run: number }
+  | { name: 'result'; result: BattleResult; newRecord: NewRecordKind; misses: SessionMiss[]; run: number }
 
 /** 匯入詢問視窗的內文：列出找到了什麼 */
 function legacySummary(legacy: LegacyImport): string {
@@ -74,14 +76,25 @@ function App() {
       const next = addResult(records, result, { id, playedAt })
       setRecords(next)
       saveRecords(next)
-      setKeyStats(keyStatsStore.saveSession(summarizeSession(state.keyLog, { sessionId: id, playedAt })))
-      setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), run: screen.run })
+      const sessionStats = summarizeSession(state.keyLog, { sessionId: id, playedAt })
+      setKeyStats(keyStatsStore.saveSession(sessionStats))
+      setScreen({ name: 'result', result, newRecord: newRecordKind(records.best[result.difficulty], result), misses: sessionMisses(sessionStats), run: screen.run })
     }
     return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} onExit={goMenu} onFinish={finish} />
   }
   if (screen.name === 'result') {
     const retry = () => setScreen({ name: 'battle', difficulty: screen.result.difficulty, run: screen.run + 1 })
-    return <ResultScreen hero={hero} result={screen.result} newRecord={screen.newRecord} onRetry={retry} onMenu={goMenu} />
+    return (
+      <ResultScreen
+        hero={hero}
+        result={screen.result}
+        newRecord={screen.newRecord}
+        misses={screen.misses}
+        onDashboard={() => setScreen({ name: 'dashboard' })}
+        onRetry={retry}
+        onMenu={goMenu}
+      />
+    )
   }
   if (screen.name === 'dashboard') {
     return <DashboardScreen records={records} keyStats={keyStats} onBack={goMenu} />

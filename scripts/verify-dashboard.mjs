@@ -83,7 +83,15 @@ check('空狀態：可以回到主選單', await page.getByText('選擇你的勇
 
 // ---- 2. 實際打兩場 ----
 const first = await playEasy({ pauseOnce: true })
+const missText = await page.getByRole('list', { name: '這場最常打錯的鍵' }).textContent()
+check(`結算畫面：這場最常打錯的鍵是 ${WEAK_KEY}`, missText === `${WEAK_KEY.toUpperCase()}錯 ${first.misses} 次／${first.misses * 2} 次`, missText)
 await shot('02-result')
+await page.setViewportSize({ width: 390, height: 800 })
+await shot('02-result-mobile')
+await page.setViewportSize({ width: 960, height: 800 })
+await page.getByRole('button', { name: /數據儀表板/ }).click()
+check('結算畫面：可以連到儀表板', await page.getByRole('heading', { name: /數據儀表板/ }).isVisible())
+await page.getByRole('button', { name: /回到選單/ }).click()
 const history1 = await stored('typingPaws2.history')
 const rows1 = await stored('typingPaws2.keyStats')
 check('打完一場：多一筆戰績', history1?.length === 1)
@@ -97,7 +105,6 @@ check(`按鍵統計：錯誤都記在 ${WEAK_KEY} 上`, weak1?.errors === first.
 const maxAvg = Math.max(...chars1.filter((r) => r.timedCount > 0).map((r) => r.totalMs / r.timedCount))
 check('暫停的 3 秒沒有算進間隔', maxAvg < 1000, `最大平均間隔 ${Math.round(maxAvg)} ms`)
 
-await page.getByRole('button', { name: /回到選單/ }).click()
 await playEasy()
 await page.getByRole('button', { name: /回到選單/ }).click()
 const rows2 = await stored('typingPaws2.keyStats')

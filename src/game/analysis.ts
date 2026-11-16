@@ -168,3 +168,26 @@ export function weaknessEmptyText(report: WeaknessReport, options: Partial<Weakn
   if (report.status === 'good') return '🎉 目前沒有明顯的弱點！\n每個鍵的錯誤率和速度都在正常範圍，繼續保持'
   return null
 }
+
+// ---- 結算畫面的本場弱點摘要（ROADMAP 2.9） ----
+
+/** 這一場打錯的某個鍵 */
+export interface SessionMiss {
+  key: string
+  /** 顯示用：字母大寫，空白鍵顯示「空白」 */
+  label: string
+  errors: number
+  attempts: number
+}
+
+/** 結算畫面最多列出幾個鍵 */
+export const SESSION_MISS_LIMIT = 3
+
+/** 從一場的統計列找出最常打錯的幾個鍵：先比錯誤次數，再比錯誤率；沒有打錯就是空陣列 */
+export function sessionMisses(rows: readonly KeyStatRow[], limit = SESSION_MISS_LIMIT): SessionMiss[] {
+  return rows
+    .filter((r) => r.kind === 'char' && r.errors > 0)
+    .sort((a, b) => b.errors - a.errors || b.errors / b.attempts - a.errors / a.attempts || (a.key < b.key ? -1 : 1))
+    .slice(0, limit)
+    .map((r) => ({ key: r.key, label: r.key === ' ' ? '空白' : r.key.toUpperCase(), errors: r.errors, attempts: r.attempts }))
+}
