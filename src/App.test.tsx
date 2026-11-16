@@ -173,3 +173,56 @@ describe('打完一場的紀錄', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
+
+describe('匯入 1.0 舊紀錄', () => {
+  const LEGACY_KEY = 'typingPaws.v1'
+  const LEGACY_RAW = JSON.stringify({
+    avatar: 'panda',
+    best: { easy: { score: 3210, wpm: 45, combo: 31, acc: 96.5, clears: 2 } },
+    history: [
+      { t: 1790000000000, diff: 'easy', win: true, wpm: 45, acc: 96.5, combo: 31, score: 3210, stage: 3 },
+      { t: 1790000100000, diff: 'hard', win: false, wpm: 30, acc: 80, combo: 9, score: 400, stage: 1 },
+    ],
+  })
+  const dialog = () => screen.queryByRole('dialog', { name: '發現 1.0 版的舊紀錄' })
+
+  it('沒有舊紀錄時不會詢問', () => {
+    render(<App />)
+    expect(dialog()).not.toBeInTheDocument()
+    expect(localStorage.getItem('typingPaws2.legacyImport')).toBeNull()
+  })
+
+  it('選擇匯入後看得到舊的勇者與戰績，之後不再詢問，舊紀錄沒有被改動', () => {
+    localStorage.setItem(LEGACY_KEY, LEGACY_RAW)
+    const first = render(<App />)
+    expect(dialog()).toHaveTextContent('找到 勇者「熊熊」、2 場戰績、最佳紀錄')
+    fireEvent.click(screen.getByRole('button', { name: /匯入/ }))
+    expect(dialog()).not.toBeInTheDocument()
+    expect(heroCard('熊熊')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('🏅 最高分 3210 ・ 最快 45 WPM')
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 2 次')
+    expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
+    expect(localStorage.getItem(LEGACY_KEY)).toBe(LEGACY_RAW)
+
+    first.unmount()
+    render(<App />)
+    expect(dialog()).not.toBeInTheDocument()
+    expect(heroCard('熊熊')).toHaveAttribute('aria-pressed', 'true')
+    expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
+  })
+
+  it('選擇略過就不匯入，之後也不再詢問，舊紀錄沒有被改動', () => {
+    localStorage.setItem(LEGACY_KEY, LEGACY_RAW)
+    const first = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: '略過' }))
+    expect(dialog()).not.toBeInTheDocument()
+    expect(heroCard('喵喵')).toHaveAttribute('aria-pressed', 'true')
+    expect(localStorage.getItem('typingPaws2.history')).toBeNull()
+    expect(localStorage.getItem('typingPaws2.legacyImport')).toBe('skipped')
+    expect(localStorage.getItem(LEGACY_KEY)).toBe(LEGACY_RAW)
+
+    first.unmount()
+    render(<App />)
+    expect(dialog()).not.toBeInTheDocument()
+  })
+})
