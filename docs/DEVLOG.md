@@ -12,7 +12,8 @@
 
 **遇到的問題與解法**
 - **github-pages 環境擋住 main 分支**：workflow 的 build 過了，但 deploy 這一步被 `github-pages` 環境的部署分支限制拒絕。
-  解法：到 repo 的 Settings → Environments → github-pages，把 `main` 加進允許部署的分支。
+  原因是這個環境的允許部署分支裡只有 `master`，沒有 `main`。
+  解法：用 `gh` 把 `main` 加進 `github-pages` 環境的允許部署分支，重跑 workflow 後部署成功，之後再把用不到的 `master` 移除。
 - **Actions 的 Node 版本警告**：把 workflow 用到的官方 action 升到跑在 Node 24 的版本。
 
 ## 階段 1：把作業五搬進 React（2026-11-15 ～ 11-16）
