@@ -10,6 +10,7 @@ const PATTERNS = [
   ['Anthropic API key', /sk-ant-[A-Za-z0-9_-]{20,}/],
   ['OpenAI API key', /sk-(proj-)?[A-Za-z0-9]{32,}/],
   ['Google API key', /AIza[0-9A-Za-z_-]{35}/],
+  ['Groq API key', /gsk_[A-Za-z0-9]{20,}/],
   ['GitHub token', /gh[pousr]_[A-Za-z0-9]{36,}/],
 ]
 
