@@ -6,6 +6,7 @@ import { createSupabaseAuth } from './auth.ts'
 import type { CloudConfig } from './config.ts'
 import { createSupabaseData } from './data.ts'
 import type { Cloud } from './index.ts'
+import { createSupabaseTraining } from './training.ts'
 
 /**
  * 建立 Supabase 連線。前端只用 publishable key；資料靠每張表的 Row Level Security 保護。
@@ -21,5 +22,5 @@ export function createSupabaseCloud(config: CloudConfig): Cloud {
       detectSessionInUrl: true,
     },
   })
-  return { auth: createSupabaseAuth(client), data: (userId) => createSupabaseData(client, userId) }
+  return { auth: createSupabaseAuth(client), data: (userId) => createSupabaseData(client, userId), training: createSupabaseTraining(client) }
 }

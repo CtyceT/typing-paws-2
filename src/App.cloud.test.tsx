@@ -93,7 +93,7 @@ describe('登入與登出', () => {
       signIn: async () => {},
       signOut: async () => {},
     }
-    render(<App cloud={{ auth: slow, data: () => fakeCloud().db.data('x') }} />)
+    render(<App cloud={{ auth: slow, data: () => fakeCloud().db.data('x'), training: fakeCloud().training.api }} />)
     expect(screen.getByRole('status')).toHaveTextContent('載入中')
     act(() => void vi.advanceTimersByTime(AUTH_WAIT_MS))
     expect(screen.getByText('👤 訪客')).toBeInTheDocument()

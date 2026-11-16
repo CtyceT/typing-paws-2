@@ -104,6 +104,44 @@ export interface WeaknessReport {
   totalAttempts: number
 }
 
+/** 一個樣本數足夠的鍵，加上它的分數；weak 表示有沒有達到弱點的門檻 */
+export interface RankedKey extends Weakness {
+  weak: boolean
+}
+
+/**
+ * 把樣本數足夠的鍵（空白除外）依分數由弱到強排序，不管有沒有達到弱點的門檻。
+ * 弱點排行榜只取 weak 的；弱點特訓在「沒有明顯弱點」時用它找出相對最弱的鍵。
+ */
+export function rankKeys(aggregates: readonly KeyAggregate[], options: Partial<WeaknessOptions> = {}): RankedKey[] {
+  const o = { ...WEAKNESS_DEFAULTS, ...options }
+  const baseline = { char: overallAvgMs(aggregates, 'char'), bigram: overallAvgMs(aggregates, 'bigram') }
+  const items: RankedKey[] = []
+  for (const a of aggregates) {
+    if (a.key === ' ') continue
+    if (a.attempts < (a.kind === 'char' ? o.minCharAttempts : o.minBigramAttempts)) continue
+    const base = baseline[a.kind]
+    const ratio = a.avgMs !== null && base !== null && base > 0 && a.timedCount >= o.minTimedCount ? a.avgMs / base : 1
+    const manyErrors = a.errorRate >= o.errorRateThreshold
+    const slow = ratio >= o.slowRatio
+    const slowness = Math.max(0, ratio - 1)
+    items.push({
+      ...a,
+      reason: manyErrors && slow ? 'both' : slow && !manyErrors ? 'slow' : 'errors',
+      slowness,
+      score: a.errorRate + o.slowWeight * slowness,
+      weak: manyErrors || slow,
+    })
+  }
+  return items.sort((x, y) => y.score - x.score || y.attempts - x.attempts || (x.key < y.key ? -1 : 1))
+}
+
+function toWeakness(k: RankedKey): Weakness {
+  const w: Partial<RankedKey> = { ...k }
+  delete w.weak
+  return w as Weakness
+}
+
 /**
  * 從加總後的統計選出最弱的幾個字母或字母組合。
  * 弱點的條件（符合其一）：錯誤率 ≥ errorRateThreshold，或平均反應時間 ≥ 同類整體平均 × slowRatio。
@@ -114,26 +152,8 @@ export function findWeaknesses(aggregates: readonly KeyAggregate[], options: Par
   const totalAttempts = aggregates.reduce((n, a) => n + (a.kind === 'char' ? a.attempts : 0), 0)
   if (totalAttempts < o.minTotalAttempts) return { status: 'insufficient', items: [], totalAttempts }
 
-  const baseline = { char: overallAvgMs(aggregates, 'char'), bigram: overallAvgMs(aggregates, 'bigram') }
-  const items: Weakness[] = []
-  for (const a of aggregates) {
-    if (a.key === ' ') continue
-    if (a.attempts < (a.kind === 'char' ? o.minCharAttempts : o.minBigramAttempts)) continue
-    const base = baseline[a.kind]
-    const ratio = a.avgMs !== null && base !== null && base > 0 && a.timedCount >= o.minTimedCount ? a.avgMs / base : 1
-    const manyErrors = a.errorRate >= o.errorRateThreshold
-    const slow = ratio >= o.slowRatio
-    if (!manyErrors && !slow) continue
-    const slowness = Math.max(0, ratio - 1)
-    items.push({
-      ...a,
-      reason: manyErrors && slow ? 'both' : manyErrors ? 'errors' : 'slow',
-      slowness,
-      score: a.errorRate + o.slowWeight * slowness,
-    })
-  }
-  items.sort((x, y) => y.score - x.score || y.attempts - x.attempts || (x.key < y.key ? -1 : 1))
-  return { status: items.length > 0 ? 'weak' : 'good', items: items.slice(0, o.limit), totalAttempts }
+  const items = rankKeys(aggregates, o).filter((k) => k.weak)
+  return { status: items.length > 0 ? 'weak' : 'good', items: items.slice(0, o.limit).map(toWeakness), totalAttempts }
 }
 
 // ---- 弱點排行榜的顯示文字（ROADMAP 2.8） ----

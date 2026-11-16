@@ -77,5 +77,8 @@ export function lazyCloud(load: () => Promise<Cloud>, maybeSignedIn: boolean): C
       },
     },
     data,
+    training: {
+      requestWords: async (...args) => (await real()).training.requestWords(...args),
+    },
   }
 }

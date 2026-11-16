@@ -1,5 +1,5 @@
-import type { AuthProvider, AuthService, AuthUser, Cloud, CloudData } from '../cloud/index.ts'
-import { DIFFICULTY_ORDER, HISTORY_LIMIT, type BestRecords, type GameRecord, type HeroId, type KeyStatRow } from '../game/index.ts'
+import { TrainingApiError, type AuthProvider, type AuthService, type AuthUser, type Cloud, type CloudData, type TrainingApi, type TrainingApiErrorCode } from '../cloud/index.ts'
+import { DIFFICULTY_ORDER, HISTORY_LIMIT, type BestRecords, type GameRecord, type HeroId, type KeyStatRow, type TrainingRequest } from '../game/index.ts'
 
 export const ALICE: AuthUser = { id: 'user-alice', name: 'alice', avatarUrl: null }
 export const BOB: AuthUser = { id: 'user-bob', name: 'bob', avatarUrl: 'https://avatars.example/bob.png' }
@@ -114,9 +114,34 @@ export function fakeDatabase() {
   return db
 }
 
+/**
+ * 假的 AI 出題：預設回傳 items 裡的題目；fail 設成錯誤代號就會失敗，hang 設成 true 就永遠不回應。
+ * requests 記下每一次請求的內容。
+ */
+export function fakeTraining(items: readonly string[] = []) {
+  const control = {
+    items: [...items] as unknown[],
+    source: 'gemini',
+    remaining: 9,
+    fail: null as TrainingApiErrorCode | null,
+    hang: false,
+    requests: [] as TrainingRequest[],
+  }
+  const api: TrainingApi = {
+    async requestWords(request) {
+      control.requests.push(request)
+      if (control.hang) return new Promise(() => {})
+      if (control.fail) throw new TrainingApiError(control.fail)
+      return { items: control.items, source: control.source, limit: 10, remaining: control.remaining }
+    },
+  }
+  return Object.assign(control, { api })
+}
+
 export function fakeCloud(initial: AuthUser | null = null) {
   const auth = fakeAuth(initial)
   const db = fakeDatabase()
-  const cloud: Cloud = { auth: auth.service, data: (userId) => db.data(userId) }
-  return { cloud, auth, db }
+  const training = fakeTraining()
+  const cloud: Cloud = { auth: auth.service, data: (userId) => db.data(userId), training: training.api }
+  return { cloud, auth, db, training }
 }
