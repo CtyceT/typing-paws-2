@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import type { KeyStatRow } from './keystats.ts'
 import type { GameRecord, Records } from './records.ts'
-import { chunk, pendingUpload, resultSyncStatus, syncStatus, toBestRecordRows, toGameRecordRow, toIsoTime, toKeyStatDbRow } from './sync.ts'
+import {
+  chunk,
+  fromBestRecordRows,
+  fromGameRecordRow,
+  fromKeyStatDbRows,
+  mergeBestSameAccount,
+  mergeCloud,
+  pendingUpload,
+  resultSyncStatus,
+  syncStatus,
+  toBestRecordRows,
+  toCloudSnapshot,
+  toGameRecordRow,
+  toIsoTime,
+  toKeyStatDbRow,
+} from './sync.ts'
 
 const record = (id: string, playedAt: number, extra: Partial<GameRecord> = {}): GameRecord => ({
   id,
@@ -128,5 +143,86 @@ describe('同步狀態的文字', () => {
     expect(resultSyncStatus('syncing', true).tone).toBe('busy')
     expect(resultSyncStatus('failed', true).text).toMatch(/尚未同步到雲端.*自動補傳/)
     expect(resultSyncStatus('syncing', false).tone).toBe('ok')
+  })
+})
+
+describe('資料表的列 → 本機資料', () => {
+  it('場次來回轉換後內容相同（毫秒已經是整數時）', () => {
+    const original = record('a', 1790000000123, { durationMs: 61235 })
+    expect(fromGameRecordRow(toGameRecordRow(original, 'u1'))).toEqual(original)
+  })
+
+  it('numeric 欄位以字串回來時也讀得懂', () => {
+    const row = { ...toGameRecordRow(record('a', 1790000000000), 'u1'), accuracy: '96.5' }
+    expect(fromGameRecordRow(row)?.accuracy).toBe(96.5)
+  })
+
+  it('壞掉的列回傳 null', () => {
+    expect(fromGameRecordRow(null)).toBeNull()
+    expect(fromGameRecordRow({ ...toGameRecordRow(record('a', 1), 'u1'), difficulty: 'nightmare' })).toBeNull()
+    expect(fromGameRecordRow({ ...toGameRecordRow(record('a', 1), 'u1'), played_at: 'not a date' })).toBeNull()
+  })
+
+  it('最佳紀錄與按鍵統計來回轉換後內容相同，壞掉的列被略過', () => {
+    const best = { easy: { score: 3000, wpm: 42, maxCombo: 30, accuracy: 96.5, clears: 2 } }
+    expect(fromBestRecordRows([...toBestRecordRows(best, 'u1'), { difficulty: 'weird', score: 1 }, 'x'])).toEqual(best)
+    expect(fromBestRecordRows(null)).toEqual({})
+    const rows = [stat('a'), stat('a', 't')]
+    expect(fromKeyStatDbRows([...rows.map((r) => toKeyStatDbRow(r, 'u1')), { id: 'bad' }, 7])).toEqual(rows)
+  })
+
+  it('toCloudSnapshot：場次由舊到新排序，勇者不合法時是 null', () => {
+    const snapshot = toCloudSnapshot({
+      best: [],
+      history: [toGameRecordRow(record('b', 2000), 'u1'), toGameRecordRow(record('a', 1000), 'u1'), { junk: true }],
+      keyStats: null,
+      hero: 'dragon',
+    })
+    expect(snapshot.history.map((r) => r.id)).toEqual(['a', 'b'])
+    expect(snapshot.keyStats).toEqual([])
+    expect(snapshot.hero).toBeNull()
+    expect(toCloudSnapshot({ best: [], history: [], keyStats: [], hero: 'panda' }).hero).toBe('panda')
+  })
+})
+
+describe('本機和雲端合併', () => {
+  const best = (score: number, clears: number) => ({ score, wpm: 40, maxCombo: 20, accuracy: 95, clears })
+  const empty = { best: {}, history: [], keyStats: [], hero: null }
+
+  it('同一個帳號的最佳紀錄：每一項取較好的，通關次數取較大值而不是相加', () => {
+    expect(mergeBestSameAccount({ easy: best(3000, 2) }, { easy: { ...best(2000, 5), wpm: 55 }, hard: best(10, 0) })).toEqual({
+      easy: { score: 3000, wpm: 55, maxCombo: 20, accuracy: 95, clears: 5 },
+      hard: best(10, 0),
+    })
+  })
+
+  it('新裝置（本機是空的）：直接得到雲端的內容', () => {
+    const cloud = { best: { easy: best(3000, 2) }, history: [record('a', 1), record('b', 2)], keyStats: [stat('a'), stat('b')], hero: null }
+    const merged = mergeCloud({ records: { best: {}, history: [] }, keyStats: [], pending: [], bestDirty: false }, cloud)
+    expect(merged.records).toEqual({ best: cloud.best, history: cloud.history })
+    expect(merged.keyStats).toEqual(cloud.keyStats)
+  })
+
+  it('還沒上傳的場次和它的統計會留著，並依時間排在一起', () => {
+    const merged = mergeCloud(
+      { records: { best: { easy: best(5000, 3) }, history: [record('a', 1), record('new', 9)] }, keyStats: [stat('a'), stat('new')], pending: ['new'], bestDirty: true },
+      { best: { easy: best(3000, 2) }, history: [record('a', 1), record('other-device', 5)], keyStats: [stat('a'), stat('other-device')], hero: null },
+    )
+    expect(merged.records.history.map((r) => r.id)).toEqual(['a', 'other-device', 'new'])
+    expect(merged.keyStats.map((k) => k.sessionId).sort()).toEqual(['a', 'new', 'other-device'])
+    expect(merged.records.best.easy).toMatchObject({ score: 5000, clears: 3 })
+  })
+
+  it('別台裝置清除了紀錄：本機已上傳過的場次、統計和最佳紀錄也跟著清掉', () => {
+    const merged = mergeCloud({ records: { best: { easy: best(3000, 2) }, history: [record('a', 1)] }, keyStats: [stat('a')], pending: [], bestDirty: false }, empty)
+    expect(merged).toEqual({ records: { best: {}, history: [] }, keyStats: [] })
+  })
+
+  it('最多保留最近 30 場', () => {
+    const cloud = { ...empty, history: Array.from({ length: 30 }, (_, i) => record(`c${i}`, 100 + i)) }
+    const merged = mergeCloud({ records: { best: {}, history: [record('new', 999)] }, keyStats: [], pending: ['new'], bestDirty: false }, cloud)
+    expect(merged.records.history).toHaveLength(30)
+    expect(merged.records.history.at(-1)?.id).toBe('new')
+    expect(merged.records.history[0].id).toBe('c1')
   })
 })

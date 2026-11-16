@@ -270,3 +270,79 @@ describe('登入後的雲端同步', () => {
     expect(diffCard('簡單')).toHaveTextContent('還沒有紀錄')
   })
 })
+
+describe('登入後讀取雲端紀錄', () => {
+  const settle = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))))
+  const cloudRecord = (id: string, playedAt: number, wpm: number) =>
+    ({ id, playedAt, mode: 'classic', difficulty: 'easy', win: true, wpm, accuracy: 95, maxCombo: 12, score: 1500, damage: 290, durationMs: 60000, stage: 3 }) as const
+  const cloudStat = (sessionId: string, key: string) =>
+    ({ id: `${sessionId}:char:${key}`, sessionId, playedAt: 1790000000000, kind: 'char', key, attempts: 60, errors: 12, timedCount: 40, totalMs: 9000 }) as const
+  const seed = (db: ReturnType<typeof fakeCloud>['db']) => {
+    const account = db.account(ALICE.id)
+    account.records.set('c1', cloudRecord('c1', 1790000000000, 33))
+    account.records.set('c2', cloudRecord('c2', 1790000100000, 47))
+    for (const k of [cloudStat('c1', 'e'), cloudStat('c2', 'e'), cloudStat('c2', 't')]) account.keyStats.set(k.id, k)
+    account.best = { easy: { score: 1500, wpm: 47, maxCombo: 12, accuracy: 95, clears: 2 } }
+    account.hero = 'panda'
+  }
+
+  it('換一個瀏覽器登入：戰績、最佳紀錄、勇者和儀表板都和雲端相同', async () => {
+    const { cloud, db } = fakeCloud(ALICE)
+    seed(db)
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(screen.getByRole('table')).toHaveTextContent('47')
+    expect(screen.getByRole('table')).toHaveTextContent('33')
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 2 次')
+    expect(screen.getByRole('button', { name: /熊熊勇者/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('☁️ 已同步')
+    fireEvent.click(screen.getByRole('button', { name: /數據儀表板/ }))
+    expect(screen.getByText(/統計最近 2 場的表現/)).toHaveTextContent('資料會同步到你的帳號')
+    expect(JSON.parse(localStorage.getItem(`typingPaws2.u.${ALICE.id}.keyStats`)!)).toHaveLength(3)
+  })
+
+  it('讀回來的資料存在本機：之後斷網重新整理也看得到', async () => {
+    const { cloud, db } = fakeCloud(ALICE)
+    seed(db)
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    first.unmount()
+    db.offline = true
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(screen.getByRole('table')).toHaveTextContent('47')
+    expect(screen.getByRole('status')).toHaveTextContent('⚠️ 連不上雲端')
+  })
+
+  it('別台裝置清除了紀錄：這台下次同步後也跟著清空', async () => {
+    const { cloud, db } = fakeCloud(ALICE)
+    seed(db)
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    first.unmount()
+    await db.data(ALICE.id).clear()
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('還沒有紀錄')
+  })
+
+  it('帳號還沒存過勇者時，把這個瀏覽器選的傳上去', async () => {
+    localStorage.setItem('typingPaws2.hero', 'shiba')
+    const { cloud, db } = fakeCloud(ALICE)
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(db.account(ALICE.id).hero).toBe('shiba')
+  })
+
+  it('不同帳號讀到各自的資料', async () => {
+    const { cloud, db, auth } = fakeCloud(ALICE)
+    seed(db)
+    render(<App cloud={cloud} />)
+    await settle()
+    act(() => auth.setUser(BOB))
+    await settle()
+    expect(screen.getByText('bob')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+})

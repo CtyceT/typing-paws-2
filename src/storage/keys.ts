@@ -25,7 +25,7 @@ export const STORAGE_KEYS = {
 export type StorageScope = string | null
 
 /** 各自一份的資料：勇者、最佳紀錄、歷史戰績、按鍵統計；pending 之後的只有登入帳號才有 */
-export type ScopedName = 'hero' | 'best' | 'history' | 'keyStats' | 'pending' | 'heroDirty' | 'guestSkip'
+export type ScopedName = 'hero' | 'best' | 'history' | 'keyStats' | 'pending' | 'heroDirty' | 'bestDirty' | 'guestSkip'
 
 /** 某個身分的 localStorage 鍵。訪客是 `typingPaws2.<名稱>`（和階段 2 以前相同），帳號是 `typingPaws2.u.<帳號 id>.<名稱>` */
 export function scopedKey(name: ScopedName, scope: StorageScope = null): string {

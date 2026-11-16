@@ -1,5 +1,5 @@
 import type { AuthProvider, AuthService, AuthUser, Cloud, CloudData } from '../cloud/index.ts'
-import { DIFFICULTY_ORDER, type BestRecords, type GameRecord, type HeroId, type KeyStatRow } from '../game/index.ts'
+import { DIFFICULTY_ORDER, HISTORY_LIMIT, type BestRecords, type GameRecord, type HeroId, type KeyStatRow } from '../game/index.ts'
 
 export const ALICE: AuthUser = { id: 'user-alice', name: 'alice', avatarUrl: null }
 export const BOB: AuthUser = { id: 'user-bob', name: 'bob', avatarUrl: 'https://avatars.example/bob.png' }
@@ -93,6 +93,13 @@ export function fakeDatabase() {
         async pushHero(hero) {
           await request('pushHero')
           account(userId).hero = hero
+        },
+        async pull() {
+          await request('pull')
+          const a = account(userId)
+          const history = [...a.records.values()].sort((x, y) => x.playedAt - y.playedAt).slice(-HISTORY_LIMIT)
+          const ids = new Set(history.map((r) => r.id))
+          return { best: structuredClone(a.best), history, keyStats: [...a.keyStats.values()].filter((k) => ids.has(k.sessionId)), hero: a.hero }
         },
         async clear() {
           await request('clear')

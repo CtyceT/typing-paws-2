@@ -3,9 +3,10 @@
  * 這裡不碰網路；真正呼叫 Supabase 的程式在 src/cloud/data.ts。
  */
 import { DIFFICULTY_ORDER, type Difficulty } from './difficulty.ts'
-import type { KeyStatKind, KeyStatRow } from './keystats.ts'
+import { toHeroId, type HeroId } from './heroes.ts'
+import { appendSessionStats, parseKeyStats, type KeyStatKind, type KeyStatRow } from './keystats.ts'
 import type { GameMode } from './modes.ts'
-import type { BestRecords, GameRecord, Records } from './records.ts'
+import { HISTORY_LIMIT, parseBestRecord, parseGameRecord, type BestRecord, type BestRecords, type GameRecord, type Records } from './records.ts'
 
 // ---- 資料表的列（欄位名稱和 supabase/migrations 裡的相同） ----
 
@@ -139,6 +140,123 @@ export function chunk<T>(rows: readonly T[], size: number): T[][] {
   const out: T[][] = []
   for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size))
   return out
+}
+
+// ---- 資料表的列 → 本機資料（ROADMAP 3.6）。雲端回來的東西一樣要驗證，不合格的列直接丟掉 ----
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+/** numeric 欄位有時候會以字串回來 */
+const num = (v: unknown): unknown => (typeof v === 'string' && v.trim() !== '' ? Number(v) : v)
+const time = (v: unknown): unknown => (typeof v === 'string' ? Date.parse(v) : v)
+
+export function fromGameRecordRow(row: unknown): GameRecord | null {
+  if (!isObject(row)) return null
+  return parseGameRecord({
+    id: row.id,
+    playedAt: time(row.played_at),
+    mode: row.mode,
+    difficulty: row.difficulty,
+    win: row.win,
+    wpm: num(row.wpm),
+    accuracy: num(row.accuracy),
+    maxCombo: num(row.max_combo),
+    score: num(row.score),
+    damage: num(row.damage),
+    durationMs: num(row.duration_ms),
+    stage: num(row.stage),
+  })
+}
+
+export function fromBestRecordRows(rows: unknown): BestRecords {
+  const best: BestRecords = {}
+  if (!Array.isArray(rows)) return best
+  for (const row of rows) {
+    if (!isObject(row)) continue
+    const parsed = parseBestRecord({ score: num(row.score), wpm: num(row.wpm), maxCombo: num(row.max_combo), accuracy: num(row.accuracy), clears: num(row.clears) })
+    const difficulty = DIFFICULTY_ORDER.find((d) => d === row.difficulty)
+    if (parsed && difficulty) best[difficulty] = parsed
+  }
+  return best
+}
+
+export function fromKeyStatDbRows(rows: unknown): KeyStatRow[] {
+  if (!Array.isArray(rows)) return []
+  return parseKeyStats(
+    rows.filter(isObject).map((row) => ({
+      id: row.id,
+      sessionId: row.session_id,
+      playedAt: time(row.played_at),
+      kind: row.kind,
+      key: row.key,
+      attempts: num(row.attempts),
+      errors: num(row.errors),
+      timedCount: num(row.timed_count),
+      totalMs: num(row.total_ms),
+    })),
+  )
+}
+
+/** 從雲端讀回來的一份資料：最近 HISTORY_LIMIT 場、它們的按鍵統計、最佳紀錄、勇者 */
+export interface CloudSnapshot {
+  best: BestRecords
+  history: GameRecord[]
+  keyStats: KeyStatRow[]
+  /** 還沒選過是 null */
+  hero: HeroId | null
+}
+
+/** 把查詢結果整理成 CloudSnapshot（每一部分各自驗證） */
+export function toCloudSnapshot(raw: { best: unknown; history: unknown; keyStats: unknown; hero: unknown }): CloudSnapshot {
+  const history = Array.isArray(raw.history) ? raw.history.map(fromGameRecordRow).filter((r): r is GameRecord => r !== null) : []
+  return {
+    best: fromBestRecordRows(raw.best),
+    history: history.sort((a, b) => a.playedAt - b.playedAt).slice(-HISTORY_LIMIT),
+    keyStats: fromKeyStatDbRows(raw.keyStats),
+    hero: typeof raw.hero === 'string' && toHeroId(raw.hero) === raw.hero ? raw.hero : null,
+  }
+}
+
+/** 同一個帳號的兩份最佳紀錄合併：每一項取較好的。通關次數也是取較大值（兩份是同一批場次的不同快照，相加會重複計算） */
+export function mergeBestSameAccount(a: BestRecords, b: BestRecords): BestRecords {
+  const out: BestRecords = {}
+  for (const d of DIFFICULTY_ORDER) {
+    const [x, y] = [a[d], b[d]]
+    if (!x && !y) continue
+    const max = (pick: (r: BestRecord) => number) => Math.max(x ? pick(x) : 0, y ? pick(y) : 0)
+    out[d] = { score: max((r) => r.score), wpm: max((r) => r.wpm), maxCombo: max((r) => r.maxCombo), accuracy: max((r) => r.accuracy), clears: max((r) => r.clears) }
+  }
+  return out
+}
+
+export interface LocalSnapshot {
+  records: Records
+  keyStats: readonly KeyStatRow[]
+  /** 還沒上傳的場次 id */
+  pending: readonly string[]
+  /** 本機的最佳紀錄是不是還有沒上傳的變動 */
+  bestDirty: boolean
+}
+
+/**
+ * 把雲端讀回來的資料和本機的合併，結果就是本機要顯示、要存的內容。
+ *
+ * 規則是「雲端說了算，但還沒上傳的留著」：
+ * - 場次與統計：雲端有的全收；本機有、雲端沒有的，只留還沒上傳的（其他的不是在別台裝置被清除了，就是已經排不進最近 30 場）。
+ * - 最佳紀錄：本機沒有待上傳的變動時直接用雲端的（別台裝置清除紀錄後，這裡也會跟著清）；有的話每一項取較好的。
+ */
+export function mergeCloud(local: LocalSnapshot, cloud: CloudSnapshot): { records: Records; keyStats: KeyStatRow[] } {
+  const pending = new Set(local.pending)
+  const byId = new Map<string, GameRecord>()
+  for (const r of cloud.history) byId.set(r.id, r)
+  for (const r of local.records.history) if (pending.has(r.id)) byId.set(r.id, r)
+  const history = [...byId.values()].sort((a, b) => a.playedAt - b.playedAt).slice(-HISTORY_LIMIT)
+
+  const stats = new Map<string, KeyStatRow>()
+  for (const k of cloud.keyStats) stats.set(k.id, k)
+  for (const k of local.keyStats) if (pending.has(k.sessionId)) stats.set(k.id, k)
+
+  const best = local.bestDirty || pending.size > 0 ? mergeBestSameAccount(local.records.best, cloud.best) : cloud.best
+  return { records: { best, history }, keyStats: appendSessionStats([], [...stats.values()]) }
 }
 
 // ---- 同步狀態 ----

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { loadHeroDirty, loadPending, saveHeroDirty, savePending } from './pending.ts'
+import { loadDirty, loadPending, saveDirty, savePending } from './pending.ts'
 
 beforeEach(() => localStorage.clear())
 
@@ -25,11 +25,16 @@ describe('待上傳清單', () => {
     expect(loadPending('u1')).toEqual(['a', 'b'])
   })
 
-  it('勇者還沒上傳的記號', () => {
-    expect(loadHeroDirty('u1')).toBe(false)
-    saveHeroDirty(true, 'u1')
-    expect(loadHeroDirty('u1')).toBe(true)
-    saveHeroDirty(false, 'u1')
+  it('還沒上傳的記號：勇者和最佳紀錄各自一個', () => {
+    expect(loadDirty('hero', 'u1')).toBe(false)
+    saveDirty('hero', true, 'u1')
+    saveDirty('best', true, 'u1')
+    expect(loadDirty('hero', 'u1')).toBe(true)
+    expect(Object.keys(localStorage).sort()).toEqual(['typingPaws2.u.u1.bestDirty', 'typingPaws2.u.u1.heroDirty'])
+    saveDirty('hero', false, 'u1')
+    expect(loadDirty('hero', 'u1')).toBe(false)
+    expect(loadDirty('best', 'u1')).toBe(true)
+    saveDirty('best', false, 'u1')
     expect(localStorage.length).toBe(0)
   })
 })

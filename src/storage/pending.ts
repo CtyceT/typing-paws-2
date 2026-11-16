@@ -20,19 +20,21 @@ export function savePending(ids: readonly string[], userId: string): void {
   }
 }
 
-/** 勇者的選擇是不是還沒上傳 */
-export function loadHeroDirty(userId: string): boolean {
+/** 「還有變動沒上傳」的記號：hero 是勇者的選擇，best 是最佳紀錄 */
+export type DirtyFlag = 'hero' | 'best'
+
+export function loadDirty(flag: DirtyFlag, userId: string): boolean {
   try {
-    return localStorage.getItem(scopedKey('heroDirty', userId)) !== null
+    return localStorage.getItem(scopedKey(`${flag}Dirty`, userId)) !== null
   } catch {
     return false
   }
 }
 
-export function saveHeroDirty(dirty: boolean, userId: string): void {
+export function saveDirty(flag: DirtyFlag, dirty: boolean, userId: string): void {
   try {
-    if (dirty) localStorage.setItem(scopedKey('heroDirty', userId), '1')
-    else localStorage.removeItem(scopedKey('heroDirty', userId))
+    if (dirty) localStorage.setItem(scopedKey(`${flag}Dirty`, userId), '1')
+    else localStorage.removeItem(scopedKey(`${flag}Dirty`, userId))
   } catch {
     // 忽略
   }

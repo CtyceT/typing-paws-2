@@ -4,6 +4,7 @@ import {
   addResult,
   appendSessionStats,
   EMPTY_RECORDS,
+  mergeCloud,
   mergeRecords,
   newRecordKind,
   pendingUpload,
@@ -21,7 +22,7 @@ import {
 import { loadHero, saveHero } from '../storage/hero.ts'
 import { createLocalKeyStatsStore } from '../storage/keyStats.ts'
 import type { StorageScope } from '../storage/keys.ts'
-import { loadHeroDirty, loadPending, saveHeroDirty, savePending } from '../storage/pending.ts'
+import { loadDirty, loadPending, saveDirty, savePending } from '../storage/pending.ts'
 import { clearRecords, loadRecords, saveRecords } from '../storage/records.ts'
 
 /** 某個身分（訪客或一個帳號）在這個瀏覽器裡的資料 */
@@ -103,11 +104,14 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
       const { records, keyStats, pending, hero } = latest.current
       const batch = pendingUpload(records, keyStats, pending)
       await cloud.pushSessions(batch.records, batch.keyStats)
-      if (batch.records.length > 0) await cloud.pushBest(records.best)
-      if (loadHeroDirty(userId)) {
+      if (loadDirty('best', userId)) {
+        await cloud.pushBest(records.best)
+        // 上傳途中又打完一場的話，記號留著，下次再傳
+        if (latest.current.records.best === records.best) saveDirty('best', false, userId)
+      }
+      if (loadDirty('hero', userId)) {
         await cloud.pushHero(hero)
-        // 上傳途中又換了勇者的話，記號留著，下次再傳
-        if (latest.current.hero === hero) saveHeroDirty(false, userId)
+        if (latest.current.hero === hero) saveDirty('hero', false, userId)
       }
       if (!alive.current) return
       const done = new Set(pending)
@@ -116,28 +120,55 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
     [commit],
   )
 
-  /** 和雲端同步；沒登入時什麼都不做 */
-  const sync = useCallback(() => {
-    if (!cloud || scope === null) return
-    void enqueue(() => upload(cloud, scope))
-  }, [cloud, scope, enqueue, upload])
+  /** 讀取雲端的資料併進本機（換裝置登入時，戰績就是從這裡來的） */
+  const download = useCallback(
+    async (cloud: CloudData, userId: string) => {
+      const snapshot = await cloud.pull()
+      if (!alive.current) return
+      // 用「現在」的本機資料合併：下載途中可能又打完了一場
+      const now = latest.current
+      const merged = mergeCloud({ records: now.records, keyStats: now.keyStats, pending: now.pending, bestDirty: loadDirty('best', userId) }, snapshot)
+      const heroDirty = loadDirty('hero', userId)
+      commit({ ...merged, ...(snapshot.hero && !heroDirty && { hero: snapshot.hero }) })
+      // 帳號還沒存過勇者：把這個瀏覽器選的傳上去
+      if (!snapshot.hero && !heroDirty) {
+        saveDirty('hero', true, userId)
+        await cloud.pushHero(now.hero)
+        if (latest.current.hero === now.hero) saveDirty('hero', false, userId)
+      }
+    },
+    [commit],
+  )
+
+  /** 和雲端同步；沒登入時什麼都不做。full：上傳之後再把雲端的讀回來；push：只上傳 */
+  const sync = useCallback(
+    (mode: 'full' | 'push') => {
+      if (!cloud || scope === null) return
+      void enqueue(async () => {
+        await upload(cloud, scope)
+        if (mode === 'full') await download(cloud, scope)
+      })
+    },
+    [cloud, scope, enqueue, upload, download],
+  )
+  const syncFull = useCallback(() => sync('full'), [sync])
 
   // 進遊戲（登入）時同步一次；之後每次恢復連線也同步
   useEffect(() => {
     alive.current = true
-    sync()
-    window.addEventListener('online', sync)
+    syncFull()
+    window.addEventListener('online', syncFull)
     return () => {
       alive.current = false
-      window.removeEventListener('online', sync)
+      window.removeEventListener('online', syncFull)
     }
-  }, [sync])
+  }, [syncFull])
 
   const selectHero = useCallback(
     (hero: HeroId) => {
       commit({ hero })
-      if (scope !== null) saveHeroDirty(true, scope)
-      sync()
+      if (scope !== null) saveDirty('hero', true, scope)
+      sync('push')
     },
     [commit, scope, sync],
   )
@@ -149,12 +180,13 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
       const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`
       const before = latest.current
       const sessionStats = summarizeSession(keyLog, { sessionId: id, playedAt })
+      if (scope !== null) saveDirty('best', true, scope)
       commit({
         records: addResult(before.records, result, { id, playedAt }),
         keyStats: appendSessionStats(before.keyStats, sessionStats),
         ...(scope !== null && { pending: [...before.pending, id] }),
       })
-      sync()
+      sync('push')
       return { id, newRecord: newRecordKind(before.records.best[result.difficulty], result), misses: sessionMisses(sessionStats) }
     },
     [commit, scope, sync],
@@ -164,11 +196,12 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
   const importRecords = useCallback(
     (extra: Records) => {
       const before = latest.current
+      if (scope !== null) saveDirty('best', true, scope)
       commit({
         records: mergeRecords(before.records, extra),
         ...(scope !== null && { pending: [...new Set([...before.pending, ...extra.history.map((r) => r.id)])] }),
       })
-      sync()
+      sync('push')
     },
     [commit, scope, sync],
   )
@@ -181,12 +214,15 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
     if (cloud && scope !== null && !(await enqueue(() => cloud.clear()))) return false
     clearRecords(scope)
     store.clear()
-    if (scope !== null) savePending([], scope)
+    if (scope !== null) {
+      savePending([], scope)
+      saveDirty('best', false, scope)
+    }
     const next = { ...latest.current, records: EMPTY_RECORDS, keyStats: [], pending: [] }
     latest.current = next
     setData(next)
     return true
   }, [cloud, scope, enqueue, store])
 
-  return { ...data, phase, selectHero, addGame, importRecords, clearAll, retrySync: sync }
+  return { ...data, phase, selectHero, addGame, importRecords, clearAll, retrySync: syncFull }
 }
