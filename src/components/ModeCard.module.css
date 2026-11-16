@@ -8,6 +8,21 @@
   position: relative;
 }
 
+/* 可以玩的模式是按鈕：滑過會浮起（和勇者卡片一樣） */
+.clickable {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition:
+    transform 0.1s,
+    background 0.15s;
+}
+
+.clickable:hover {
+  transform: translateY(-3px);
+}
+
 .card.selected {
   background: #fff0c4;
 }

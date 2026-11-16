@@ -1,5 +1,18 @@
 import { Button, Card, HeroAvatar } from '../components/index.ts'
-import { HEROES, resultComment, resultStats, resultSubtitle, resultTitle, type BattleResult, type HeroId, type NewRecordKind, type SessionMiss, type SyncStatus } from '../game/index.ts'
+import {
+  HEROES,
+  resultComment,
+  resultStats,
+  resultSubtitle,
+  resultTitle,
+  trainingFeedbackText,
+  type BattleResult,
+  type HeroId,
+  type NewRecordKind,
+  type SessionMiss,
+  type SyncStatus,
+  type TrainingFeedbackRow,
+} from '../game/index.ts'
 import styles from './ResultScreen.module.css'
 
 export interface ResultScreenProps {
@@ -9,6 +22,8 @@ export interface ResultScreenProps {
   newRecord?: NewRecordKind
   /** 這一場最常打錯的鍵（錯最多的在前）；沒給就不顯示這一區 */
   misses?: readonly SessionMiss[]
+  /** 弱點特訓的成效：每個目標鍵這一場和之前的比較，以及題目的來源；不是特訓就不給 */
+  training?: { rows: readonly TrainingFeedbackRow[]; source: 'ai' | 'cache' | 'builtin' }
   /** 這一場有沒有存到雲端；訪客沒有這一行 */
   sync?: SyncStatus
   /** 打開數據儀表板；沒給就不顯示按鈕 */
@@ -20,7 +35,7 @@ export interface ResultScreenProps {
 const NEW_RECORD_LABEL = { wpm: '最快 WPM', score: '最高分' } as const
 
 /** 結算畫面：星等、六項數據、評語、新紀錄標示、本場最常打錯的鍵 */
-export function ResultScreen({ hero, result, newRecord = null, misses, sync, onDashboard, onRetry, onMenu }: ResultScreenProps) {
+export function ResultScreen({ hero, result, newRecord = null, misses, training, sync, onDashboard, onRetry, onMenu }: ResultScreenProps) {
   return (
     <main>
       <Card className={styles.result}>
@@ -46,6 +61,27 @@ export function ResultScreen({ hero, result, newRecord = null, misses, sync, onD
           ))}
         </div>
         <div className={styles.comment}>{resultComment(result)}</div>
+        {training && (
+          <div className={styles.training}>
+            <div className={styles.missesTitle}>🎯 這次特訓的弱點</div>
+            <ul className={styles.trainingList} aria-label="這次特訓的弱點">
+              {training.rows.map((row) => {
+                const text = trainingFeedbackText(row)
+                return (
+                  <li key={`${row.kind}:${row.key}`} className={styles.trainingRow}>
+                    <kbd className={styles.keycap}>{row.key}</kbd>
+                    <span className={styles.trainingNow}>
+                      {text.now}
+                      <small>{text.before}</small>
+                    </span>
+                    <span className={`${styles.change} ${styles[row.change]}`}>{text.change}</span>
+                  </li>
+                )
+              })}
+            </ul>
+            <div className={styles.trainingSource}>{training.source === 'builtin' ? '📚 這場的題目來自內建字庫（AI 出題沒有成功）' : '🤖 這場的題目由 AI 針對這些鍵出題'}</div>
+          </div>
+        )}
         {misses && (
           <div className={styles.misses}>
             <div className={styles.missesTitle}>⌨️ 這場最常打錯的鍵</div>

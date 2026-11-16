@@ -16,6 +16,6 @@ export const MODE_ORDER: readonly GameMode[] = ['classic', 'story', 'training', 
 export const MODES: Readonly<Record<GameMode, GameModeConfig>> = {
   classic: { label: '經典闖關', icon: '⚔️', desc: '連闖三關打倒怪物，挑戰最高分', available: true },
   story: { label: '故事模式', icon: '📖', desc: '跟著 AI 寫的故事一路打下去', available: false },
-  training: { label: '弱點特訓', icon: '🎯', desc: 'AI 針對你常打錯的鍵出題', available: false },
+  training: { label: '弱點特訓', icon: '🎯', desc: 'AI 針對你常打錯的鍵出題', available: true },
   daily: { label: '每日挑戰', icon: '📅', desc: '每天一題，和大家比速度', available: false },
 }

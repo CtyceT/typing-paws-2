@@ -9,6 +9,8 @@ import { useBattleSession } from './useBattleSession.ts'
 export interface BattleScreenProps {
   hero: HeroId
   difficulty: Difficulty
+  /** 這一場的題目；沒給就用這個難度的內建字庫（弱點特訓會傳 AI 出的題目進來） */
+  words?: readonly string[]
   /** 放棄，回主選單（不記錄成績） */
   onExit: () => void
   /** 整場結束（通關或被打倒），帶著結束時的戰鬥狀態 */
@@ -16,8 +18,8 @@ export interface BattleScreenProps {
 }
 
 /** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程，這裡把訊息視窗接上去 */
-export function BattleScreen({ hero, difficulty, onExit, onFinish }: BattleScreenProps) {
-  const session = useBattleSession(difficulty)
+export function BattleScreen({ hero, difficulty, words, onExit, onFinish }: BattleScreenProps) {
+  const session = useBattleSession(difficulty, words)
   const { battle } = session
   const effects = useBattleEffects(session.eventLog, battle.stage)
   const heroName = HEROES[hero].name

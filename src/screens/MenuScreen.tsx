@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { AccountBar, Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, WpmTrendChart } from '../components/index.ts'
+import { AccountBar, Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, TrainingPanel, WpmTrendChart, type TrainingPanelProps } from '../components/index.ts'
 import {
   bestSummary,
   DIFFICULTIES,
@@ -14,6 +14,7 @@ import {
   wpmTrend,
   type BestRecord,
   type Difficulty,
+  type GameMode,
   type HeroId,
   type Records,
 } from '../game/index.ts'
@@ -35,6 +36,11 @@ export interface MenuScreenProps {
   /** 右上角的帳號列；沒給就只顯示訪客標示 */
   accountBar?: ReactNode
   onSelectHero: (hero: HeroId) => void
+  /** 目前選中的模式（預設經典闖關）與切換；只有可以玩的模式點得到 */
+  mode?: GameMode
+  onSelectMode?: (mode: GameMode) => void
+  /** 弱點特訓的內容；沒給的話弱點特訓卡片點了沒有反應 */
+  training?: Omit<TrainingPanelProps, 'signedIn' | 'onGoClassic'>
   /** 點難度卡片：用經典闖關模式開始戰鬥 */
   onStart: (difficulty: Difficulty) => void
   /** 打開數據儀表板 */
@@ -56,10 +62,11 @@ function bestLines(best: BestRecord | undefined) {
 }
 
 /** 主選單：選勇者、選模式、選難度、玩法說明、戰績 */
-export function MenuScreen({ hero, records, signedIn = false, accountBar, onSelectHero, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
+export function MenuScreen({ hero, records, signedIn = false, accountBar, onSelectHero, mode = 'classic', onSelectMode, training, onStart, onOpenDashboard, onClearRecords }: MenuScreenProps) {
   const [confirmingClear, setConfirmingClear] = useState(false)
   const trend = wpmTrend(records.history)
   const recent = recentHistory(records.history)
+  const activeMode: GameMode = mode === 'training' && training ? 'training' : 'classic'
   return (
     <main>
       {accountBar ?? <AccountBar user={null} />}
@@ -84,18 +91,22 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
       <h2 className={styles.sectionTitle}>🎮 選擇模式</h2>
       <div className={styles.grid4}>
         {MODE_ORDER.map((id) => (
-          <ModeCard key={id} mode={id} selected={id === 'classic'} />
+          <ModeCard key={id} mode={id} selected={id === activeMode} onClick={MODES[id].available ? () => onSelectMode?.(id) : undefined} />
         ))}
       </div>
 
       <h2 className={styles.sectionTitle}>
-        {MODES.classic.icon} {MODES.classic.label}：選擇難度開始戰鬥
+        {MODES[activeMode].icon} {MODES[activeMode].label}：{activeMode === 'training' ? 'AI 針對你的弱點出題' : '選擇難度開始戰鬥'}
       </h2>
-      <div className={styles.grid3}>
-        {DIFFICULTY_ORDER.map((d) => (
-          <DifficultyCard key={d} difficulty={d} best={bestLines(records.best[d])} onClick={() => onStart(d)} />
-        ))}
-      </div>
+      {activeMode === 'training' && training ? (
+        <TrainingPanel {...training} signedIn={signedIn} onGoClassic={() => onSelectMode?.('classic')} />
+      ) : (
+        <div className={styles.grid3}>
+          {DIFFICULTY_ORDER.map((d) => (
+            <DifficultyCard key={d} difficulty={d} best={bestLines(records.best[d])} onClick={() => onStart(d)} />
+          ))}
+        </div>
+      )}
 
       <h2 className={styles.sectionTitle}>📖 玩法說明</h2>
       <div className={styles.howGrid}>

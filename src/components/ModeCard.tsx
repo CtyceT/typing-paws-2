@@ -2,21 +2,22 @@ import type { HTMLAttributes } from 'react'
 import { MODES, type GameMode } from '../game/index.ts'
 import styles from './ModeCard.module.css'
 
-export interface ModeCardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface ModeCardProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   mode: GameMode
   /** 目前選中的模式：黃底加打勾 */
   selected?: boolean
 }
 
-/** 遊戲模式卡片。還沒開放的模式是灰色、標「即將推出」，不能點 */
+/** 遊戲模式卡片。可以玩的模式是按鈕，點了就切換過去；還沒開放的模式是灰色、標「即將推出」，不能點 */
 export function ModeCard({ mode, selected = false, className, ...rest }: ModeCardProps) {
   const m = MODES[mode]
-  const classes = [styles.card, selected && styles.selected, !m.available && styles.soon, className]
+  const classes = [styles.card, selected && styles.selected, !m.available && styles.soon, m.available && styles.clickable, className]
+  const Element = m.available ? 'button' : 'div'
   return (
-    <div
+    <Element
+      {...(m.available ? { type: 'button' } : { 'aria-disabled': 'true' })}
       className={classes.filter(Boolean).join(' ')}
       aria-current={selected ? 'true' : undefined}
-      aria-disabled={m.available ? undefined : 'true'}
       {...rest}
     >
       <div className={styles.icon} aria-hidden="true">
@@ -25,6 +26,6 @@ export function ModeCard({ mode, selected = false, className, ...rest }: ModeCar
       <div className={styles.name}>{m.label}</div>
       <div className={styles.desc}>{m.desc}</div>
       {!m.available && <div className={styles.badge}>即將推出</div>}
-    </div>
+    </Element>
   )
 }

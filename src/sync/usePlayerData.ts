@@ -13,6 +13,7 @@ import {
   sessionMisses,
   summarizeSession,
   type BattleResult,
+  type GameMode,
   type GuestOffer,
   type HeroId,
   type KeyEvent,
@@ -183,19 +184,20 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
 
   /** 打完一場：存成績與按鍵統計，登入時在背景上傳 */
   const addGame = useCallback(
-    (result: BattleResult, keyLog: readonly KeyEvent[]): SavedGame => {
+    (result: BattleResult, keyLog: readonly KeyEvent[], mode: GameMode = 'classic'): SavedGame => {
       const playedAt = Date.now()
       const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`
       const before = latest.current
       const sessionStats = summarizeSession(keyLog, { sessionId: id, playedAt })
       if (scope !== null) saveDirty('best', true, scope)
       commit({
-        records: addResult(before.records, result, { id, playedAt }),
+        records: addResult(before.records, result, { id, playedAt, mode }),
         keyStats: appendSessionStats(before.keyStats, sessionStats),
         ...(scope !== null && { pending: [...before.pending, id] }),
       })
       sync('push')
-      return { id, newRecord: newRecordKind(before.records.best[result.difficulty], result), misses: sessionMisses(sessionStats) }
+      // 弱點特訓不算最佳紀錄，所以也不會有「新紀錄」
+      return { id, newRecord: mode === 'training' ? null : newRecordKind(before.records.best[result.difficulty], result), misses: sessionMisses(sessionStats) }
     },
     [commit, scope, sync],
   )

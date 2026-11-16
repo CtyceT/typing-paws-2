@@ -55,13 +55,14 @@ describe('主選單', () => {
     expect(heroCard('熊熊')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('經典闖關是選中的模式，其他三個模式標示即將推出', async () => {
+  it('經典闖關是選中的模式；故事模式與每日挑戰標示即將推出', async () => {
     render(<App />)
     expect(screen.getByText('經典闖關').parentElement).toHaveAttribute('aria-current', 'true')
-    expect(screen.getAllByText('即將推出')).toHaveLength(3)
-    for (const name of ['故事模式', '弱點特訓', '每日挑戰']) {
+    expect(screen.getAllByText('即將推出')).toHaveLength(2)
+    for (const name of ['故事模式', '每日挑戰']) {
       expect(screen.getByText(name).parentElement).toHaveAttribute('aria-disabled', 'true')
     }
+    expect(screen.getByRole('button', { name: /弱點特訓/ })).not.toHaveAttribute('aria-current')
   })
 
   it('戰績區在沒有紀錄時顯示空狀態', async () => {

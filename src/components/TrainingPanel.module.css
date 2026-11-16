@@ -1,0 +1,108 @@
+/* 弱點特訓（2.0 新增，1.0 沒有）：沿用貼紙風的卡片、膠囊按鈕與鍵帽 */
+.notice {
+  text-align: center;
+  padding: 22px 18px;
+}
+
+.noticeIcon {
+  font-size: 38px;
+}
+
+.noticeTitle {
+  display: block;
+  font-size: 1.25rem;
+  margin: 4px 0 6px;
+}
+
+.noticeText {
+  margin: 0 auto 14px;
+  max-width: 560px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.themeRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.themeLabel {
+  font-weight: 600;
+}
+
+.themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.theme {
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+  padding: 5px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.theme:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.theme:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.themeOn {
+  background: var(--yellow);
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.grid3 button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  margin-left: 5px;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hint {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+}

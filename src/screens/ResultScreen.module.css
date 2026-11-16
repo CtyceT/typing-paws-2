@@ -132,6 +132,74 @@
   font-weight: 700;
 }
 
+/* 弱點特訓的成效回饋（2.0 新增） */
+.training {
+  margin: 0 auto 18px;
+  max-width: 520px;
+}
+
+.trainingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.trainingRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: #fdf6fa;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 8px 12px;
+}
+
+.trainingNow {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.trainingNow small {
+  display: block;
+  color: var(--ink-soft);
+  font-weight: 400;
+  font-size: 0.82rem;
+}
+
+.change {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.better {
+  background: #d9f7ea;
+}
+
+.worse {
+  background: #ffd9e3;
+}
+
+.same,
+.new,
+.none {
+  background: #fff;
+}
+
+.trainingSource {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
 .noMiss {
   color: var(--ink-soft);
 }

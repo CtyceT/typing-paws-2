@@ -16,8 +16,8 @@ describe('遊戲模式', () => {
     }
   })
 
-  it('目前只有經典闖關可以玩，而且排在第一個', () => {
+  it('目前可以玩的是經典闖關與弱點特訓，經典闖關排在第一個', () => {
     expect(MODE_ORDER[0]).toBe('classic')
-    expect(MODE_ORDER.filter((id) => MODES[id].available)).toEqual(['classic'])
+    expect(MODE_ORDER.filter((id) => MODES[id].available)).toEqual(['classic', 'training'])
   })
 })

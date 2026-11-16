@@ -77,7 +77,10 @@ export function newRecordKind(prev: BestRecord | undefined, result: BattleResult
   return null
 }
 
-/** 把一場的成績記進紀錄：更新該難度的最佳紀錄，並加到歷史的最後（超過上限就丟掉最舊的） */
+/**
+ * 把一場的成績記進紀錄：更新該難度的最佳紀錄，並加到歷史的最後（超過上限就丟掉最舊的）。
+ * 弱點特訓的場次只記進歷史，不算最佳紀錄：題目是針對弱點出的，和經典闖關的字庫不同，放在一起比不公平。
+ */
 export function addResult(records: Records, result: BattleResult, meta: { id: string; playedAt: number; mode?: GameMode }): Records {
   const record: GameRecord = {
     id: meta.id,
@@ -94,7 +97,7 @@ export function addResult(records: Records, result: BattleResult, meta: { id: st
     stage: result.stage,
   }
   return {
-    best: { ...records.best, [result.difficulty]: updateBest(records.best[result.difficulty], result) },
+    best: record.mode === 'training' ? records.best : { ...records.best, [result.difficulty]: updateBest(records.best[result.difficulty], result) },
     history: [...records.history, record].slice(-HISTORY_LIMIT),
   }
 }

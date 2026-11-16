@@ -1,33 +1,62 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  aggregateKeyStats,
   battleResult,
+  DEFAULT_THEME,
+  DIFFICULTY_ORDER,
   HEROES,
+  planTraining,
   resultSyncStatus,
+  summarizeSession,
   syncStatus,
+  trainingFeedback,
   type BattleResult,
   type BattleState,
   type Difficulty,
+  type GameMode,
   type LegacyImport,
   type NewRecordKind,
   type SessionMiss,
+  type TrainingFeedbackRow,
+  type TrainingPlan,
+  type TrainingTarget,
+  type TrainingTheme,
 } from './game/index.ts'
 import { AUTH_PROVIDERS, authErrorFromUrl, authRedirectUrl, defaultCloud, PROVIDER_LABELS, useAuth, type AuthProvider, type AuthUser, type Cloud } from './cloud/index.ts'
 import { AccountBar, MessageDialog } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
+import { TrainingLoadingScreen } from './screens/TrainingLoadingScreen.tsx'
 import { findLegacyImport, markLegacyAsked } from './storage/legacy.ts'
 import { usePlayerData } from './sync/usePlayerData.ts'
+import { loadTrainingWords, type TrainingWords } from './training/loadTrainingWords.ts'
 
 /** 儀表板（熱力圖、趨勢圖、弱點排行）點進去才下載，首頁不用先載入（ROADMAP 11.5） */
 const DashboardScreen = lazy(() => import('./screens/DashboardScreen.tsx').then((m) => ({ default: m.DashboardScreen })))
+
+/** 一場弱點特訓：要練的鍵、主題、題目。再挑戰一次時沿用同一份題目，不會再請 AI 出題 */
+interface TrainingSession {
+  targets: readonly TrainingTarget[]
+  theme: TrainingTheme
+  words: TrainingWords
+}
 
 /** battle 的 run 每再挑戰一次就加一，用來重新建立整個戰鬥畫面 */
 type Screen =
   | { name: 'menu' }
   | { name: 'dashboard' }
-  | { name: 'battle'; difficulty: Difficulty; run: number }
-  | { name: 'result'; id: string; result: BattleResult; newRecord: NewRecordKind; misses: SessionMiss[]; run: number }
+  | { name: 'training-loading'; difficulty: Difficulty; targets: readonly TrainingTarget[]; theme: TrainingTheme; loading: Promise<TrainingWords>; cancel: () => void }
+  | { name: 'battle'; difficulty: Difficulty; run: number; training?: TrainingSession }
+  | {
+      name: 'result'
+      id: string
+      result: BattleResult
+      newRecord: NewRecordKind
+      misses: SessionMiss[]
+      run: number
+      training?: TrainingSession & { rows: TrainingFeedbackRow[] }
+    }
 
 /** 匯入詢問視窗的內文：列出找到了什麼 */
 function legacySummary(legacy: LegacyImport): string {
@@ -76,6 +105,14 @@ function Game({ user, cloud }: GameProps) {
   const [guestMergeFailed, setGuestMergeFailed] = useState(false)
   const answerGuest = (accept: boolean) => void player.answerGuestOffer(accept).then((ok) => setGuestMergeFailed(!ok))
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
+  /** 主選單上選中的模式與特訓主題（回到選單時還記得） */
+  const [mode, setMode] = useState<GameMode>('classic')
+  const [theme, setTheme] = useState<TrainingTheme>(DEFAULT_THEME)
+  /** 每個難度的特訓要練哪些鍵 */
+  const plans = useMemo(() => {
+    const aggregates = aggregateKeyStats(keyStats)
+    return Object.fromEntries(DIFFICULTY_ORDER.map((d) => [d, planTraining(aggregates, d)])) as Record<Difficulty, TrainingPlan>
+  }, [keyStats])
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
   const [legacy, setLegacy] = useState<LegacyImport | null>(findLegacyImport)
   /** 登入視窗：closed 關著、open 開著、其他字串是要顯示的錯誤說明 */
@@ -102,6 +139,20 @@ function Game({ user, cloud }: GameProps) {
   }
 
   const goMenu = () => setScreen({ name: 'menu' })
+  /** 請 AI 出題（只有登入時可以；失敗會自動退回內建字庫），同時切到「出題中」的畫面 */
+  const startTraining = (difficulty: Difficulty) => {
+    const plan = plans[difficulty]
+    if (plan.status !== 'ready') return
+    const controller = new AbortController()
+    const request = { difficulty, theme, weaknesses: plan.targets.map((t) => t.key) }
+    const loading = loadTrainingWords(user && cloud ? cloud.training : null, request, { signal: controller.signal })
+    setScreen({ name: 'training-loading', difficulty, targets: plan.targets, theme, loading, cancel: () => controller.abort() })
+  }
+  const trainingReady = useCallback((words: TrainingWords) => {
+    setScreen((current) =>
+      current.name === 'training-loading' ? { name: 'battle', difficulty: current.difficulty, run: 0, training: { targets: current.targets, theme: current.theme, words } } : current,
+    )
+  }, [])
   const answerLegacy = (answer: 'imported' | 'skipped') => {
     if (legacy && answer === 'imported') {
       player.importRecords(legacy.records)
@@ -111,22 +162,40 @@ function Game({ user, cloud }: GameProps) {
     setLegacy(null)
   }
 
+  if (screen.name === 'training-loading') {
+    const cancel = () => {
+      screen.cancel()
+      goMenu()
+    }
+    return <TrainingLoadingScreen targets={screen.targets} theme={screen.theme} loading={screen.loading} onReady={trainingReady} onCancel={cancel} />
+  }
   if (screen.name === 'battle') {
+    const { training } = screen
     const finish = (state: BattleState) => {
       const result = battleResult(state)
-      const saved = player.addGame(result, state.keyLog)
-      setScreen({ name: 'result', result, ...saved, run: screen.run })
+      // 特訓成效要和「這一場之前」的統計比，所以在存檔之前先算好
+      const rows = training && trainingFeedback(training.targets, summarizeSession(state.keyLog, { sessionId: 'feedback', playedAt: 0 }), aggregateKeyStats(keyStats))
+      const saved = player.addGame(result, state.keyLog, training ? 'training' : 'classic')
+      setScreen({ name: 'result', result, ...saved, run: screen.run, ...(training && rows && { training: { ...training, rows } }) })
     }
-    return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} onExit={goMenu} onFinish={finish} />
+    return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} words={training?.words.words} onExit={goMenu} onFinish={finish} />
   }
   if (screen.name === 'result') {
-    const retry = () => setScreen({ name: 'battle', difficulty: screen.result.difficulty, run: screen.run + 1 })
+    const { training } = screen
+    const retry = () =>
+      setScreen({
+        name: 'battle',
+        difficulty: screen.result.difficulty,
+        run: screen.run + 1,
+        ...(training && { training: { targets: training.targets, theme: training.theme, words: training.words } }),
+      })
     return (
       <ResultScreen
         hero={hero}
         result={screen.result}
         newRecord={screen.newRecord}
         misses={screen.misses}
+        training={training && { rows: training.rows, source: training.words.source }}
         sync={cloudData ? resultSyncStatus(player.phase, player.pending.includes(screen.id)) : undefined}
         onDashboard={() => setScreen({ name: 'dashboard' })}
         onRetry={retry}
@@ -154,6 +223,9 @@ function Game({ user, cloud }: GameProps) {
         records={records}
         signedIn={signedIn}
         onSelectHero={player.selectHero}
+        mode={mode}
+        onSelectMode={setMode}
+        training={{ plans, theme, onSelectTheme: setTheme, onStart: startTraining, onSignIn: cloud ? () => setSignIn('open') : undefined }}
         onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
         onOpenDashboard={() => setScreen({ name: 'dashboard' })}
         accountBar={

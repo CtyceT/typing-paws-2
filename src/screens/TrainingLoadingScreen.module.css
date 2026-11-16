@@ -1,0 +1,53 @@
+.card {
+  text-align: center;
+  padding: 36px 20px 30px;
+  margin-top: 40px;
+}
+
+.robot {
+  font-size: 64px;
+  display: inline-block;
+  animation: think 1.2s ease-in-out infinite;
+}
+
+.title {
+  margin: 8px 0 10px;
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
+}
+
+.text {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  line-height: 2;
+}
+
+.small {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: #ffd9e3;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+@keyframes think {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(4deg);
+  }
+}

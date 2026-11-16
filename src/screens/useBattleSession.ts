@@ -58,8 +58,8 @@ const isActive = (b: BattleState) => b.phase === 'running' && !b.paused
  * 一場戰鬥的流程控制：開場訊息 → 倒數 → 戰鬥 → 過關訊息 → 倒數 → … → 結束。
  * 規則都在 src/game 的純函式裡，這裡只負責計時、接瀏覽器事件、管理輸入框焦點。
  */
-export function useBattleSession(difficulty: Difficulty) {
-  const [{ battle, eventLog }, dispatch] = useReducer(sessionReducer, difficulty, (d) => ({ battle: createBattle(d), eventLog: [] }))
+export function useBattleSession(difficulty: Difficulty, words?: readonly string[]) {
+  const [{ battle, eventLog }, dispatch] = useReducer(sessionReducer, difficulty, (d) => ({ battle: createBattle(d, { words }), eventLog: [] }))
   /** 第一關的開場訊息是否還開著 */
   const [introOpen, setIntroOpen] = useState(true)
   /** 倒數中顯示的字；null 表示沒有在倒數 */
