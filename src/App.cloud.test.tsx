@@ -346,3 +346,116 @@ describe('登入後讀取雲端紀錄', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })
+
+describe('訪客資料併入帳號', () => {
+  const settle = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))))
+  const game = (id: string, playedAt: number, wpm: number) => ({ id, playedAt, mode: 'classic', difficulty: 'easy', win: true, wpm, accuracy: 95, maxCombo: 12, score: 1500, damage: 290, durationMs: 60000, stage: 3 })
+  const stat = (sessionId: string) => ({ id: `${sessionId}:char:e`, sessionId, playedAt: 1790000000000, kind: 'char', key: 'e', attempts: 60, errors: 12, timedCount: 40, totalMs: 9000 })
+  const seedGuest = () => {
+    localStorage.setItem('typingPaws2.history', JSON.stringify([game('g1', 1790000000000, 31), game('g2', 1790000100000, 36)]))
+    localStorage.setItem('typingPaws2.best', JSON.stringify({ easy: { score: 1500, wpm: 36, maxCombo: 12, accuracy: 95, clears: 2 } }))
+    localStorage.setItem('typingPaws2.keyStats', JSON.stringify([stat('g1'), stat('g2')]))
+  }
+  const offer = () => screen.queryByRole('dialog', { name: '要把訪客紀錄併入帳號嗎？' })
+
+  it('訪客沒有紀錄時登入不會詢問', async () => {
+    const { cloud } = fakeCloud(ALICE)
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).not.toBeInTheDocument()
+  })
+
+  it('選擇併入：紀錄上傳到帳號、通關次數加上去、訪客那一份清空', async () => {
+    seedGuest()
+    const { cloud, db } = fakeCloud(ALICE)
+    db.account(ALICE.id).records.set('c1', game('c1', 1790000050000, 50) as never)
+    db.account(ALICE.id).best = { easy: { score: 2000, wpm: 50, maxCombo: 15, accuracy: 97, clears: 5 } }
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).toHaveTextContent('有 2 場還沒登入時留下的紀錄')
+    expect(offer()).toHaveTextContent('「alice」的帳號')
+    fireEvent.keyDown(document, { key: 'Enter' })
+    await settle()
+    expect(offer()).not.toBeInTheDocument()
+    const account = db.account(ALICE.id)
+    expect([...account.records.keys()].sort()).toEqual(['c1', 'g1', 'g2'])
+    expect(account.keyStats.size).toBe(2)
+    expect(account.best.easy).toMatchObject({ score: 2000, wpm: 50, clears: 7 })
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 7 次')
+    expect(screen.getByRole('table')).toHaveTextContent('36')
+    expect(localStorage.getItem('typingPaws2.history')).toBeNull()
+    expect(localStorage.getItem('typingPaws2.keyStats')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('☁️ 已同步')
+  })
+
+  it('併入之後重新整理、再登入都不會再問，也不會重複上傳', async () => {
+    seedGuest()
+    const { cloud, db } = fakeCloud(ALICE)
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    fireEvent.keyDown(document, { key: 'Enter' })
+    await settle()
+    first.unmount()
+    const uploads = db.calls.filter((c) => c === 'pushSessions').length
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).not.toBeInTheDocument()
+    expect(db.account(ALICE.id).records.size).toBe(2)
+    expect(db.account(ALICE.id).best.easy?.clears).toBe(2)
+    // 第二次開啟只有例行的同步（沒有待上傳的場次）
+    expect(db.calls.filter((c) => c === 'pushSessions').length).toBe(uploads + 1)
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 2 次')
+  })
+
+  it('選擇先不要：訪客紀錄原封不動，同一批不再詢問；登出後還看得到', async () => {
+    seedGuest()
+    const { cloud, db } = fakeCloud(ALICE)
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: '先不要' }))
+    await settle()
+    expect(db.account(ALICE.id).records.size).toBe(0)
+    expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
+    first.unmount()
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '登出' }))
+    expect(screen.getByRole('table')).toHaveTextContent('36')
+  })
+
+  it('訪客之後又玩了新的一場，下次登入會再問一次', async () => {
+    seedGuest()
+    const { cloud } = fakeCloud(ALICE)
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: '先不要' }))
+    first.unmount()
+    localStorage.setItem('typingPaws2.history', JSON.stringify([game('g1', 1790000000000, 31), game('g2', 1790000100000, 36), game('g3', 1790000200000, 40)]))
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).toHaveTextContent('有 3 場')
+  })
+
+  it('連不上雲端時不會詢問；併入到一半失敗的話什麼都不會改', async () => {
+    seedGuest()
+    const { cloud, db } = fakeCloud(ALICE)
+    db.offline = true
+    const first = render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).not.toBeInTheDocument()
+    first.unmount()
+
+    db.offline = false
+    render(<App cloud={cloud} />)
+    await settle()
+    expect(offer()).toBeInTheDocument()
+    db.offline = true
+    fireEvent.keyDown(document, { key: 'Enter' })
+    await settle()
+    expect(screen.getByRole('dialog', { name: '併入沒有成功' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
+    expect(localStorage.getItem(`typingPaws2.u.${ALICE.id}.history`) ?? '[]').toBe('[]')
+    expect(db.account(ALICE.id).records.size).toBe(0)
+  })
+})

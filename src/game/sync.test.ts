@@ -6,8 +6,10 @@ import {
   fromBestRecordRows,
   fromGameRecordRow,
   fromKeyStatDbRows,
+  guestMergeOffer,
   mergeBestSameAccount,
   mergeCloud,
+  mergeGuest,
   pendingUpload,
   resultSyncStatus,
   syncStatus,
@@ -224,5 +226,45 @@ describe('本機和雲端合併', () => {
     expect(merged.records.history).toHaveLength(30)
     expect(merged.records.history.at(-1)?.id).toBe('new')
     expect(merged.records.history[0].id).toBe('c1')
+  })
+})
+
+describe('訪客資料併入帳號', () => {
+  const best = (score: number, clears: number) => ({ score, wpm: 40, maxCombo: 20, accuracy: 95, clears })
+
+  it('訪客沒有資料時不詢問', () => {
+    expect(guestMergeOffer({ best: {}, history: [] }, null)).toBeNull()
+  })
+
+  it('有戰績時詢問，記號是最新一場的 id', () => {
+    expect(guestMergeOffer({ best: {}, history: [record('a', 1), record('b', 2)] }, null)).toEqual({ games: 2, marker: 'b' })
+  })
+
+  it('只有最佳紀錄（例如從 1.0 匯入）也會詢問', () => {
+    expect(guestMergeOffer({ best: { easy: best(100, 0) }, history: [] }, null)).toEqual({ games: 0, marker: 'best-only' })
+  })
+
+  it('同一批資料拒絕過就不再問；訪客又玩了新的一場才會再問', () => {
+    const guest = { best: {}, history: [record('a', 1), record('b', 2)] }
+    expect(guestMergeOffer(guest, 'b')).toBeNull()
+    expect(guestMergeOffer({ ...guest, history: [...guest.history, record('c', 3)] }, 'b')).toEqual({ games: 3, marker: 'c' })
+  })
+
+  it('併入：場次依時間排在一起、通關次數相加、統計合在一起', () => {
+    const merged = mergeGuest(
+      { records: { best: { easy: best(3000, 5) }, history: [record('acc', 5)] }, keyStats: [stat('acc')] },
+      { records: { best: { easy: best(4000, 2), hard: best(10, 0) }, history: [record('g1', 1), record('g2', 9)] }, keyStats: [stat('g1'), stat('g2')] },
+    )
+    expect(merged.records.history.map((r) => r.id)).toEqual(['g1', 'acc', 'g2'])
+    expect(merged.records.best).toEqual({ easy: best(4000, 7), hard: best(10, 0) })
+    expect(merged.keyStats.map((k) => k.sessionId).sort()).toEqual(['acc', 'g1', 'g2'])
+  })
+
+  it('併入兩次（同樣的場次）不會重複', () => {
+    const guest = { records: { best: {}, history: [record('g1', 1)] }, keyStats: [stat('g1')] }
+    const once = mergeGuest({ records: { best: {}, history: [] }, keyStats: [] }, guest)
+    const twice = mergeGuest(once, guest)
+    expect(twice.records.history).toHaveLength(1)
+    expect(twice.keyStats).toHaveLength(1)
   })
 })

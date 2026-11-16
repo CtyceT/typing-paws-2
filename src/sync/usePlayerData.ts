@@ -4,13 +4,16 @@ import {
   addResult,
   appendSessionStats,
   EMPTY_RECORDS,
+  guestMergeOffer,
   mergeCloud,
+  mergeGuest,
   mergeRecords,
   newRecordKind,
   pendingUpload,
   sessionMisses,
   summarizeSession,
   type BattleResult,
+  type GuestOffer,
   type HeroId,
   type KeyEvent,
   type KeyStatRow,
@@ -22,7 +25,7 @@ import {
 import { loadHero, saveHero } from '../storage/hero.ts'
 import { createLocalKeyStatsStore } from '../storage/keyStats.ts'
 import type { StorageScope } from '../storage/keys.ts'
-import { loadDirty, loadPending, saveDirty, savePending } from '../storage/pending.ts'
+import { loadDirty, loadGuestSkip, loadPending, saveDirty, saveGuestSkip, savePending } from '../storage/pending.ts'
 import { clearRecords, loadRecords, saveRecords } from '../storage/records.ts'
 
 /** 某個身分（訪客或一個帳號）在這個瀏覽器裡的資料 */
@@ -59,6 +62,8 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
     pending: scope === null ? [] : loadPending(scope),
   }))
   const [phase, setPhase] = useState<SyncPhase>('idle')
+  /** 可以併入帳號的訪客資料；沒有、還沒同步完或已經回答過是 null */
+  const [guestOffer, setGuestOffer] = useState<GuestOffer | null>(null)
   /** 最新的資料：背景的同步跑完時畫面可能已經又變了，要用這一份而不是當時的那一份 */
   const latest = useRef(data)
   /** 同步一次只跑一個，後面的排隊 */
@@ -146,7 +151,10 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
       if (!cloud || scope === null) return
       void enqueue(async () => {
         await upload(cloud, scope)
-        if (mode === 'full') await download(cloud, scope)
+        if (mode !== 'full') return
+        await download(cloud, scope)
+        // 確定帳號的資料是最新的之後，才問要不要併入訪客的紀錄（通關次數要加在正確的數字上）
+        if (alive.current) setGuestOffer(guestMergeOffer(loadRecords(null), loadGuestSkip(scope)))
       })
     },
     [cloud, scope, enqueue, upload, download],
@@ -224,5 +232,37 @@ export function usePlayerData(scope: StorageScope, cloud: CloudData | null) {
     return true
   }, [cloud, scope, enqueue, store])
 
-  return { ...data, phase, selectHero, addGame, importRecords, clearAll, retrySync: syncFull }
+  /**
+   * 回答要不要把訪客的紀錄併入帳號。
+   * 併入：先把訪客的場次上傳（成功了才動本機），再併進帳號這一份，最後清掉訪客那一份——所以不會重複，也不會傳到一半遺失。
+   * 上傳失敗時什麼都不改，回傳 false，下次登入會再問。
+   * 不併入：記下這一批已經問過，訪客的紀錄原封不動留著。
+   */
+  const answerGuestOffer = useCallback(
+    async (accept: boolean): Promise<boolean> => {
+      const offer = guestOffer
+      setGuestOffer(null)
+      if (!offer || !cloud || scope === null) return true
+      if (!accept) {
+        saveGuestSkip(offer.marker, scope)
+        return true
+      }
+      const guestStore = createLocalKeyStatsStore(null)
+      const guest = { records: loadRecords(null), keyStats: guestStore.load() }
+      const moved = await enqueue(async () => {
+        await cloud.pushSessions(guest.records.history, guest.keyStats)
+        const now = latest.current
+        saveDirty('best', true, scope)
+        commit(mergeGuest({ records: now.records, keyStats: now.keyStats }, guest))
+        clearRecords(null)
+        guestStore.clear()
+      })
+      // 最佳紀錄另外排一次上傳：就算這一步失敗，場次已經搬好了，之後的同步會補傳
+      if (moved) sync('push')
+      return moved
+    },
+    [guestOffer, cloud, scope, enqueue, commit, sync],
+  )
+
+  return { ...data, phase, selectHero, addGame, importRecords, clearAll, retrySync: syncFull, guestOffer, answerGuestOffer }
 }

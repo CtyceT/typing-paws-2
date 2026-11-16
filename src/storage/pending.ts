@@ -39,3 +39,20 @@ export function saveDirty(flag: DirtyFlag, dirty: boolean, userId: string): void
     // 忽略
   }
 }
+
+/** 這個帳號上次選「先不要併入」時，訪客資料的記號；沒有拒絕過是 null */
+export function loadGuestSkip(userId: string): string | null {
+  try {
+    return localStorage.getItem(scopedKey('guestSkip', userId))
+  } catch {
+    return null
+  }
+}
+
+export function saveGuestSkip(marker: string, userId: string): void {
+  try {
+    localStorage.setItem(scopedKey('guestSkip', userId), marker)
+  } catch {
+    // 忽略：存不進去的話下次登入會再問一次
+  }
+}

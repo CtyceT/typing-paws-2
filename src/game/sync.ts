@@ -6,7 +6,7 @@ import { DIFFICULTY_ORDER, type Difficulty } from './difficulty.ts'
 import { toHeroId, type HeroId } from './heroes.ts'
 import { appendSessionStats, parseKeyStats, type KeyStatKind, type KeyStatRow } from './keystats.ts'
 import type { GameMode } from './modes.ts'
-import { HISTORY_LIMIT, parseBestRecord, parseGameRecord, type BestRecord, type BestRecords, type GameRecord, type Records } from './records.ts'
+import { HISTORY_LIMIT, mergeRecords, parseBestRecord, parseGameRecord, type BestRecord, type BestRecords, type GameRecord, type Records } from './records.ts'
 
 // ---- 資料表的列（欄位名稱和 supabase/migrations 裡的相同） ----
 
@@ -257,6 +257,34 @@ export function mergeCloud(local: LocalSnapshot, cloud: CloudSnapshot): { record
 
   const best = local.bestDirty || pending.size > 0 ? mergeBestSameAccount(local.records.best, cloud.best) : cloud.best
   return { records: { best, history }, keyStats: appendSessionStats([], [...stats.values()]) }
+}
+
+// ---- 訪客資料併入帳號（ROADMAP 3.7） ----
+
+export interface GuestOffer {
+  /** 訪客有幾場戰績 */
+  games: number
+  /** 代表「這一批」訪客資料的記號：玩家選了先不要之後，同一批不會再問，訪客又玩了新的場次才會再問 */
+  marker: string
+}
+
+/** 這個瀏覽器有沒有可以併入帳號的訪客資料；沒有、或這一批已經問過被拒絕時回傳 null */
+export function guestMergeOffer(guest: Records, skippedMarker: string | null): GuestOffer | null {
+  const last = guest.history.at(-1)
+  const hasBest = Object.keys(guest.best).length > 0
+  if (!last && !hasBest) return null
+  const marker = last ? last.id : 'best-only'
+  return marker === skippedMarker ? null : { games: guest.history.length, marker }
+}
+
+/**
+ * 把訪客的資料併進帳號的本機資料。
+ * 這是兩批不同的場次，所以通關次數相加（和同一個帳號的兩份快照取較大值不同）；同一個 id 的場次只會留一筆。
+ */
+export function mergeGuest(account: { records: Records; keyStats: readonly KeyStatRow[] }, guest: { records: Records; keyStats: readonly KeyStatRow[] }): { records: Records; keyStats: KeyStatRow[] } {
+  const byId = new Map<string, KeyStatRow>()
+  for (const k of [...account.keyStats, ...guest.keyStats]) byId.set(k.id, k)
+  return { records: mergeRecords(account.records, guest.records), keyStats: appendSessionStats([], [...byId.values()]) }
 }
 
 // ---- 同步狀態 ----

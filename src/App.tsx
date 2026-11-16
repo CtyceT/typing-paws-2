@@ -70,6 +70,9 @@ function Game({ user, cloud }: GameProps) {
   const signedIn = user !== null
   /** 清除紀錄時雲端刪除失敗 */
   const [clearFailed, setClearFailed] = useState(false)
+  /** 訪客紀錄併入帳號時上傳失敗 */
+  const [guestMergeFailed, setGuestMergeFailed] = useState(false)
+  const answerGuest = (accept: boolean) => void player.answerGuestOffer(accept).then((ok) => setGuestMergeFailed(!ok))
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   /** 等使用者決定要不要匯入的 1.0 舊紀錄；沒有或已經問過是 null */
   const [legacy, setLegacy] = useState<LegacyImport | null>(findLegacyImport)
@@ -176,6 +179,23 @@ function Game({ user, cloud }: GameProps) {
         title="清除沒有成功"
         text={'連不上雲端，所以紀錄都還在。\n請確認網路後再試一次。'}
         buttons={[{ label: '知道了（Enter）', primary: true, onClick: () => setClearFailed(false) }]}
+      />
+      <MessageDialog
+        open={player.guestOffer !== null && !legacy}
+        emoji="🎒"
+        title="要把訪客紀錄併入帳號嗎？"
+        text={`這個瀏覽器有${player.guestOffer?.games ? ` ${player.guestOffer.games} 場` : ''}還沒登入時留下的紀錄。\n併入後會存到「${user?.name ?? ''}」的帳號，並從訪客紀錄移走；\n選「先不要」的話，它們會原封不動留在訪客模式。`}
+        buttons={[
+          { label: '📥 併入帳號（Enter）', primary: true, onClick: () => answerGuest(true) },
+          { label: '先不要', onClick: () => answerGuest(false) },
+        ]}
+      />
+      <MessageDialog
+        open={guestMergeFailed}
+        emoji="😿"
+        title="併入沒有成功"
+        text={'連不上雲端，訪客紀錄都還在原本的地方。\n下次登入時會再問你一次。'}
+        buttons={[{ label: '知道了（Enter）', primary: true, onClick: () => setGuestMergeFailed(false) }]}
       />
       {legacy && signIn === 'closed' && (
         <MessageDialog
