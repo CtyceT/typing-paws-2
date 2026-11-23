@@ -1,140 +1,140 @@
 {
-  "generated_at": "2026-11-23T14:30:23.779Z",
-  "model": "groq/openai/gpt-oss-120b",
-  "prompt_version": "monster-v1",
+  "source": "manual",
+  "note": "2026-11-23 專案負責人手動定案（D89）。look 抄自 docs/monster-art.md 第三節。LLM 生成的版本見 git 歷史（commit 57c8918）。",
   "monsters": [
     {
       "id": "monster-01",
       "theme": "daily",
       "boss": false,
-      "name": "鬧鐘小叮",
-      "line": "嗶嗶作響，快打字把我關掉！",
+      "name": "失蹤襪子怪",
+      "line": "你的另一隻襪子？早就被我藏起來啦！",
       "weakKeys": [
-        "s"
+        "k"
       ],
-      "look": "A tiny round alarm clock with big cartoon eyes, bright red body, tiny metal claws, and a springy tail that wiggles when it rings."
+      "look": "a mischievous striped sock monster with tiny arms"
     },
     {
       "id": "monster-02",
       "theme": "daily",
       "boss": false,
-      "name": "早餐麵包怪",
-      "line": "香噴噴的挑釁，打不出字我就變硬！",
+      "name": "賴床鬧鐘怪",
+      "line": "再五分鐘……不，我要吵到你打完字為止！",
       "weakKeys": [
-        "b"
+        "l"
       ],
-      "look": "A fluffy golden-brown bread slice with a cheeky smile, butter pats as ears, and sprinkles that look like tiny stars on its surface."
+      "look": "a grumpy round alarm clock monster with two bells on its head"
     },
     {
       "id": "monster-03",
       "theme": "daily",
       "boss": true,
-      "name": "洗衣大魔王",
-      "line": "旋轉旋轉，打字快點把我洗走！",
+      "name": "髒衣服山大王",
+      "line": "臭襪子大軍集合！今天誰都別想洗衣服！",
       "weakKeys": [
         "w"
       ],
-      "look": "A large, bubbly washing machine with oversized eyes on the door, swirling blue water patterns, and rubbery arms that wave laundry socks."
+      "look": "a big fluffy laundry pile monster wearing a sock as a crown"
     },
     {
       "id": "monster-04",
       "theme": "fantasy",
       "boss": false,
-      "name": "糖果小鼠",
-      "line": "快打字，別讓我吃掉你的分數！",
+      "name": "果凍史萊姆",
+      "line": "軟Q軟Q，打錯一個字我就黏住你！",
       "weakKeys": [
-        "p"
+        "j"
       ],
-      "look": "A tiny round mouse with pastel pink fur, oversized ears, and a candy cane tail, big sparkling eyes and a cheeky grin."
+      "look": "a bouncy green jelly slime monster with a leaf on top"
     },
     {
       "id": "monster-05",
       "theme": "fantasy",
       "boss": false,
-      "name": "霧光蝙蝠",
-      "line": "打錯字我就噴出霧氣，你怕嗎？",
+      "name": "蘑菇小妖",
+      "line": "聞了我的孢子，你的手指會變慢喔～",
       "weakKeys": [
-        "w"
+        "m"
       ],
-      "look": "A small bat with soft lavender wings, glowing teal eyes, and a fluffy belly; its wings flutter like cotton clouds."
+      "look": "a tiny red spotted mushroom imp with a mischievous smile"
     },
     {
       "id": "monster-06",
       "theme": "fantasy",
       "boss": true,
-      "name": "星辰大魔王",
-      "line": "挑戰我，輸的只能寫星星！",
+      "name": "小火龍",
+      "line": "別看我小，一口火就燒掉你的 Combo！",
       "weakKeys": [
-        "s"
+        "f"
       ],
-      "look": "A majestic dragon-sized creature covered in midnight-blue scales dotted with tiny silver stars, crowned with a comet tail and gentle amber eyes."
+      "look": "a chubby little purple dragon with small wings and a tiny flame"
     },
     {
       "id": "monster-07",
       "theme": "space",
       "boss": false,
-      "name": "星塵小彈",
-      "line": "嗚呼！快打出字母，我要閃閃發亮啦！",
+      "name": "果凍外星人",
+      "line": "嗶嗶嗶，正在掃描地球人的打字速度……",
       "weakKeys": [
-        "s"
+        "u"
       ],
-      "look": "Tiny spherical creature, shimmering silver with sparkling star dust speckles, tiny antennae glowing blue, cute grin and wobbling bounce."
+      "look": "a small blue blob alien with one big eye and antenna"
     },
     {
       "id": "monster-08",
       "theme": "space",
       "boss": false,
-      "name": "彈跳隕石鼠",
-      "line": "哎呀呀，你打錯字我就彈跳！快快快！",
+      "name": "隕石怪",
+      "line": "轟隆隆！我要從天而降砸亂你的鍵盤！",
       "weakKeys": [
         "r"
       ],
-      "look": "Round rock body covered in pastel purple craters, small paws, big round eyes, a tiny rocket tail that wobbles, smiling cheeks."
+      "look": "a grumpy rocky meteor monster with small glowing cracks"
     },
     {
       "id": "monster-09",
       "theme": "space",
       "boss": true,
-      "name": "黑洞大魔王",
-      "line": "哼！輸入錯誤，我會把你吸進無盡的空虛！",
+      "name": "章魚艦長",
+      "line": "我有八隻手打字，你兩隻手追得上嗎？",
       "weakKeys": [
-        "g"
+        "p"
       ],
-      "look": "Large swirling vortex with a cartoonish face, deep navy core, bright orange rim, tiny star-shaped teeth, hovering with gentle aura."
+      "look": "a pink octopus alien captain wearing a tiny space helmet"
     },
     {
       "id": "monster-10",
       "theme": "school",
       "boss": false,
-      "name": "紙張小精靈",
-      "line": "快打字，別讓我變成紙飛機！",
+      "name": "小 Bug 蟲",
+      "line": "嘰嘰！我會讓你的程式跑不動！",
       "weakKeys": [
-        "s"
+        "b",
+        "g"
       ],
-      "look": "A tiny floating sheet with a bright yellow border, eyes like tiny ink drops, and a mischievous smile."
+      "look": "a small green beetle bug monster with tiny glasses"
     },
     {
       "id": "monster-11",
       "theme": "school",
       "boss": false,
-      "name": "粉筆怪",
-      "line": "你的鍵盤能擦掉我的粉筆痕跡嗎？",
+      "name": "Typo 幽靈",
+      "line": "嘿嘿～你一定會打錯字的～",
       "weakKeys": [
-        "c"
+        "y"
       ],
-      "look": "A short, chubby creature made of white chalk, with a crumbling body, stubby arms, and a chalk-dust halo."
+      "look": "a playful white ghost monster holding a pencil"
     },
     {
       "id": "monster-12",
       "theme": "school",
       "boss": true,
-      "name": "考試大魔王",
-      "line": "答對我才能通過，快打出正確單字！",
+      "name": "Deadline 龍王",
+      "line": "吼！截止時間就要到了！",
       "weakKeys": [
-        "t",
-        "e"
+        "d",
+        "n"
       ],
-      "look": "A towering figure wearing a giant blackboard cape, red ink eyes, a clock for a head, and holding a massive pencil sword."
+      "look": "an orange dragon monster with a clock on its belly"
     }
   ]
 }

@@ -25,7 +25,7 @@ describe('validateMonsterProfile', () => {
     expect(validateMonsterProfile({ ...good, name: 'Typo Ghost' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
     expect(validateMonsterProfile({ ...good, name: '流星🐭' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
     expect(validateMonsterProfile({ ...good, name: '流星！鼠' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
-    expect(validateMonsterProfile({ ...good, name: '超級無敵宇宙流星小鼠' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
+    expect(validateMonsterProfile({ ...good, name: '超級無敵宇宙銀河流星小老鼠' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
     expect(validateMonsterProfile({ ...good, name: '鼠' }, slot)).toEqual({ ok: false, issue: 'bad_name' })
   })
 

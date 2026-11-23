@@ -1,5 +1,5 @@
 // AI 怪物（階段 6）：12 隻，4 個主題 × 小怪、小怪、魔王（D83）。
-// 名字、台詞、弱點來自 LLM 產生並驗證過的 monster-profiles.json（scripts/gen-monsters.mjs）；
+// 名字、台詞、弱點在 monster-profiles.json（專案負責人手動定案，D89；LLM 生成的版本見 scripts/gen-monsters.mjs）；
 // 血量、傷害倍率依出場位置固定（沿用 1.0 版三關的數值）。
 import type { TrainingTheme } from '../../supabase/functions/_shared/training/request.ts'
 import PROFILE_FILE from './monster-profiles.json'
@@ -34,20 +34,20 @@ export const SLOT_STATS: readonly { hp: number; damageScale: number }[] = [
   { hp: 140, damageScale: 1.3 },
 ]
 
-/** 圖片載入失敗時的 emoji，依 monster-profiles.json 的名字挑的；重新產生設定後要跟著檢查 */
+/** 圖片載入失敗時的 emoji，依 monster-profiles.json 的名字挑的；改名字時要跟著檢查 */
 export const FALLBACK_EMOJI: Readonly<Record<MonsterId, string>> = {
-  'monster-01': '⏰',
-  'monster-02': '🍞',
-  'monster-03': '🫧',
-  'monster-04': '🐭',
-  'monster-05': '🦇',
+  'monster-01': '🧦',
+  'monster-02': '⏰',
+  'monster-03': '👕',
+  'monster-04': '🍮',
+  'monster-05': '🍄',
   'monster-06': '🐉',
-  'monster-07': '✨',
+  'monster-07': '👽',
   'monster-08': '☄️',
-  'monster-09': '🌀',
-  'monster-10': '📄',
-  'monster-11': '🖍️',
-  'monster-12': '📝',
+  'monster-09': '🐙',
+  'monster-10': '🐛',
+  'monster-11': '👻',
+  'monster-12': '🐲',
 }
 
 const profiles = (PROFILE_FILE as { monsters: MonsterProfile[] }).monsters

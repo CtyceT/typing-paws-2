@@ -37,7 +37,7 @@ export interface MonsterProfile {
 
 export const PROFILE_LIMITS = {
   nameMin: 2,
-  nameMax: 8,
+  nameMax: 12,
   lineMin: 6,
   lineMax: 30,
   weakKeysMin: 1,

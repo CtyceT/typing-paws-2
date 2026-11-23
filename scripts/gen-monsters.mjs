@@ -1,5 +1,6 @@
-// 用 LLM 產生 12 隻 AI 怪物的名字、台詞、弱點屬性（ROADMAP 6.2），驗證後寫進 src/game/monster-profiles.json。
-// 只在開發時跑一次，結果進版控，專案負責人可以直接看、直接改。遊戲執行時不會呼叫 LLM。
+// 用 LLM 產生 12 隻 AI 怪物的名字、台詞、弱點屬性（ROADMAP 6.2），驗證後寫進 docs/monster-profiles-llm.json。
+// 遊戲實際用的是專案負責人手動定案的 src/game/monster-profiles.json（D89）；這支腳本保留作為「LLM 生成 → 人工修訂」的例子，
+// 輸出寫到 docs/，不會蓋掉遊戲用的版本。遊戲執行時不會呼叫 LLM。
 //
 // 金鑰：和 try-llm.mjs 一樣讀 supabase/functions/.env 的 GROQ_API_KEY（不會進版控，也不會印出來）。
 //
@@ -15,7 +16,7 @@ import { GROQ_MODEL } from '../supabase/functions/_shared/training/providers.ts'
 
 const root = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const ENV_FILE = root('supabase/functions/.env')
-const OUT_FILE = root('src/game/monster-profiles.json')
+const OUT_FILE = root('docs/monster-profiles-llm.json')
 const PROMPT_VERSION = 'monster-v1'
 const TIMEOUT_MS = 30000
 /** 每個主題最多試幾次 */
