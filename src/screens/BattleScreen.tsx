@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { CountdownOverlay, MessageDialog } from '../components/index.ts'
+import { CountdownOverlay, Icon, MessageDialog, MonsterSprite, StickerIcon } from '../components/index.ts'
 import { preloadMonsterImages } from '../components/monsterImages.ts'
-import { currentMonster, HEROES, introMessage, stageClearMessage, type BattleState, type Difficulty, type HeroId, type Monster } from '../game/index.ts'
+import { currentMonster, HEROES, introMessage, stageClearMessage, type BattleState, type Difficulty, type FlowMessage, type HeroId, type Monster } from '../game/index.ts'
 import styles from './BattleScreen.module.css'
 import { BattleView } from './BattleView.tsx'
 import { useBattleEffects } from './useBattleEffects.ts'
@@ -18,6 +18,11 @@ export interface BattleScreenProps {
   onExit: () => void
   /** 整場結束（通關或被打倒），帶著結束時的戰鬥狀態 */
   onFinish: (state: BattleState) => void
+}
+
+/** 開場、過關訊息：大圖是怪物立繪或貼紙圖示 */
+function flowDialog({ art, title, text }: FlowMessage) {
+  return { icon: 'monster' in art ? <MonsterSprite monster={art.monster} /> : <StickerIcon name={art.icon} tone="yellow" />, title, text }
 }
 
 /** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程，這裡把訊息視窗接上去 */
@@ -41,18 +46,18 @@ export function BattleScreen({ hero, difficulty, words, monsters, onExit, onFini
   let dialog = null
   if (session.introOpen) {
     dialog = (
-      <MessageDialog open {...introMessage(currentMonster(battle))} buttons={[{ label: '⚔️ 開打！（Enter）', primary: true, onClick: session.begin }]} />
+      <MessageDialog open {...flowDialog(introMessage(currentMonster(battle)))} buttons={[{ label: '開打！（Enter）', icon: 'sword', primary: true, onClick: session.begin }]} />
     )
   } else if (session.pauseOpen === 'user') {
     dialog = (
       <MessageDialog
         open
-        emoji="⏸"
+        icon={<StickerIcon name="pause" tone="mint" />}
         title="暫停中"
         text="喘口氣，準備好再繼續！"
         buttons={[
-          { label: '▶ 繼續（Esc）', primary: true, onClick: session.resume },
-          { label: '🏳 放棄回選單', onClick: onExit },
+          { label: '繼續（Esc）', icon: 'play', primary: true, onClick: session.resume },
+          { label: '放棄回選單', icon: 'flag', onClick: onExit },
         ]}
       />
     )
@@ -60,18 +65,18 @@ export function BattleScreen({ hero, difficulty, words, monsters, onExit, onFini
     dialog = (
       <MessageDialog
         open
-        emoji="⌨️"
+        icon={<StickerIcon name="keyboard" tone="pink" />}
         title="好像切到中文輸入法了"
-        text={'遊戲先幫你暫停 ⏸\n請按 Shift 切回英文輸入（Mac 可按 Caps Lock 或 Ctrl+Space），\n切好之後再按繼續。'}
-        buttons={[{ label: '▶ 切好了，繼續', primary: true, onClick: session.resumeFromIme }]}
+        text={'遊戲先幫你暫停了。\n請按 Shift 切回英文輸入（Mac 可按 Caps Lock 或 Ctrl+Space），\n切好之後再按繼續。'}
+        buttons={[{ label: '切好了，繼續', icon: 'play', primary: true, onClick: session.resumeFromIme }]}
       />
     )
   } else if (session.stageClearOpen) {
     dialog = (
       <MessageDialog
         open
-        {...stageClearMessage(battle, heroName)}
-        buttons={[{ label: '⚔️ 繼續戰鬥（Enter）', primary: true, onClick: session.continueToNextStage }]}
+        {...flowDialog(stageClearMessage(battle, heroName))}
+        buttons={[{ label: '繼續戰鬥（Enter）', icon: 'sword', primary: true, onClick: session.continueToNextStage }]}
       />
     )
   }
@@ -80,11 +85,15 @@ export function BattleScreen({ hero, difficulty, words, monsters, onExit, onFini
   if (session.warning === 'ime') {
     warning = (
       <>
-        ⚠️ 偵測到中文輸入法！請按 <kbd>Shift</kbd> 切回英文（Mac 可按 <kbd>Caps Lock</kbd> 或 <kbd>Ctrl</kbd>+<kbd>Space</kbd>）
+        <Icon name="warning" tone="yellow" /> 偵測到中文輸入法！請按 <kbd>Shift</kbd> 切回英文（Mac 可按 <kbd>Caps Lock</kbd> 或 <kbd>Ctrl</kbd>+<kbd>Space</kbd>）
       </>
     )
   } else if (session.warning === 'capsLock') {
-    warning = '🔠 Caps Lock 開著喔！字母會變成大寫，可能一直打錯'
+    warning = (
+      <>
+        <Icon name="capsLock" tone="yellow" /> Caps Lock 開著喔！字母會變成大寫，可能一直打錯
+      </>
+    )
   }
 
   return (

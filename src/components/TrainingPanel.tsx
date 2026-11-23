@@ -10,6 +10,8 @@ import {
 import { Button } from './Button.tsx'
 import { Card } from './Card.tsx'
 import { DifficultyCard } from './DifficultyCard.tsx'
+import { Icon } from './Icon.tsx'
+import { StickerIcon } from './StickerIcon.tsx'
 import styles from './TrainingPanel.module.css'
 
 export interface TrainingPanelProps {
@@ -32,7 +34,7 @@ function Targets({ plan }: { plan: TrainingPlan }) {
   if (plan.status !== 'ready') return <>資料還不夠，先打幾場經典闖關</>
   return (
     <>
-      🎯 要練的鍵：
+      <Icon name="target" /> 要練的鍵：
       {plan.targets.map((t) => (
         <kbd key={`${t.kind}:${t.key}`} className={styles.keycap}>
           {t.key}
@@ -47,16 +49,16 @@ export function TrainingPanel({ signedIn, onSignIn, plans, theme, onSelectTheme,
   if (!signedIn) {
     return (
       <Card className={styles.notice}>
-        <div className={styles.noticeIcon} aria-hidden="true">
-          🔒
-        </div>
+        <StickerIcon name="lock" tone="lilac" className={styles.noticeIcon} />
         <b className={styles.noticeTitle}>登入後即可使用</b>
         <p className={styles.noticeText}>
           弱點特訓會請 AI 依照你的按鍵統計出題。AI 的免費額度是所有玩家共用的，所以需要登入才能使用；
           <br />
           不登入也可以繼續玩經典闖關，紀錄一樣會留在這個瀏覽器。
         </p>
-        {onSignIn ? <Button onClick={onSignIn}>🔑 登入</Button> : <p className={styles.noticeText}>（這個版本沒有開啟登入功能）</p>}
+        {onSignIn ? <Button onClick={onSignIn}>
+            <Icon name="key" /> 登入
+          </Button> : <p className={styles.noticeText}>（這個版本沒有開啟登入功能）</p>}
       </Card>
     )
   }
@@ -65,16 +67,16 @@ export function TrainingPanel({ signedIn, onSignIn, plans, theme, onSelectTheme,
   if (sample.status === 'insufficient') {
     return (
       <Card className={styles.notice}>
-        <div className={styles.noticeIcon} aria-hidden="true">
-          🐾
-        </div>
+        <StickerIcon name="paw" tone="yellow" className={styles.noticeIcon} />
         <b className={styles.noticeTitle}>資料還不夠</b>
         <p className={styles.noticeText}>
           目前統計了 {sample.totalAttempts} 次按鍵，累積到 {sample.needed} 次就能找出你的弱點。
           <br />
           先打一兩場經典闖關吧！
         </p>
-        <Button onClick={onGoClassic}>⚔️ 去打經典闖關</Button>
+        <Button onClick={onGoClassic}>
+          <Icon name="sword" /> 去打經典闖關
+        </Button>
       </Card>
     )
   }
@@ -87,7 +89,7 @@ export function TrainingPanel({ signedIn, onSignIn, plans, theme, onSelectTheme,
         <div className={styles.themes} role="group" aria-labelledby="training-theme-label">
           {TRAINING_THEMES.map((id) => (
             <button key={id} type="button" className={`${styles.theme} ${id === theme ? styles.themeOn : ''}`} aria-pressed={id === theme} onClick={() => onSelectTheme(id)}>
-              {THEME_INFO[id].icon} {THEME_INFO[id].label}
+              <Icon name={THEME_INFO[id].icon} /> {THEME_INFO[id].label}
             </button>
           ))}
         </div>

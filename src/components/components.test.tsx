@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { HERO_EXPRESSIONS, HERO_ORDER, INK } from '../game/index.ts'
-import { Button, Card, HeroAvatar, MessageDialog, ProgressBar, Tag } from './index.ts'
+import { Button, Card, HeroAvatar, MessageDialog, ProgressBar, StickerIcon, Tag } from './index.ts'
 
 describe('Button', () => {
   it('預設是 type="button"，點擊會呼叫 onClick', () => {
@@ -72,7 +72,7 @@ describe('MessageDialog', () => {
     const view = render(
       <MessageDialog
         open={open}
-        emoji="⏸"
+        icon={<StickerIcon name="pause" tone="mint" />}
         title="暫停中"
         text={'第一行\n第二行'}
         buttons={[

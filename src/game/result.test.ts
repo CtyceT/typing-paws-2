@@ -27,7 +27,7 @@ describe('結算文字', () => {
   const lost = battleResult(ended({ phase: 'lost', stage: 1, playerHp: 0 }))
 
   it('標題與副標', () => {
-    expect(resultTitle(win, '喵喵')).toBe('🏆 通關成功！')
+    expect(resultTitle(win, '喵喵')).toBe('通關成功！')
     expect(resultSubtitle(win)).toBe(`普通模式 ・ 打倒了 ${themeLineup('daily')[2].name}！`)
     expect(resultTitle(lost, '熊熊')).toBe('熊熊被打倒了…')
     expect(resultSubtitle(lost)).toBe(`普通模式 ・ 止步於第 2 關（${themeLineup('daily')[1].name}）`)

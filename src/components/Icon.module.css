@@ -1,0 +1,40 @@
+.icon {
+  display: inline-block;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+}
+
+/* Duotone 的淡色色塊：預設是線條同色、20% 不透明 */
+.light {
+  opacity: 0.2;
+}
+
+/* 給了 tone：色塊換成色票的實色，看起來像貼紙上的色塊 */
+.pink .light,
+.mint .light,
+.yellow .light,
+.lilac .light {
+  opacity: 1;
+}
+
+.pink .light {
+  fill: var(--pink);
+}
+
+.mint .light {
+  fill: var(--mint);
+}
+
+.yellow .light {
+  fill: var(--yellow);
+}
+
+.lilac .light {
+  fill: var(--purple);
+}
+
+/* 放在 StickerIcon 色塊上的圖示：色塊換成白色，讓圖示從底色裡跳出來 */
+.onSticker .light {
+  fill: #fff;
+  opacity: 0.85;
+}

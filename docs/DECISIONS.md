@@ -553,3 +553,22 @@
 - 遊戲用的 `src/game/monster-profiles.json` 是手動定案的版本；`look` 欄位抄自 `docs/monster-art.md` 第三節的描述提示詞。驗證規則不變，單元測試照樣檢查這份檔案。
 - `scripts/gen-monsters.mjs` 保留，作為報告中「LLM 生成 → 人工修訂」的例子；輸出改寫到 `docs/monster-profiles-llm.json`，不會蓋掉遊戲用的版本。
 - `FALLBACK_EMOJI` 依新名字重新挑過。
+
+---
+
+# 介面圖示：拿掉 emoji（2026-11-23 由專案負責人決定）
+
+**D90. 介面不使用 emoji，圖示一律用 Phosphor Icons 的 Duotone 樣式或 `<StickerIcon>`。**
+- 理由：emoji 在不同裝置上長得不一樣，也和手繪 SVG 勇者的風格不搭。
+- 例外：怪物圖片載入失敗時的 emoji 備案（`FALLBACK_EMOJI`，D86）。怪物本身換成 AI 圖片（階段 6）。勾選標記 `✓`、箭頭 `→` 是一般文字符號，不是 emoji，保留。
+- **代號**：`src/game` 只用圖示代號（`src/game/icons.ts` 的 `IconName`，例如模式卡片的 `icon: 'sword'`），不依賴 React 或圖示套件。
+  原本回傳含 emoji 字串的純函式改成回傳「圖示代號＋純文字」（`recordOutcome`、`bestSummary`、`trainingFeedbackText`、同步狀態的 `SYNC_ICON`），或直接拿掉 emoji（結算評語，D87）。
+- **小圖示** `<Icon name>`：按鈕、標題、文字裡用。線條是文字顏色（深紫），可以用 `tone` 把 Duotone 的淡色色塊換成色票的實色。
+- **大圖示** `<StickerIcon name tone>`：色票色塊底、粗深紫外框、偏移陰影，中間是圖示。模式卡片、難度卡片、玩法說明、訊息視窗標題、特訓的提示卡用它。
+- **無障礙**：每個圖示都要有 `label`（念得出來），或旁邊有文字（圖示本身 `aria-hidden`）。
+- **戰鬥粒子**：`effects.ts` 的 `burst` 從 emoji 改成形狀（`star`、`sparkle`、`heart`、`dot`），用 SVG 畫成粗外框的貼紙風，每顆的顏色從色票四色（`PARTICLE_COLORS`）隨機挑。結算畫面的星等也用同一個星星。
+- **其他**：競技場的雲改成 SVG；開場訊息的大圖改成怪物立繪（沒有圖時是佔位圖）。
+- **不直接 import `@phosphor-icons/react` 的元件**：每個元件都帶著 6 種樣式（約 3 kB），45 個圖示讓首頁的 JS 從 284 kB 變成 426 kB。
+  改成 `node scripts/build-icons.mjs` 從套件取出 Duotone 的兩層 path（座標四捨五入到小數一位），產生 `src/components/icon-paths.ts`（約 23 kB）；套件改成開發用（devDependencies）。新增圖示時改 `ICON_NAMES` 和腳本的 `ICON_SOURCES` 再重新產生。
+- **待決定：首頁 JS 超過 ROADMAP 11.5 的 300 kB 上限**。這次之後 `index` 是 306 kB（加上 `jsx-runtime` 是 314 kB；11.5 記錄的 292 kB 是兩者加起來）。
+  多出來的主要是圖示形狀（約 20 kB）。座標改成整數只能再省 3 kB，還是超過。要放寬上限，或把戰鬥／結算畫面改成點進去才下載，請專案負責人決定。

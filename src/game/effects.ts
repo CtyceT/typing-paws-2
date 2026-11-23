@@ -12,11 +12,17 @@ export type FloatTone = 'normal' | 'crit' | 'ouch'
 /** 會晃動或彈一下的畫面區塊：arena 整個競技場震動、word 題目左右晃、combo 數字彈一下 */
 export type ShakeTarget = 'arena' | 'word' | 'combo'
 
+/** 粒子的形狀（D90）：用 SVG 畫，顏色由畫面從色票隨機挑。取代 1.0 版的 emoji 粒子 */
+export type ParticleShape = 'star' | 'sparkle' | 'heart' | 'dot'
+
+/** 粒子的顏色：色票（CLAUDE.md）裡的四色，每顆隨機挑一色 */
+export const PARTICLE_COLORS = ['#ff8fab', '#6fd6b0', '#ffd166', '#b79ced'] as const
+
 /** 一個特效指令。delayMs 是事件發生後隔多久才播 */
 export type EffectCommand =
   | { type: 'sprite'; target: 'hero' | 'monster'; anim: SpriteAnim; delayMs: number; durationMs: number }
   | { type: 'float'; target: EffectTarget; text: string; tone: FloatTone; delayMs: number }
-  | { type: 'burst'; target: 'hero' | 'monster'; emojis: readonly string[]; count: number; delayMs: number }
+  | { type: 'burst'; target: 'hero' | 'monster'; shapes: readonly ParticleShape[]; count: number; delayMs: number }
   | { type: 'shake'; target: ShakeTarget; delayMs: number }
 
 /** Combo 至少累積到這個數字，被中斷時才跳提示 */
@@ -69,20 +75,20 @@ export function effectsForEvents(events: readonly BattleEvent[]): EffectCommand[
         out.push({
           type: 'burst',
           target: 'monster',
-          emojis: e.crit ? ['⭐', '✨', '💥', '🌟'] : ['✨', '💖', '⭐'],
+          shapes: e.crit ? ['star', 'sparkle', 'dot', 'star'] : ['sparkle', 'heart', 'star'],
           count: e.crit ? 12 : 7,
           delayMs: HERO_IMPACT_MS,
         })
         break
       case 'monsterDefeated':
         out.push({ type: 'sprite', target: 'monster', anim: 'ko', delayMs: 0, durationMs: 0 })
-        out.push({ type: 'burst', target: 'monster', emojis: ['🎉', '⭐', '✨', '🌸'], count: 16, delayMs: 0 })
+        out.push({ type: 'burst', target: 'monster', shapes: ['star', 'sparkle', 'heart', 'dot'], count: 16, delayMs: 0 })
         break
       case 'monsterAttack':
         out.push({ type: 'sprite', target: 'monster', anim: 'attack', delayMs: 0, durationMs: ATTACK_MONSTER_MS })
         out.push({ type: 'sprite', target: 'hero', anim: 'hit', delayMs: MONSTER_IMPACT_MS, durationMs: HIT_MS })
         out.push({ type: 'float', target: 'hero', text: `-${e.damage}`, tone: 'ouch', delayMs: MONSTER_IMPACT_MS })
-        out.push({ type: 'burst', target: 'hero', emojis: ['💢', '💫'], count: 5, delayMs: MONSTER_IMPACT_MS })
+        out.push({ type: 'burst', target: 'hero', shapes: ['dot', 'star'], count: 5, delayMs: MONSTER_IMPACT_MS })
         out.push({ type: 'shake', target: 'arena', delayMs: MONSTER_IMPACT_MS })
         if (e.comboLost >= COMBO_BREAK_NOTICE) {
           out.push({ type: 'float', target: 'combo', text: 'Combo 被打斷！', tone: 'ouch', delayMs: MONSTER_IMPACT_MS })

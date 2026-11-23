@@ -16,7 +16,7 @@ describe('introMessage', () => {
   it('顯示怪物名字、台詞與輸入法提醒', () => {
     const first = MONSTERS[0]
     const m = introMessage(first)
-    expect(m.emoji).toBe(first.emoji)
+    expect(m.art).toEqual({ monster: first })
     expect(m.title).toBe(`${first.name} 出現了！`)
     expect(m.text).toContain(`「${first.line}」`)
     expect(m.text).toContain('英文')
@@ -28,7 +28,8 @@ describe('stageClearMessage', () => {
     const m = stageClearMessage(state({ stage: 0, phase: 'stageClear', playerHp: 70 }), '喵喵')
     expect(m.title).toBe('第 1 關 CLEAR！')
     const next = MONSTERS[1]
-    expect(m.text).toBe(`過關獎勵 +650 分，喵喵恢復 20 HP。\n下一個對手：${next.emoji} ${next.name}\n「${next.line}」`)
+    expect(m.text).toBe(`過關獎勵 +650 分，喵喵恢復 20 HP。\n下一個對手：${next.name}\n「${next.line}」`)
+    expect(m.art).toEqual({ icon: 'confetti' })
   })
 
   it('血量接近全滿時只補到滿', () => {

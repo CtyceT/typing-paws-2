@@ -65,7 +65,7 @@ describe('弱點特訓：入口', () => {
     expect(screen.getByText(/免費額度是所有玩家共用的/)).toBeInTheDocument()
     expect(screen.queryByText('題目主題')).not.toBeInTheDocument()
     // 說明裡的登入按鈕會打開登入視窗
-    fireEvent.click(screen.getAllByRole('button', { name: '🔑 登入' }).at(-1)!)
+    fireEvent.click(screen.getAllByRole('button', { name: '登入' }).at(-1)!)
     expect(screen.getByRole('dialog', { name: '登入喵喵打字' })).toBeInTheDocument()
     expect(training.requests).toEqual([])
   })
@@ -74,7 +74,7 @@ describe('弱點特訓：入口', () => {
     render(<App cloud={null} />)
     openTraining()
     expect(screen.getByText('登入後即可使用')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '🔑 登入' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '登入' })).not.toBeInTheDocument()
   })
 
   it('登入但資料不足：引導先打經典闖關', async () => {

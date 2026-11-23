@@ -1,5 +1,6 @@
-import type { SyncStatus } from '../game/index.ts'
+import { SYNC_ICON, type SyncStatus } from '../game/index.ts'
 import { Button } from './Button.tsx'
+import { Icon } from './Icon.tsx'
 import styles from './AccountBar.module.css'
 
 export interface AccountBarProps {
@@ -20,11 +21,11 @@ export function AccountBar({ user, onSignIn, onSignOut, sync, onRetrySync }: Acc
     return (
       <div className={styles.bar}>
         <span className={styles.guest} title={onSignIn ? '紀錄只存在這個瀏覽器，登入後可以存到雲端' : '這個版本沒有開啟登入功能，紀錄只存在這個瀏覽器'}>
-          👤 訪客
+          <Icon name="user" /> 訪客
         </span>
         {onSignIn && (
           <Button size="small" onClick={onSignIn}>
-            🔑 登入
+            <Icon name="key" /> 登入
           </Button>
         )}
       </div>
@@ -34,7 +35,7 @@ export function AccountBar({ user, onSignIn, onSignOut, sync, onRetrySync }: Acc
     <div className={styles.bar}>
       {sync && (
         <span className={`${styles.sync} ${styles[sync.tone]}`} role="status">
-          {sync.text}
+          <Icon name={SYNC_ICON[sync.tone]} /> {sync.text}
           {sync.tone === 'warn' && onRetrySync && (
             <button type="button" className={styles.retry} onClick={onRetrySync}>
               重試
@@ -43,7 +44,7 @@ export function AccountBar({ user, onSignIn, onSignOut, sync, onRetrySync }: Acc
         </span>
       )}
       <span className={styles.user}>
-        {user.avatarUrl ? <img className={styles.avatar} src={user.avatarUrl} alt="" referrerPolicy="no-referrer" /> : <span aria-hidden="true">🐾</span>}
+        {user.avatarUrl ? <img className={styles.avatar} src={user.avatarUrl} alt="" referrerPolicy="no-referrer" /> : <Icon name="paw" tone="pink" />}
         <span className={styles.name}>{user.name}</span>
       </span>
       <Button variant="ghost" size="small" onClick={onSignOut}>

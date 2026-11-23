@@ -21,7 +21,7 @@ const result = (over: Partial<BattleResult> = {}): BattleResult => ({
 describe('結算畫面', () => {
   it('通關：標題、副標、開心的勇者、三顆星、六項數據與評語', () => {
     render(<ResultScreen hero="shiba" result={result()} onRetry={() => {}} onMenu={() => {}} />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('🏆 通關成功！')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('通關成功！')
     expect(screen.getByText('普通模式 ・ 打倒了 洗衣大魔王！')).toBeInTheDocument()
     expect(document.querySelector('svg')).toHaveAttribute('data-expression', 'happy')
     expect(screen.getByRole('img', { name: '3 顆星（滿分 3 顆）' })).toBeInTheDocument()
@@ -49,9 +49,9 @@ describe('結算畫面', () => {
 
   it('新紀錄標示', () => {
     const { rerender } = render(<ResultScreen hero="cat" result={result()} newRecord="wpm" onRetry={() => {}} onMenu={() => {}} />)
-    expect(screen.getByText('✨ 新紀錄！最快 WPM ✨')).toBeInTheDocument()
+    expect(screen.getByText('新紀錄！最快 WPM')).toBeInTheDocument()
     rerender(<ResultScreen hero="cat" result={result()} newRecord="score" onRetry={() => {}} onMenu={() => {}} />)
-    expect(screen.getByText('✨ 新紀錄！最高分 ✨')).toBeInTheDocument()
+    expect(screen.getByText('新紀錄！最高分')).toBeInTheDocument()
   })
 
   it('再挑戰與回選單', () => {
@@ -84,6 +84,6 @@ describe('結算畫面', () => {
 
   it('這場沒有打錯時顯示鼓勵的文字', () => {
     render(<ResultScreen hero="cat" result={result()} misses={[]} onRetry={() => {}} onMenu={() => {}} />)
-    expect(screen.getByText('這場一個鍵都沒打錯 🎉')).toBeInTheDocument()
+    expect(screen.getByText('這場一個鍵都沒打錯')).toBeInTheDocument()
   })
 })

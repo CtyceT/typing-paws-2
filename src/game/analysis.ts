@@ -184,8 +184,8 @@ export function weaknessDetail(w: Weakness): { errors: string; speed: string } {
 /** 排行榜在沒有弱點可列時的說明文字 */
 export function weaknessEmptyText(report: WeaknessReport, options: Partial<WeaknessOptions> = {}): string | null {
   const o = { ...WEAKNESS_DEFAULTS, ...options }
-  if (report.status === 'insufficient') return `資料還不夠 🐾\n目前統計了 ${report.totalAttempts} 次按鍵，累積到 ${o.minTotalAttempts} 次就會開始分析弱點`
-  if (report.status === 'good') return '🎉 目前沒有明顯的弱點！\n每個鍵的錯誤率和速度都在正常範圍，繼續保持'
+  if (report.status === 'insufficient') return `資料還不夠\n目前統計了 ${report.totalAttempts} 次按鍵，累積到 ${o.minTotalAttempts} 次就會開始分析弱點`
+  if (report.status === 'good') return '目前沒有明顯的弱點！\n每個鍵的錯誤率和速度都在正常範圍，繼續保持'
   return null
 }
 

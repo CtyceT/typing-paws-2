@@ -1,5 +1,20 @@
 import { useState, type ReactNode } from 'react'
-import { AccountBar, Button, Card, DifficultyCard, HeroAvatar, HeroCard, MessageDialog, ModeCard, Tag, TrainingPanel, WpmTrendChart, type TrainingPanelProps } from '../components/index.ts'
+import {
+  AccountBar,
+  Button,
+  Card,
+  DifficultyCard,
+  HeroAvatar,
+  HeroCard,
+  Icon,
+  MessageDialog,
+  ModeCard,
+  StickerIcon,
+  Tag,
+  TrainingPanel,
+  WpmTrendChart,
+  type TrainingPanelProps,
+} from '../components/index.ts'
 import {
   bestSummary,
   DIFFICULTIES,
@@ -16,15 +31,17 @@ import {
   type Difficulty,
   type GameMode,
   type HeroId,
+  type IconName,
+  type IconTone,
   type Records,
 } from '../game/index.ts'
 import styles from './MenuScreen.module.css'
 
-const HOW = [
-  { e: '⌨️', title: '打字＝攻擊', text: '打完一個單字就會對怪物造成傷害，字越長越痛' },
-  { e: '🔥', title: '連擊加成', text: '連續打對累積 Combo，每 10 下傷害倍率 +0.5（最高 ×3）' },
-  { e: '⏳', title: '小心反擊', text: '怪物的黃色蓄力條滿了就會攻擊你；打錯字會讓它蓄力更快' },
-  { e: '🏆', title: '三關闖關', text: '打倒 3 隻怪物就通關，成績與最佳紀錄會自動保存' },
+const HOW: readonly { icon: IconName; tone: IconTone; title: string; text: string }[] = [
+  { icon: 'keyboard', tone: 'yellow', title: '打字＝攻擊', text: '打完一個單字就會對怪物造成傷害，字越長越痛' },
+  { icon: 'fire', tone: 'pink', title: '連擊加成', text: '連續打對累積 Combo，每 10 下傷害倍率 +0.5（最高 ×3）' },
+  { icon: 'hourglass', tone: 'mint', title: '小心反擊', text: '怪物的黃色蓄力條滿了就會攻擊你；打錯字會讓它蓄力更快' },
+  { icon: 'trophy', tone: 'lilac', title: '三關闖關', text: '打倒 3 隻怪物就通關，成績與最佳紀錄會自動保存' },
 ]
 
 export interface MenuScreenProps {
@@ -54,9 +71,9 @@ function bestLines(best: BestRecord | undefined) {
   const lines = bestSummary(best)
   return lines ? (
     <>
-      {lines[0]}
+      <Icon name={lines[0].icon} /> {lines[0].text}
       <br />
-      {lines[1]}
+      <Icon name={lines[1].icon} /> {lines[1].text}
     </>
   ) : undefined
 }
@@ -81,14 +98,18 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
         <p className={styles.subtitle}>Typing Paws — AI 個人化英文打字冒險</p>
       </header>
 
-      <h2 className={styles.sectionTitle}>🐾 選擇你的勇者</h2>
+      <h2 className={styles.sectionTitle}>
+        <Icon name="paw" tone="pink" /> 選擇你的勇者
+      </h2>
       <div className={styles.grid4}>
         {HERO_ORDER.map((id) => (
           <HeroCard key={id} hero={id} selected={id === hero} onClick={() => onSelectHero(id)} />
         ))}
       </div>
 
-      <h2 className={styles.sectionTitle}>🎮 選擇模式</h2>
+      <h2 className={styles.sectionTitle}>
+        <Icon name="gamepad" tone="lilac" /> 選擇模式
+      </h2>
       <div className={styles.grid4}>
         {MODE_ORDER.map((id) => (
           <ModeCard key={id} mode={id} selected={id === activeMode} onClick={MODES[id].available ? () => onSelectMode?.(id) : undefined} />
@@ -96,7 +117,7 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
       </div>
 
       <h2 className={styles.sectionTitle}>
-        {MODES[activeMode].icon} {MODES[activeMode].label}：{activeMode === 'training' ? 'AI 針對你的弱點出題' : '選擇難度開始戰鬥'}
+        <Icon name={MODES[activeMode].icon} tone={MODES[activeMode].tone} /> {MODES[activeMode].label}：{activeMode === 'training' ? 'AI 針對你的弱點出題' : '選擇難度開始戰鬥'}
       </h2>
       {activeMode === 'training' && training ? (
         <TrainingPanel {...training} signedIn={signedIn} onGoClassic={() => onSelectMode?.('classic')} />
@@ -108,13 +129,13 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
         </div>
       )}
 
-      <h2 className={styles.sectionTitle}>📖 玩法說明</h2>
+      <h2 className={styles.sectionTitle}>
+        <Icon name="book" tone="yellow" /> 玩法說明
+      </h2>
       <div className={styles.howGrid}>
         {HOW.map((h) => (
           <Card key={h.title} className={styles.how}>
-            <div className={styles.e} aria-hidden="true">
-              {h.e}
-            </div>
+            <StickerIcon name={h.icon} tone={h.tone} size={50} className={styles.e} />
             <b>{h.title}</b>
             <small>{h.text}</small>
           </Card>
@@ -122,9 +143,11 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
       </div>
 
       <div className={styles.sectionRow}>
-        <h2 className={styles.sectionTitle}>📈 我的戰績</h2>
+        <h2 className={styles.sectionTitle}>
+          <Icon name="chartLine" tone="mint" /> 我的戰績
+        </h2>
         <Button size="small" onClick={onOpenDashboard}>
-          📊 數據儀表板
+          <Icon name="chartBar" /> 數據儀表板
         </Button>
       </div>
       <div className={styles.historyWrap}>
@@ -133,12 +156,12 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
             <span>最近 10 場 WPM 走勢</span>
             {trend && <span>最高 {trend.best} ・ 綠點＝通關</span>}
           </div>
-          {trend ? <WpmTrendChart trend={trend} /> : <div className={styles.empty}>玩 2 場以上就會畫出你的進步曲線 📈</div>}
+          {trend ? <WpmTrendChart trend={trend} /> : <div className={styles.empty}>玩 2 場以上就會畫出你的進步曲線</div>}
         </Card>
         <Card>
           {recent.length === 0 ? (
             <div className={styles.empty}>
-              還沒有戰績 🐾
+              還沒有戰績
               <br />
               完成一場戰鬥後會出現在這裡
             </div>
@@ -160,7 +183,9 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
                     <td>
                       <Tag tone={r.difficulty}>{DIFFICULTIES[r.difficulty].label}</Tag>
                     </td>
-                    <td>{recordOutcome(r)}</td>
+                    <td className={styles.outcome}>
+                      <Icon name={recordOutcome(r).icon} tone={r.win ? 'yellow' : 'pink'} /> {recordOutcome(r).text}
+                    </td>
                     <td>
                       <b>{r.wpm}</b>
                     </td>
@@ -172,7 +197,7 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
           )}
           <div className={styles.rowEnd}>
             <Button variant="ghost" size="small" onClick={() => hasRecords(records) && setConfirmingClear(true)}>
-              🧹 清除紀錄
+              <Icon name="broom" /> 清除紀錄
             </Button>
           </div>
         </Card>
@@ -184,13 +209,14 @@ export function MenuScreen({ hero, records, signedIn = false, accountBar, onSele
 
       <MessageDialog
         open={confirmingClear}
-        emoji="🧹"
+        icon={<StickerIcon name="broom" tone="pink" />}
         title="清除所有紀錄？"
         text={`最佳紀錄、歷史戰績和按鍵統計都會被刪除${signedIn ? '，\n包含已經存到雲端的資料' : ''}，\n這個動作無法復原。`}
         buttons={[
           { label: '先不要（Enter）', primary: true, onClick: () => setConfirmingClear(false) },
           {
-            label: '🧹 確定清除',
+            label: '確定清除',
+            icon: 'broom',
             onClick: () => {
               setConfirmingClear(false)
               onClearRecords()

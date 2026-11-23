@@ -1,4 +1,5 @@
 import { stageBonus, stageHealAmount, type BattleState } from './battle.ts'
+import type { IconName } from './icons.ts'
 import type { Monster } from './monsters.ts'
 
 /** 開打前的倒數：每一步顯示的文字與停留的毫秒數 */
@@ -18,7 +19,8 @@ export const DEFEAT_DELAY_MS = 1300
 
 /** 訊息視窗的文字內容（text 用 \n 換行） */
 export interface FlowMessage {
-  emoji: string
+  /** 上方的大圖：怪物（開場）或圖示 */
+  art: { monster: Monster } | { icon: IconName }
   title: string
   text: string
 }
@@ -26,9 +28,9 @@ export interface FlowMessage {
 /** 第一關的開場訊息 */
 export function introMessage(monster: Monster): FlowMessage {
   return {
-    emoji: monster.emoji,
+    art: { monster },
     title: `${monster.name} 出現了！`,
-    text: `「${monster.line}」\n把字打完就能攻擊，小心黃色蓄力條！\n⌨️ 記得先切換成「英文」輸入法喔`,
+    text: `「${monster.line}」\n把字打完就能攻擊，小心黃色蓄力條！\n記得先切換成「英文」輸入法喔`,
   }
 }
 
@@ -39,8 +41,8 @@ export function stageClearMessage(state: BattleState, heroName: string): FlowMes
   const next = state.monsters[state.stage + 1]
   const heal = healed > 0 ? `，${heroName}恢復 ${healed} HP` : ''
   return {
-    emoji: '🎉',
+    art: { icon: 'confetti' },
     title: `第 ${state.stage + 1} 關 CLEAR！`,
-    text: `過關獎勵 +${bonus} 分${heal}。\n下一個對手：${next.emoji} ${next.name}\n「${next.line}」`,
+    text: `過關獎勵 +${bonus} 分${heal}。\n下一個對手：${next.name}\n「${next.line}」`,
   }
 }

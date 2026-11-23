@@ -1,10 +1,11 @@
-import { Button, Card, HeroAvatar } from '../components/index.ts'
+import { Button, Card, HeroAvatar, Icon, ParticleShape } from '../components/index.ts'
 import {
   HEROES,
   resultComment,
   resultStats,
   resultSubtitle,
   resultTitle,
+  SYNC_ICON,
   trainingFeedbackText,
   type BattleResult,
   type HeroId,
@@ -42,16 +43,22 @@ export function ResultScreen({ hero, result, newRecord = null, misses, training,
         <div className={styles.mascot}>
           <HeroAvatar hero={hero} expression={result.win ? 'happy' : 'hurt'} className={styles.mascotSvg} />
         </div>
-        <h1 className={styles.title}>{resultTitle(result, HEROES[hero].name)}</h1>
+        <h1 className={styles.title}>
+          {result.win && <Icon name="trophy" tone="yellow" />} {resultTitle(result, HEROES[hero].name)}
+        </h1>
         <div className={styles.subtitle}>{resultSubtitle(result)}</div>
         <div className={styles.stars} role="img" aria-label={`${result.stars} 顆星（滿分 3 顆）`}>
           {[0, 1, 2].map((i) => (
             <span key={i} className={i < result.stars ? undefined : styles.off} style={{ animationDelay: `${0.15 * i + 0.1}s` }}>
-              ⭐
+              <ParticleShape shape="star" color="#ffd166" />
             </span>
           ))}
         </div>
-        {newRecord && <div className={styles.newRecord}>✨ 新紀錄！{NEW_RECORD_LABEL[newRecord]} ✨</div>}
+        {newRecord && (
+          <div className={styles.newRecord}>
+            <Icon name="sparkle" tone="yellow" /> 新紀錄！{NEW_RECORD_LABEL[newRecord]} <Icon name="sparkle" tone="yellow" />
+          </div>
+        )}
         <div className={styles.statGrid}>
           {resultStats(result).map((s) => (
             <div key={s.label} className={styles.stat}>
@@ -63,7 +70,9 @@ export function ResultScreen({ hero, result, newRecord = null, misses, training,
         <div className={styles.comment}>{resultComment(result)}</div>
         {training && (
           <div className={styles.training}>
-            <div className={styles.missesTitle}>🎯 這次特訓的弱點</div>
+            <div className={styles.missesTitle}>
+              <Icon name="target" tone="mint" /> 這次特訓的弱點
+            </div>
             <ul className={styles.trainingList} aria-label="這次特訓的弱點">
               {training.rows.map((row) => {
                 const text = trainingFeedbackText(row)
@@ -74,17 +83,31 @@ export function ResultScreen({ hero, result, newRecord = null, misses, training,
                       {text.now}
                       <small>{text.before}</small>
                     </span>
-                    <span className={`${styles.change} ${styles[row.change]}`}>{text.change}</span>
+                    <span className={`${styles.change} ${styles[row.change]}`}>
+                      {text.changeIcon && <Icon name={text.changeIcon} />} {text.change}
+                    </span>
                   </li>
                 )
               })}
             </ul>
-            <div className={styles.trainingSource}>{training.source === 'builtin' ? '📚 這場的題目來自內建字庫（AI 出題沒有成功）' : '🤖 這場的題目由 AI 針對這些鍵出題'}</div>
+            <div className={styles.trainingSource}>
+              {training.source === 'builtin' ? (
+                <>
+                  <Icon name="books" /> 這場的題目來自內建字庫（AI 出題沒有成功）
+                </>
+              ) : (
+                <>
+                  <Icon name="robot" /> 這場的題目由 AI 針對這些鍵出題
+                </>
+              )}
+            </div>
           </div>
         )}
         {misses && (
           <div className={styles.misses}>
-            <div className={styles.missesTitle}>⌨️ 這場最常打錯的鍵</div>
+            <div className={styles.missesTitle}>
+              <Icon name="keyboard" tone="pink" /> 這場最常打錯的鍵
+            </div>
             {misses.length > 0 ? (
               <ul className={styles.missList} aria-label="這場最常打錯的鍵">
                 {misses.map((m) => (
@@ -97,23 +120,27 @@ export function ResultScreen({ hero, result, newRecord = null, misses, training,
                 ))}
               </ul>
             ) : (
-              <div className={styles.noMiss}>這場一個鍵都沒打錯 🎉</div>
+              <div className={styles.noMiss}>
+                <Icon name="confetti" tone="yellow" /> 這場一個鍵都沒打錯
+              </div>
             )}
           </div>
         )}
         {sync && (
           <div className={`${styles.sync} ${sync.tone === 'warn' ? styles.syncWarn : ''}`} role="status">
-            {sync.text}
+            <Icon name={SYNC_ICON[sync.tone]} /> {sync.text}
           </div>
         )}
         <div className={styles.buttons}>
-          <Button onClick={onRetry}>🔁 再挑戰一次</Button>
+          <Button onClick={onRetry}>
+            <Icon name="retry" /> 再挑戰一次
+          </Button>
           <Button variant="ghost" onClick={onMenu}>
-            🏠 回到選單
+            <Icon name="home" /> 回到選單
           </Button>
           {onDashboard && (
             <Button variant="ghost" onClick={onDashboard}>
-              📊 數據儀表板
+              <Icon name="chartBar" /> 數據儀表板
             </Button>
           )}
         </div>

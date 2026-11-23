@@ -151,10 +151,10 @@ describe('顯示用函式', () => {
     expect(bestSummary(undefined)).toBeNull()
     expect(bestSummary({ score: 0, wpm: 0, maxCombo: 0, accuracy: 0, clears: 0 })).toBeNull()
     expect(bestSummary({ score: 3210, wpm: 45, maxCombo: 31, accuracy: 96, clears: 2 })).toEqual([
-      '🏅 最高分 3210 ・ 最快 45 WPM',
-      '🔥 最高 Combo 31 ・ 通關 2 次',
+      { icon: 'medal', text: '最高分 3210 ・ 最快 45 WPM' },
+      { icon: 'fire', text: '最高 Combo 31 ・ 通關 2 次' },
     ])
-    expect(bestSummary({ score: 500, wpm: 0, maxCombo: 8, accuracy: 0, clears: 0 })![0]).toBe('🏅 最高分 500 ・ 尚未通關')
+    expect(bestSummary({ score: 500, wpm: 0, maxCombo: 8, accuracy: 0, clears: 0 })![0]).toEqual({ icon: 'medal', text: '最高分 500 ・ 尚未通關' })
   })
 
   it('戰績表取最近 6 場，新的在前', () => {
@@ -164,7 +164,7 @@ describe('顯示用函式', () => {
 
   it('時間與結果欄', () => {
     expect(formatPlayedAt(new Date(2026, 10, 5, 9, 7).getTime())).toBe('11/5 09:07')
-    expect(recordOutcome({ win: true, stage: 3 })).toBe('🏆')
-    expect(recordOutcome({ win: false, stage: 2 })).toBe('💀 2關')
+    expect(recordOutcome({ win: true, stage: 3 })).toEqual({ icon: 'trophy', text: '通關' })
+    expect(recordOutcome({ win: false, stage: 2 })).toEqual({ icon: 'heartBreak', text: '第 2 關倒下' })
   })
 })

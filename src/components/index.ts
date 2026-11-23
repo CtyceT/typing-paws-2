@@ -17,3 +17,6 @@ export * from './AccountBar.tsx'
 export * from './TrainingPanel.tsx'
 // KeyboardHeatmap、PerformanceTrendChart、WeaknessList 只有儀表板用到，刻意不從這裡匯出：
 // 從這裡匯出的話會被打包進首頁，儀表板就沒辦法點進去才下載（ROADMAP 11.5）。
+export * from './Icon.tsx'
+export * from './StickerIcon.tsx'
+export * from './ParticleShape.tsx'

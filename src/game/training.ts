@@ -3,6 +3,7 @@
 import { MAX_TARGETS, isTargetKey, type TrainingTheme } from '../../supabase/functions/_shared/training/request.ts'
 import { rankKeys, WEAKNESS_DEFAULTS, type KeyAggregate, type WeaknessOptions } from './analysis.ts'
 import type { Difficulty } from './difficulty.ts'
+import type { IconName } from './icons.ts'
 import type { KeyStatKind, KeyStatRow } from './keystats.ts'
 import { WORDS } from './words.ts'
 
@@ -13,11 +14,11 @@ export { validateItems } from '../../supabase/functions/_shared/training/validat
 /** 每天可以請 AI 出題幾次（實際的限制在 Edge Function，這裡只用來顯示說明） */
 export const TRAINING_DAILY_LIMIT = 10
 
-export const THEME_INFO: Readonly<Record<TrainingTheme, { label: string; icon: string }>> = {
-  daily: { label: '日常', icon: '☕' },
-  fantasy: { label: '奇幻', icon: '🐉' },
-  space: { label: '太空', icon: '🚀' },
-  school: { label: '校園', icon: '🎒' },
+export const THEME_INFO: Readonly<Record<TrainingTheme, { label: string; icon: IconName }>> = {
+  daily: { label: '日常', icon: 'coffee' },
+  fantasy: { label: '奇幻', icon: 'magic' },
+  space: { label: '太空', icon: 'rocket' },
+  school: { label: '校園', icon: 'backpack' },
 }
 export const DEFAULT_THEME: TrainingTheme = 'daily'
 
@@ -115,10 +116,11 @@ export function trainingFeedback(
 const percent = (rate: number) => `${Math.round(rate * 1000) / 10}%`
 
 /** 結算畫面上每個特訓目標的文字：這一場的數字、之前的平均、變化 */
-export function trainingFeedbackText(row: TrainingFeedbackRow): { now: string; before: string; change: string } {
+export function trainingFeedbackText(row: TrainingFeedbackRow): { now: string; before: string; change: string; changeIcon: IconName | null } {
   const now = row.rate === null ? '這場沒有打到' : `這場錯誤率 ${percent(row.rate)}（打 ${row.attempts} 次、錯 ${row.errors} 次）`
   const before = row.beforeRate === null ? '之前沒有資料' : `之前平均 ${percent(row.beforeRate)}`
   const diff = row.rate !== null && row.beforeRate !== null ? percent(Math.abs(row.rate - row.beforeRate)) : ''
-  const change = { better: `📉 進步 ${diff}`, worse: `📈 多錯 ${diff}`, same: '➖ 差不多', new: '🆕 第一次統計', none: '—' }[row.change]
-  return { now, before, change }
+  const change = { better: `進步 ${diff}`, worse: `多錯 ${diff}`, same: '差不多', new: '第一次統計', none: '—' }[row.change]
+  const changeIcon = ({ better: 'trendDown', worse: 'trendUp', same: 'minus', new: 'sparkle', none: null } as const)[row.change]
+  return { now, before, change, changeIcon }
 }

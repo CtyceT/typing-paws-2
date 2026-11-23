@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   effectsForEvents,
   FLOAT_MS,
+  PARTICLE_COLORS,
   PARTICLE_MS,
   type BattleEvent,
   type EffectCommand,
   type EffectTarget,
   type FloatTone,
+  type ParticleShape,
   type ShakeTarget,
   type SpriteAnim,
 } from '../game/index.ts'
@@ -29,7 +31,9 @@ export interface FloatText {
 export interface Particle {
   id: number
   target: 'hero' | 'monster'
-  emoji: string
+  shape: ParticleShape
+  /** 從色票隨機挑的顏色 */
+  color: string
   /** 飛出去的位移（px） */
   dx: number
   dy: number
@@ -103,7 +107,7 @@ export function useBattleEffects(eventLog: readonly BattleEvent[], stage: number
           const added: Particle[] = Array.from({ length: cmd.count }, (_, i) => {
             const angle = Math.random() * Math.PI * 2
             const dist = 50 + Math.random() * 70
-            return { id: id * 100 + i, target: cmd.target, emoji: pick(cmd.emojis), dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist - 20 }
+            return { id: id * 100 + i, target: cmd.target, shape: pick(cmd.shapes), color: pick(PARTICLE_COLORS), dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist - 20 }
           })
           const ids = new Set(added.map((p) => p.id))
           setParticles((list) => [...list, ...added])

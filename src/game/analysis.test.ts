@@ -158,7 +158,7 @@ describe('弱點排行榜的顯示文字', () => {
   })
 
   it('沒有弱點可列時的說明', () => {
-    expect(weaknessEmptyText({ status: 'insufficient', items: [], totalAttempts: 37 })).toBe('資料還不夠 🐾\n目前統計了 37 次按鍵，累積到 100 次就會開始分析弱點')
+    expect(weaknessEmptyText({ status: 'insufficient', items: [], totalAttempts: 37 })).toBe('資料還不夠\n目前統計了 37 次按鍵，累積到 100 次就會開始分析弱點')
     expect(weaknessEmptyText({ status: 'good', items: [], totalAttempts: 500 })).toMatch(/沒有明顯的弱點/)
     expect(weaknessEmptyText({ status: 'weak', items: [weak({})], totalAttempts: 500 })).toBeNull()
   })

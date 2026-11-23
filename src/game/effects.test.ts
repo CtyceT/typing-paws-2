@@ -33,7 +33,7 @@ describe('effectsForEvents', () => {
       { type: 'sprite', target: 'hero', anim: 'attack', delayMs: 0, durationMs: 350 },
       { type: 'sprite', target: 'monster', anim: 'hit', delayMs: 120, durationMs: 400 },
       { type: 'float', target: 'monster', text: '-9', tone: 'normal', delayMs: 120 },
-      { type: 'burst', target: 'monster', emojis: ['✨', '💖', '⭐'], count: 7, delayMs: 120 },
+      { type: 'burst', target: 'monster', shapes: ['sparkle', 'heart', 'star'], count: 7, delayMs: 120 },
     ])
   })
 
@@ -59,7 +59,7 @@ describe('effectsForEvents', () => {
       { type: 'sprite', target: 'monster', anim: 'attack', delayMs: 0, durationMs: 400 },
       { type: 'sprite', target: 'hero', anim: 'hit', delayMs: 150, durationMs: 400 },
       { type: 'float', target: 'hero', text: '-8', tone: 'ouch', delayMs: 150 },
-      { type: 'burst', target: 'hero', emojis: ['💢', '💫'], count: 5, delayMs: 150 },
+      { type: 'burst', target: 'hero', shapes: ['dot', 'star'], count: 5, delayMs: 150 },
       { type: 'shake', target: 'arena', delayMs: 150 },
     ])
   })

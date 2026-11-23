@@ -125,7 +125,7 @@ describe('遊戲迴圈', () => {
     startBattle()
     advance(3500)
     expect(Number.parseFloat(statValue('時間')!)).toBeGreaterThan(3)
-    expect(screen.getByText('⚡ 攻擊蓄力').nextElementSibling!.textContent).toMatch(/^(4\d|50)%$/)
+    expect(screen.getByText('攻擊蓄力').nextElementSibling!.textContent).toMatch(/^(4\d|50)%$/)
     expect(screen.getByText('100/100')).toBeInTheDocument()
     advance(4000) // 簡單難度 7 秒蓄滿
     expect(screen.getByText('92/100')).toBeInTheDocument()
@@ -192,7 +192,7 @@ describe('遊戲迴圈', () => {
 })
 
 describe('暫停', () => {
-  const chargeText = () => screen.getByText('⚡ 攻擊蓄力').nextElementSibling!.textContent
+  const chargeText = () => screen.getByText('攻擊蓄力').nextElementSibling!.textContent
   const setHidden = (hidden: boolean) => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
     fireEvent(document, new Event('visibilitychange'))
@@ -381,13 +381,13 @@ describe('動畫與特效', () => {
     typeWord(word)
     advance(20)
     expect(anims()).toEqual(['attack', 'idle'])
-    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'happy')
+    expect(arena().querySelector('svg[data-expression]')).toHaveAttribute('data-expression', 'happy')
     advance(120)
     expect(anims()).toEqual(['attack', 'hit'])
     expect(screen.getByText(`-${word.length * 3}`)).toBeInTheDocument()
     advance(600)
     expect(anims()).toEqual(['idle', 'idle'])
-    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'normal')
+    expect(arena().querySelector('svg[data-expression]')).toHaveAttribute('data-expression', 'normal')
     advance(600)
     expect(screen.queryByText(`-${word.length * 3}`)).not.toBeInTheDocument()
   })
@@ -400,7 +400,7 @@ describe('動畫與特效', () => {
     expect(anims()[1]).toBe('attack')
     advance(200)
     expect(anims()[0]).toBe('hit')
-    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'hurt')
+    expect(arena().querySelector('svg[data-expression]')).toHaveAttribute('data-expression', 'hurt')
     expect(screen.getByText('-8')).toBeInTheDocument()
     expect(arena().className).toMatch(/shake/)
   })
@@ -423,7 +423,7 @@ describe('動畫與特效', () => {
     startBattle()
     for (let i = 0; i < 95; i++) advance(1000)
     expect(anims()[0]).toBe('ko')
-    expect(arena().querySelector('svg')).toHaveAttribute('data-expression', 'ko')
+    expect(arena().querySelector('svg[data-expression]')).toHaveAttribute('data-expression', 'ko')
   })
 
   it('打錯：題目晃一下', () => {

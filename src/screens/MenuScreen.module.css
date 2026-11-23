@@ -75,7 +75,7 @@
 }
 
 .how .e {
-  font-size: 30px;
+  margin-bottom: 4px;
 }
 
 .how b {
@@ -121,6 +121,10 @@
 .hist th {
   color: var(--ink-soft);
   font-weight: 500;
+}
+
+.hist .outcome {
+  white-space: nowrap;
 }
 
 .empty {

@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { Button, Card, FighterInfo, HeroAvatar, MonsterSprite, StatChip, WordDisplay } from '../components/index.ts'
+import { Button, Card, FighterInfo, HeroAvatar, Icon, MonsterSprite, ParticleShape, StatChip, WordDisplay } from '../components/index.ts'
 import {
   battleHud,
   currentMonster,
@@ -15,6 +15,21 @@ import styles from './BattleView.module.css'
 
 /** 勇者動畫對應的表情：衝出去是開心、被打是受傷、倒地是倒地 */
 const HERO_EXPRESSION: Partial<Record<SpriteAnim | 'idle', HeroExpression>> = { attack: 'happy', hit: 'hurt', ko: 'ko' }
+
+/** 競技場天空飄的雲（裝飾，用 SVG 畫，取代 1.0 版的 emoji 雲） */
+function Cloud({ style }: { style: CSSProperties }) {
+  return (
+    <svg className={styles.cloud} style={style} viewBox="0 0 48 30" width="1.6em" height="1em" aria-hidden="true">
+      <path
+        d="M12 27h25a8 8 0 0 0 1-15.9A11 11 0 0 0 17.3 8 8.5 8.5 0 0 0 4 15a6 6 0 0 0 8 12z"
+        fill="#fff"
+        stroke="#8ecdf6"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 /** 讓同一個 CSS 動畫可以重播：次數是奇數和偶數時用不同名字的 keyframes（內容相同） */
 const replay = (count: number | undefined, a: string, b: string) => (count ? (count % 2 ? a : b) : '')
@@ -59,7 +74,7 @@ export function BattleView({ state, hero, effects, onPause, onRequestFocus, focu
         .filter((p) => p.target === target)
         .map((p) => (
           <div key={p.id} className={styles.particle} style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px` } as CSSProperties} aria-hidden="true">
-            {p.emoji}
+            <ParticleShape shape={p.shape} color={p.color} />
           </div>
         ))}
     </>
@@ -76,20 +91,17 @@ export function BattleView({ state, hero, effects, onPause, onRequestFocus, focu
           <StatChip label="分數" value={hud.score} />
         </div>
         <Button variant="ghost" size="small" onClick={onPause}>
-          ⏸ 暫停
+          <Icon name="pause" /> 暫停
         </Button>
       </div>
 
       <div className={[styles.arena, replay(shakes?.arena, styles.shakeA, styles.shakeB)].join(' ')} data-battle="arena" onClick={onRequestFocus}>
-        <div className={styles.cloud} style={{ top: 14, animationDelay: '-4s' }} aria-hidden="true">
-          ☁️
-        </div>
-        <div className={styles.cloud} style={{ top: 56, animationDelay: '-12s', fontSize: 28 }} aria-hidden="true">
-          ☁️
-        </div>
+        <Cloud style={{ top: 14, animationDelay: '-4s' }} />
+        <Cloud style={{ top: 56, animationDelay: '-12s', fontSize: 28 }} />
 
         <div className={styles.fighter}>
-          <FighterInfo side="player" name={`🐾 ${HEROES[hero].name}勇者`} hpText={hud.playerHpText} hpRatio={hud.playerHpRatio} />
+          <FighterInfo side="player" name={`${HEROES[hero].name}勇者`}
+            icon="paw" hpText={hud.playerHpText} hpRatio={hud.playerHpRatio} />
           <div className={styles.spriteBox}>
             {/* key 讓同一個動畫連續觸發時可以重播 */}
             <div key={effects?.heroAnim?.id ?? 0} className={[styles.heroSprite, styles[heroAnim ?? 'idle']].join(' ')} data-anim={heroAnim ?? 'idle'}>
@@ -134,7 +146,9 @@ export function BattleView({ state, hero, effects, onPause, onRequestFocus, focu
             <span key={i}>{w}</span>
           ))}
         </div>
-        {focusLost && <div className={styles.focusWarn}>👆 點一下這裡繼續打字</div>}
+        {focusLost && <div className={styles.focusWarn}>
+            <Icon name="pointer" /> 點一下這裡繼續打字
+          </div>}
         {warning && (
           <div className={styles.warning} role="alert">
             {warning}

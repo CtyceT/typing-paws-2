@@ -1,0 +1,33 @@
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: var(--line);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--ink);
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.rounded {
+  border-radius: 30%;
+}
+
+.pink {
+  background: var(--pink);
+}
+
+.mint {
+  background: var(--mint);
+}
+
+.yellow {
+  background: var(--yellow);
+}
+
+.lilac {
+  background: var(--purple);
+}

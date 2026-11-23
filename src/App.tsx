@@ -26,7 +26,7 @@ import {
   type TrainingTheme,
 } from './game/index.ts'
 import { AUTH_PROVIDERS, authErrorFromUrl, authRedirectUrl, defaultCloud, PROVIDER_LABELS, useAuth, type AuthProvider, type AuthUser, type Cloud } from './cloud/index.ts'
-import { AccountBar, MessageDialog } from './components/index.ts'
+import { AccountBar, Icon, MessageDialog, StickerIcon } from './components/index.ts'
 import { BattleScreen } from './screens/BattleScreen.tsx'
 import { MenuScreen } from './screens/MenuScreen.tsx'
 import { ResultScreen } from './screens/ResultScreen.tsx'
@@ -85,7 +85,7 @@ function App({ cloud = defaultCloud, random = Math.random }: AppProps) {
   if (auth.status === 'loading') {
     return (
       <main className="app-loading" role="status">
-        🐾 載入中…
+        <Icon name="paw" tone="pink" /> 載入中…
       </main>
     )
   }
@@ -229,7 +229,7 @@ function Game({ user, cloud, random }: GameProps) {
       <Suspense
         fallback={
           <main className="app-loading" role="status">
-            🐾 載入中…
+            <Icon name="paw" tone="pink" /> 載入中…
           </main>
         }
       >
@@ -262,7 +262,7 @@ function Game({ user, cloud, random }: GameProps) {
       />
       <MessageDialog
         open={signIn !== 'closed'}
-        emoji={signIn === 'open' ? '🔑' : '😿'}
+        icon={signIn === 'open' ? <StickerIcon name="key" tone="yellow" /> : <StickerIcon name="sad" tone="pink" />}
         title={signIn === 'open' ? '登入喵喵打字' : '登入沒有成功'}
         text={
           signIn === 'open' || signIn === 'closed'
@@ -280,24 +280,24 @@ function Game({ user, cloud, random }: GameProps) {
       />
       <MessageDialog
         open={clearFailed}
-        emoji="😿"
+        icon={<StickerIcon name="sad" tone="pink" />}
         title="清除沒有成功"
         text={'連不上雲端，所以紀錄都還在。\n請確認網路後再試一次。'}
         buttons={[{ label: '知道了（Enter）', primary: true, onClick: () => setClearFailed(false) }]}
       />
       <MessageDialog
         open={player.guestOffer !== null && !legacy}
-        emoji="🎒"
+        icon={<StickerIcon name="backpack" tone="mint" />}
         title="要把訪客紀錄併入帳號嗎？"
         text={`這個瀏覽器有${player.guestOffer?.games ? ` ${player.guestOffer.games} 場` : ''}還沒登入時留下的紀錄。\n併入後會存到「${user?.name ?? ''}」的帳號，並從訪客紀錄移走；\n選「先不要」的話，它們會原封不動留在訪客模式。`}
         buttons={[
-          { label: '📥 併入帳號（Enter）', primary: true, onClick: () => answerGuest(true) },
+          { label: '併入帳號（Enter）', icon: 'download', primary: true, onClick: () => answerGuest(true) },
           { label: '先不要', onClick: () => answerGuest(false) },
         ]}
       />
       <MessageDialog
         open={guestMergeFailed}
-        emoji="😿"
+        icon={<StickerIcon name="sad" tone="pink" />}
         title="併入沒有成功"
         text={'連不上雲端，訪客紀錄都還在原本的地方。\n下次登入時會再問你一次。'}
         buttons={[{ label: '知道了（Enter）', primary: true, onClick: () => setGuestMergeFailed(false) }]}
@@ -305,11 +305,11 @@ function Game({ user, cloud, random }: GameProps) {
       {legacy && signIn === 'closed' && (
         <MessageDialog
           open
-          emoji="📦"
+          icon={<StickerIcon name="package" tone="lilac" />}
           title="發現 1.0 版的舊紀錄"
           text={legacySummary(legacy)}
           buttons={[
-            { label: '📥 匯入（Enter）', primary: true, onClick: () => answerLegacy('imported') },
+            { label: '匯入（Enter）', icon: 'download', primary: true, onClick: () => answerLegacy('imported') },
             { label: '略過', onClick: () => answerLegacy('skipped') },
           ]}
         />

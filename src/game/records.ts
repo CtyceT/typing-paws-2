@@ -1,3 +1,4 @@
+import type { IconText } from './icons.ts'
 import { DIFFICULTIES, DIFFICULTY_ORDER, type Difficulty } from './difficulty.ts'
 import type { GameMode } from './modes.ts'
 import type { BattleResult } from './result.ts'
@@ -166,12 +167,12 @@ export function hasRecords(records: Records): boolean {
 
 // ---- 顯示用 ----
 
-/** 難度卡片上的最佳紀錄（兩行）；還沒有分數時回傳 null */
-export function bestSummary(best: BestRecord | undefined): [string, string] | null {
+/** 難度卡片上的最佳紀錄（兩行，各有一個圖示）；還沒有分數時回傳 null */
+export function bestSummary(best: BestRecord | undefined): [IconText, IconText] | null {
   if (!best || best.score <= 0) return null
   return [
-    `🏅 最高分 ${best.score} ・ ${best.clears > 0 ? `最快 ${best.wpm} WPM` : '尚未通關'}`,
-    `🔥 最高 Combo ${best.maxCombo} ・ 通關 ${best.clears} 次`,
+    { icon: 'medal', text: `最高分 ${best.score} ・ ${best.clears > 0 ? `最快 ${best.wpm} WPM` : '尚未通關'}` },
+    { icon: 'fire', text: `最高 Combo ${best.maxCombo} ・ 通關 ${best.clears} 次` },
   ]
 }
 
@@ -187,7 +188,7 @@ export function formatPlayedAt(playedAt: number): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 戰績表的結果欄 */
-export function recordOutcome(record: Pick<GameRecord, 'win' | 'stage'>): string {
-  return record.win ? '🏆' : `💀 ${record.stage}關`
+/** 戰績表的結果欄（D87）：圖示加文字 */
+export function recordOutcome(record: Pick<GameRecord, 'win' | 'stage'>): IconText {
+  return record.win ? { icon: 'trophy', text: '通關' } : { icon: 'heartBreak', text: `第 ${record.stage} 關倒下` }
 }

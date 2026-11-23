@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, MessageDialog } from '../components/index.ts'
+import { Button, Card, Icon, MessageDialog, StickerIcon } from '../components/index.ts'
 import { THEME_INFO, type TrainingTarget, type TrainingTheme } from '../game/index.ts'
 import type { TrainingWords } from '../training/loadTrainingWords.ts'
 import styles from './TrainingLoadingScreen.module.css'
@@ -38,9 +38,7 @@ export function TrainingLoadingScreen({ targets, theme, loading, onReady, onCanc
   return (
     <main>
       <Card className={styles.card}>
-        <div className={styles.robot} aria-hidden="true">
-          🤖
-        </div>
+        <StickerIcon name="robot" tone="mint" size={72} className={styles.robot} />
         <h1 className={styles.title} role="status">
           {fallback ? '改用內建字庫' : 'AI 正在為你出題…'}
         </h1>
@@ -52,7 +50,7 @@ export function TrainingLoadingScreen({ targets, theme, loading, onReady, onCanc
             </kbd>
           ))}
           <br />
-          主題：{THEME_INFO[theme].icon} {THEME_INFO[theme].label}
+          主題：<Icon name={THEME_INFO[theme].icon} /> {THEME_INFO[theme].label}
         </p>
         {!fallback && <p className={styles.small}>通常幾秒內就好；等太久會自動改用內建字庫，不會卡住。</p>}
         <Button variant="ghost" onClick={onCancel}>
@@ -61,11 +59,11 @@ export function TrainingLoadingScreen({ targets, theme, loading, onReady, onCanc
       </Card>
       <MessageDialog
         open={fallback !== null}
-        emoji="📚"
+        icon={<StickerIcon name="books" tone="yellow" />}
         title="這場先用內建字庫"
         text={fallback?.notice ?? ''}
         buttons={[
-          { label: '⚔️ 開始特訓（Enter）', primary: true, onClick: () => fallback && onReady(fallback) },
+          { label: '開始特訓（Enter）', icon: 'sword', primary: true, onClick: () => fallback && onReady(fallback) },
           { label: '回到選單', onClick: onCancel },
         ]}
       />

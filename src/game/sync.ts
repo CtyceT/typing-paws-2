@@ -298,17 +298,20 @@ export interface SyncStatus {
   text: string
 }
 
+/** 同步狀態的圖示 */
+export const SYNC_ICON = { ok: 'cloudCheck', busy: 'syncing', warn: 'warning' } as const
+
 /** 主選單帳號列上的同步狀態 */
 export function syncStatus(phase: SyncPhase, pendingCount: number): SyncStatus {
-  if (phase === 'syncing') return { tone: 'busy', text: '🔄 同步中…' }
-  if (pendingCount > 0) return { tone: 'warn', text: `⚠️ ${pendingCount} 場尚未同步` }
-  if (phase === 'failed') return { tone: 'warn', text: '⚠️ 連不上雲端' }
-  return { tone: 'ok', text: '☁️ 已同步' }
+  if (phase === 'syncing') return { tone: 'busy', text: '同步中…' }
+  if (pendingCount > 0) return { tone: 'warn', text: `${pendingCount} 場尚未同步` }
+  if (phase === 'failed') return { tone: 'warn', text: '連不上雲端' }
+  return { tone: 'ok', text: '已同步' }
 }
 
 /** 結算畫面上，這一場有沒有存到雲端 */
 export function resultSyncStatus(phase: SyncPhase, stillPending: boolean): SyncStatus {
-  if (!stillPending) return { tone: 'ok', text: '☁️ 這場已存到雲端' }
-  if (phase === 'syncing') return { tone: 'busy', text: '🔄 正在存到雲端…' }
-  return { tone: 'warn', text: '⚠️ 這場尚未同步到雲端（已先存在這個瀏覽器，連上網路後會自動補傳）' }
+  if (!stillPending) return { tone: 'ok', text: '這場已存到雲端' }
+  if (phase === 'syncing') return { tone: 'busy', text: '正在存到雲端…' }
+  return { tone: 'warn', text: '這場尚未同步到雲端（已先存在這個瀏覽器，連上網路後會自動補傳）' }
 }

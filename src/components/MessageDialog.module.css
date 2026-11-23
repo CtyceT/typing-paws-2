@@ -16,8 +16,10 @@
   animation: popIn 0.3s cubic-bezier(0.3, 1.6, 0.6, 1);
 }
 
-.emoji {
-  font-size: 56px;
+.art {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
 }
 
 .title {

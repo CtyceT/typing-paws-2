@@ -1,10 +1,14 @@
 import { Fragment, useEffect, useId, type ReactNode } from 'react'
+import type { IconName } from '../game/index.ts'
 import { Button } from './Button.tsx'
+import { Icon } from './Icon.tsx'
 import { Card } from './Card.tsx'
 import styles from './MessageDialog.module.css'
 
 export interface DialogButton {
   label: string
+  /** 文字前面的小圖示 */
+  icon?: IconName
   /** 主要按鈕（黃色）；按 Enter 會觸發第一個主要按鈕 */
   primary?: boolean
   onClick: () => void
@@ -12,8 +16,8 @@ export interface DialogButton {
 
 export interface MessageDialogProps {
   open: boolean
-  /** 上方的大圖示，可以是 emoji 或任何元素 */
-  emoji: ReactNode
+  /** 上方的大圖（StickerIcon 或怪物立繪）；介面不使用 emoji（D90） */
+  icon: ReactNode
   title: string
   /** 內文，用 \n 換行 */
   text: string
@@ -21,7 +25,7 @@ export interface MessageDialogProps {
 }
 
 /** 置中的訊息視窗，蓋住整個畫面（開場、過關、暫停等訊息用） */
-export function MessageDialog({ open, emoji, title, text, buttons }: MessageDialogProps) {
+export function MessageDialog({ open, icon, title, text, buttons }: MessageDialogProps) {
   const titleId = useId()
   const primary = buttons.find((b) => b.primary)?.onClick
 
@@ -41,7 +45,7 @@ export function MessageDialog({ open, emoji, title, text, buttons }: MessageDial
   return (
     <div className={styles.overlay}>
       <Card className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <div className={styles.emoji}>{emoji}</div>
+        <div className={styles.art}>{icon}</div>
         <h2 className={styles.title} id={titleId}>
           {title}
         </h2>
@@ -56,7 +60,7 @@ export function MessageDialog({ open, emoji, title, text, buttons }: MessageDial
         <div className={styles.buttons}>
           {buttons.map((b) => (
             <Button key={b.label} variant={b.primary ? 'primary' : 'ghost'} onClick={b.onClick}>
-              {b.label}
+              {b.icon && <Icon name={b.icon} />} {b.label}
             </Button>
           ))}
         </div>

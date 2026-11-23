@@ -23,6 +23,7 @@ AI 個人化英文打字冒險遊戲。是 TAICA「生成式AI：文字與圖像
 - 遊戲核心邏輯（打字判定、Combo、傷害、WPM 計算、弱點分析）寫成純函式放在 `src/game/`，並且要有單元測試；React 元件只負責畫面
 - 保留作業五的視覺風格：奶油色點點背景、粗深紫外框＋偏移陰影的貼紙風、Fredoka 字體、色票 #ff8fab / #6fd6b0 / #ffd166 / #b79ced / #4a3550
 - 保留作業五已解決的細節：輸入法（IME）防呆、全形轉半形、Caps Lock 提醒、暫停時不計時、切換分頁自動暫停
+- 介面不使用 emoji，圖示一律用 Phosphor Duotone 或 StickerIcon（做法見 DECISIONS D90；唯一的例外是怪物圖片載入失敗時的 emoji 備案）
 - 所有 LLM 輸出都要驗證（只允許可列印 ASCII、長度限制、JSON schema），失敗時退回內建字庫，遊戲不能因為 AI 失敗而卡住
 
 ## 安全

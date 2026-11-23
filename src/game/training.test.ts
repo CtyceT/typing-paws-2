@@ -99,10 +99,10 @@ describe('trainingFeedback', () => {
   })
 
   it('顯示文字', () => {
-    expect(trainingFeedbackText(rows[0])).toEqual({ now: '這場錯誤率 12%（打 25 次、錯 3 次）', before: '之前平均 40%', change: '📉 進步 28%' })
-    expect(trainingFeedbackText(rows[1]).change).toBe('📈 多錯 15%')
-    expect(trainingFeedbackText(rows[2])).toEqual({ now: '這場沒有打到', before: '之前平均 30%', change: '—' })
-    expect(trainingFeedbackText(rows[3])).toMatchObject({ before: '之前沒有資料', change: '🆕 第一次統計' })
-    expect(trainingFeedbackText(rows[4]).change).toBe('➖ 差不多')
+    expect(trainingFeedbackText(rows[0])).toEqual({ now: '這場錯誤率 12%（打 25 次、錯 3 次）', before: '之前平均 40%', change: '進步 28%', changeIcon: 'trendDown' })
+    expect(trainingFeedbackText(rows[1]).change).toBe('多錯 15%')
+    expect(trainingFeedbackText(rows[2])).toEqual({ now: '這場沒有打到', before: '之前平均 30%', change: '—', changeIcon: null })
+    expect(trainingFeedbackText(rows[3])).toMatchObject({ before: '之前沒有資料', change: '第一次統計', changeIcon: 'sparkle' })
+    expect(trainingFeedbackText(rows[4]).change).toBe('差不多')
   })
 })

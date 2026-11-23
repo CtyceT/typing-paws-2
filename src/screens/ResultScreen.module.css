@@ -38,6 +38,13 @@
   opacity: 0.3;
 }
 
+/* SVG 星星（取代 emoji）：和原本的 emoji 一樣大 */
+.stars svg {
+  display: block;
+  width: 1.15em;
+  height: 1.15em;
+}
+
 .newRecord {
   display: inline-block;
   background: var(--pink);

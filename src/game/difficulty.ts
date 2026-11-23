@@ -1,10 +1,14 @@
+import type { IconName, IconTone } from './icons.ts'
+
 /** 難度代號，也是字庫與最佳紀錄的索引鍵 */
 export type Difficulty = 'easy' | 'normal' | 'hard'
 
 export interface DifficultyConfig {
   /** 顯示名稱（繁中） */
   label: string
-  icon: string
+  icon: IconName
+  /** 圖示的色塊顏色（和難度標籤同色：綠、黃、粉） */
+  tone: IconTone
   /** 選單上的一句話說明 */
   desc: string
   /** 怪物蓄力條從 0 到滿所需的毫秒數 */
@@ -20,7 +24,8 @@ export const DIFFICULTY_ORDER: readonly Difficulty[] = ['easy', 'normal', 'hard'
 export const DIFFICULTIES: Readonly<Record<Difficulty, DifficultyConfig>> = {
   easy: {
     label: '簡單',
-    icon: '🌱',
+    icon: 'plant',
+    tone: 'mint',
     desc: '3～5 字母短單字，怪物攻擊慢慢來',
     chargeIntervalMs: 7000,
     monsterDamage: 8,
@@ -28,7 +33,8 @@ export const DIFFICULTIES: Readonly<Record<Difficulty, DifficultyConfig>> = {
   },
   normal: {
     label: '普通',
-    icon: '🌟',
+    icon: 'star',
+    tone: 'yellow',
     desc: '5～8 字母單字，節奏剛剛好',
     chargeIntervalMs: 5200,
     monsterDamage: 12,
@@ -36,7 +42,8 @@ export const DIFFICULTIES: Readonly<Record<Difficulty, DifficultyConfig>> = {
   },
   hard: {
     label: '困難',
-    icon: '🔥',
+    icon: 'fire',
+    tone: 'pink',
     desc: '片語＋大小寫＋標點，怪物出手很快',
     chargeIntervalMs: 4400,
     monsterDamage: 15,

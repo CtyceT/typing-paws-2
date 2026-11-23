@@ -133,15 +133,15 @@ describe('還沒上傳的場次', () => {
 
 describe('同步狀態的文字', () => {
   it('帳號列', () => {
-    expect(syncStatus('idle', 0)).toEqual({ tone: 'ok', text: '☁️ 已同步' })
-    expect(syncStatus('syncing', 2)).toEqual({ tone: 'busy', text: '🔄 同步中…' })
-    expect(syncStatus('failed', 2)).toEqual({ tone: 'warn', text: '⚠️ 2 場尚未同步' })
-    expect(syncStatus('idle', 1)).toEqual({ tone: 'warn', text: '⚠️ 1 場尚未同步' })
-    expect(syncStatus('failed', 0)).toEqual({ tone: 'warn', text: '⚠️ 連不上雲端' })
+    expect(syncStatus('idle', 0)).toEqual({ tone: 'ok', text: '已同步' })
+    expect(syncStatus('syncing', 2)).toEqual({ tone: 'busy', text: '同步中…' })
+    expect(syncStatus('failed', 2)).toEqual({ tone: 'warn', text: '2 場尚未同步' })
+    expect(syncStatus('idle', 1)).toEqual({ tone: 'warn', text: '1 場尚未同步' })
+    expect(syncStatus('failed', 0)).toEqual({ tone: 'warn', text: '連不上雲端' })
   })
 
   it('結算畫面', () => {
-    expect(resultSyncStatus('idle', false).text).toBe('☁️ 這場已存到雲端')
+    expect(resultSyncStatus('idle', false).text).toBe('這場已存到雲端')
     expect(resultSyncStatus('syncing', true).tone).toBe('busy')
     expect(resultSyncStatus('failed', true).text).toMatch(/尚未同步到雲端.*自動補傳/)
     expect(resultSyncStatus('syncing', false).tone).toBe('ok')

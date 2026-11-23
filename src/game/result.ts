@@ -42,7 +42,7 @@ export function battleResult(state: BattleState): BattleResult {
 }
 
 export function resultTitle(result: BattleResult, heroName: string): string {
-  return result.win ? '🏆 通關成功！' : `${heroName}被打倒了…`
+  return result.win ? '通關成功！' : `${heroName}被打倒了…`
 }
 
 export function resultSubtitle(result: BattleResult): string {
@@ -64,10 +64,10 @@ export function resultStats(result: BattleResult): { label: string; value: strin
 
 /** 結算評語（規則照 1.0 版，由上往下第一個符合的） */
 export function resultComment(result: Pick<BattleResult, 'win' | 'accuracy' | 'wpm' | 'maxCombo'>): string {
-  if (!result.win && result.accuracy < 85) return '🐾 打錯字會讓怪物蓄力變快，先求穩再求快，準確率拉到 90% 以上會輕鬆很多喔！'
-  if (!result.win) return '🐾 差一點點！記得打完一個字可以把怪物蓄力推回去，連續打字不要停下來。'
-  if (result.wpm >= 70) return '🚀 手速驚人！你已經是鍵盤上的忍者喵了，試試更高難度吧！'
-  if (result.maxCombo >= 40) return '🔥 Combo 大師！維持三倍傷害的感覺很爽對吧～'
-  if (result.accuracy >= 97) return '🎯 幾乎零失誤！穩定度滿分，接下來可以試著再快一點。'
-  return '🌟 順利通關！多玩幾次，看看你的 WPM 走勢會不會一路往上～'
+  if (!result.win && result.accuracy < 85) return '打錯字會讓怪物蓄力變快，先求穩再求快，準確率拉到 90% 以上會輕鬆很多喔！'
+  if (!result.win) return '差一點點！記得打完一個字可以把怪物蓄力推回去，連續打字不要停下來。'
+  if (result.wpm >= 70) return '手速驚人！你已經是鍵盤上的忍者喵了，試試更高難度吧！'
+  if (result.maxCombo >= 40) return 'Combo 大師！維持三倍傷害的感覺很爽對吧～'
+  if (result.accuracy >= 97) return '幾乎零失誤！穩定度滿分，接下來可以試著再快一點。'
+  return '順利通關！多玩幾次，看看你的 WPM 走勢會不會一路往上～'
 }

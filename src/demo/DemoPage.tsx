@@ -4,8 +4,11 @@ import {
   Card,
   HeroAvatar,
   HeroCard,
+  Icon,
   MessageDialog,
+  MonsterSprite,
   ProgressBar,
+  StickerIcon,
   Tag,
   type MessageDialogProps,
 } from '../components/index.ts'
@@ -21,16 +24,18 @@ import {
   type BattleState,
   type HeroExpression,
   type HeroId,
+  type IconName,
+  type IconTone,
 } from '../game/index.ts'
 import { BattleView } from '../screens/BattleView.tsx'
 import styles from './DemoPage.module.css'
 
 /** 文字內容刻意和 1.0 版相同，方便截圖並排比對 */
-const HOW = [
-  { e: '⌨️', title: '打字＝攻擊', text: '打完一個單字就會對怪物造成傷害，字越長越痛' },
-  { e: '🔥', title: '連擊加成', text: '連續打對累積 Combo，每 10 下傷害倍率 +0.5（最高 ×3）' },
-  { e: '⏳', title: '小心反擊', text: '怪物的黃色蓄力條滿了就會攻擊你；打錯字會讓它蓄力更快' },
-  { e: '🏆', title: '三關闖關', text: '打倒 3 隻怪物就通關，成績與最佳紀錄會自動保存' },
+const HOW: readonly { icon: IconName; tone: IconTone; title: string; text: string }[] = [
+  { icon: 'keyboard', tone: 'yellow', title: '打字＝攻擊', text: '打完一個單字就會對怪物造成傷害，字越長越痛' },
+  { icon: 'fire', tone: 'pink', title: '連擊加成', text: '連續打對累積 Combo，每 10 下傷害倍率 +0.5（最高 ×3）' },
+  { icon: 'hourglass', tone: 'mint', title: '小心反擊', text: '怪物的黃色蓄力條滿了就會攻擊你；打錯字會讓它蓄力更快' },
+  { icon: 'trophy', tone: 'lilac', title: '三關闖關', text: '打倒 3 隻怪物就通關，成績與最佳紀錄會自動保存' },
 ]
 
 const EXPRESSION_LABELS: Record<HeroExpression, string> = {
@@ -77,19 +82,19 @@ export default function DemoPage() {
 
   const openIntro = () =>
     setDialog({
-      emoji: first.emoji,
+      icon: <MonsterSprite monster={first} />,
       title: `${first.name} 出現了！`,
-      text: `「${first.line}」\n把字打完就能攻擊，小心黃色蓄力條！\n⌨️ 記得先切換成「英文」輸入法喔`,
-      buttons: [{ label: '⚔️ 開打！（Enter）', primary: true, onClick: close }],
+      text: `「${first.line}」\n把字打完就能攻擊，小心黃色蓄力條！\n記得先切換成「英文」輸入法喔`,
+      buttons: [{ label: '開打！（Enter）', icon: 'sword', primary: true, onClick: close }],
     })
   const openPause = () =>
     setDialog({
-      emoji: '⏸',
+      icon: <StickerIcon name="pause" tone="mint" />,
       title: '暫停中',
       text: '喘口氣，準備好再繼續！',
       buttons: [
-        { label: '▶ 繼續（Esc）', primary: true, onClick: close },
-        { label: '🏳 放棄回選單', onClick: close },
+        { label: '繼續（Esc）', icon: 'play', primary: true, onClick: close },
+        { label: '放棄回選單', icon: 'flag', onClick: close },
       ],
     })
 
@@ -101,7 +106,7 @@ export default function DemoPage() {
       <div className={styles.howGrid} data-demo="cards">
         {HOW.map((h) => (
           <Card key={h.title} className={styles.how}>
-            <div className={styles.e}>{h.e}</div>
+            <StickerIcon name={h.icon} tone={h.tone} size={50} className={styles.e} />
             <b>{h.title}</b>
             <small>{h.text}</small>
           </Card>
@@ -110,9 +115,11 @@ export default function DemoPage() {
 
       <div className={styles.title}>按鈕 Button</div>
       <div className={styles.row} data-demo="buttons">
-        <Button data-demo="btn-primary">⚔️ 開打！（Enter）</Button>
+        <Button data-demo="btn-primary">
+          <Icon name="sword" /> 開打！（Enter）
+        </Button>
         <Button variant="ghost" data-demo="btn-ghost">
-          🏳 放棄回選單
+          <Icon name="flag" /> 放棄回選單
         </Button>
         <Button size="small">小的主要按鈕</Button>
       </div>
@@ -126,7 +133,7 @@ export default function DemoPage() {
             </Tag>
           ))}
           <Button variant="ghost" size="small" data-demo="btn-small-ghost">
-            🧹 清除紀錄
+            <Icon name="broom" /> 清除紀錄
           </Button>
         </div>
       </Card>

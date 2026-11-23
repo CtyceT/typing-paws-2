@@ -40,7 +40,7 @@ describe('主選單', () => {
   it('顯示遊戲標題與訪客標示', async () => {
     render(<App random={DAILY_FIRST} />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('喵喵打字大冒險 2.0')
-    expect(screen.getByText('👤 訪客')).toBeInTheDocument()
+    expect(screen.getByText('訪客')).toBeInTheDocument()
   })
 
   it('預設選中喵喵，點別的勇者會換過去', async () => {
@@ -81,9 +81,9 @@ describe('主選單', () => {
     fireEvent.click(heroCard('柴柴'))
     fireEvent.click(screen.getByRole('button', { name: /困難/ }))
     expect(screen.getByText('第 1 / 3 關 ・ 困難')).toBeInTheDocument()
-    expect(screen.getByText('🐾 柴柴勇者')).toBeInTheDocument()
+    expect(screen.getByText('柴柴勇者')).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: `${DAILY[0].name} 出現了！` })).toBeInTheDocument()
-    expect(screen.queryByText('🐾 選擇你的勇者')).not.toBeInTheDocument()
+    expect(screen.queryByText('選擇你的勇者')).not.toBeInTheDocument()
   })
 })
 
@@ -131,9 +131,9 @@ describe('打完一場的紀錄', () => {
   it('通關後進結算畫面：第一次通關是新紀錄', async () => {
     render(<App random={DAILY_FIRST} />)
     winEasy()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('🏆 通關成功！')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('通關成功！')
     expect(screen.getByText(`簡單模式 ・ 打倒了 ${DAILY[2].name}！`)).toBeInTheDocument()
-    expect(screen.getByText('✨ 新紀錄！最快 WPM ✨')).toBeInTheDocument()
+    expect(screen.getByText('新紀錄！最快 WPM')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: '3 顆星（滿分 3 顆）' })).toBeInTheDocument()
   })
 
@@ -141,7 +141,7 @@ describe('打完一場的紀錄', () => {
     const first = render(<App random={DAILY_FIRST} />)
     winEasy()
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
-    expect(diffCard('簡單')).toHaveTextContent(/🏅 最高分 \d+ ・ 最快 \d+ WPM/)
+    expect(diffCard('簡單')).toHaveTextContent(/最高分 \d+ ・ 最快 \d+ WPM/)
     expect(diffCard('簡單')).toHaveTextContent(/通關 1 次/)
     expect(diffCard('困難')).toHaveTextContent('還沒有紀錄')
     first.unmount()
@@ -188,7 +188,7 @@ describe('打完一場的紀錄', () => {
     expect(items[0]).toHaveTextContent(new RegExp(`^${target.toUpperCase()}錯 2 次／\\d+ 次$`))
 
     await openDashboard()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('數據儀表板')
     expect(screen.getByText('場數').previousElementSibling).toHaveTextContent('1')
   })
 
@@ -209,17 +209,17 @@ describe('打完一場的紀錄', () => {
     const [wpm, accuracy] = [stat('WPM'), stat('準確率')]
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
     expect(screen.queryByTestId('wpm-chart')).not.toBeInTheDocument()
-    expect(screen.getByText('玩 2 場以上就會畫出你的進步曲線 📈')).toBeInTheDocument()
+    expect(screen.getByText('玩 2 場以上就會畫出你的進步曲線')).toBeInTheDocument()
     let rows = screen.getAllByRole('row').slice(1)
     expect(rows).toHaveLength(1)
-    expect([...rows[0].children].map((c) => c.textContent)).toEqual(['11/15 14:05', '簡單', '🏆', wpm, accuracy])
+    expect([...rows[0].children].map((c) => c.textContent?.trim())).toEqual(['11/15 14:05', '簡單', '通關', wpm, accuracy])
 
     loseEasy()
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
     rows = screen.getAllByRole('row').slice(1)
     expect(rows).toHaveLength(2)
-    expect(rows[0].children[2]).toHaveTextContent('💀 1關')
-    expect(rows[1].children[2]).toHaveTextContent('🏆')
+    expect(rows[0].children[2]).toHaveTextContent('第 1 關倒下')
+    expect(rows[1].children[2]).toHaveTextContent('通關')
     await chartsLoaded()
     const chart = screen.getByTestId('wpm-chart')
     expect(JSON.parse(chart.getAttribute('data-values')!)).toEqual([Number(wpm), 0])
@@ -278,15 +278,15 @@ describe('數據儀表板', () => {
   it('從主選單進入，沒有資料時顯示引導文字，可以返回', async () => {
     render(<App random={DAILY_FIRST} />)
     await openDashboard()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('📊 數據儀表板')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('數據儀表板')
     expect(screen.getByText('還沒有數據')).toBeInTheDocument()
     expect(screen.queryByText('場數')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /去打一場/ }))
-    expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
+    expect(screen.getByText('選擇你的勇者')).toBeInTheDocument()
 
     await openDashboard()
     fireEvent.click(screen.getByRole('button', { name: /回到選單/ }))
-    expect(screen.getByText('🐾 選擇你的勇者')).toBeInTheDocument()
+    expect(screen.getByText('選擇你的勇者')).toBeInTheDocument()
   })
 
   it('有戰績時顯示總覽數字', async () => {
@@ -425,7 +425,7 @@ describe('匯入 1.0 舊紀錄', () => {
     fireEvent.click(screen.getByRole('button', { name: /匯入/ }))
     expect(dialog()).not.toBeInTheDocument()
     expect(heroCard('熊熊')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('🏅 最高分 3210 ・ 最快 45 WPM')
+    expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('最高分 3210 ・ 最快 45 WPM')
     expect(screen.getByRole('button', { name: /^.*簡單/ })).toHaveTextContent('通關 2 次')
     expect(JSON.parse(localStorage.getItem('typingPaws2.history')!)).toHaveLength(2)
     expect(localStorage.getItem(LEGACY_KEY)).toBe(LEGACY_RAW)

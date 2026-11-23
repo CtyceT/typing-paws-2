@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Card } from '../components/index.ts'
+import { Button, Card, Icon, StickerIcon } from '../components/index.ts'
 // 只有儀表板用到的元件直接從檔案匯入，才會跟著儀表板一起動態載入，不會被打包進首頁
 import { KeyboardHeatmap } from '../components/KeyboardHeatmap.tsx'
 import { PerformanceTrendChart } from '../components/PerformanceTrendChart.tsx'
@@ -44,9 +44,11 @@ export function DashboardScreen({ records, keyStats, signedIn = false, onBack }:
   return (
     <main>
       <header className={styles.header}>
-        <h1 className={styles.title}>📊 數據儀表板</h1>
+        <h1 className={styles.title}>
+          <Icon name="chartBar" tone="mint" /> 數據儀表板
+        </h1>
         <Button variant="ghost" size="small" onClick={onBack}>
-          🏠 回到選單
+          <Icon name="home" /> 回到選單
         </Button>
       </header>
 
@@ -62,13 +64,15 @@ export function DashboardScreen({ records, keyStats, signedIn = false, onBack }:
             ))}
           </div>
 
-          <h2 className={styles.sectionTitle}>⌨️ 鍵盤熱力圖</h2>
+          <h2 className={styles.sectionTitle}>
+            <Icon name="keyboard" tone="pink" /> 鍵盤熱力圖
+          </h2>
           <Card>
             {hasKeyStats ? (
               <KeyboardHeatmap rows={heatmapRows(aggregates)} />
             ) : (
               <div className={styles.empty}>
-                還沒有按鍵統計 🐾
+                還沒有按鍵統計
                 <br />
                 在 2.0 打完一場戰鬥後，這裡會標出你常打錯的鍵
               </div>
@@ -76,7 +80,9 @@ export function DashboardScreen({ records, keyStats, signedIn = false, onBack }:
           </Card>
 
           <div className={styles.sectionRow}>
-            <h2 className={styles.sectionTitle}>📈 WPM／準確率趨勢</h2>
+            <h2 className={styles.sectionTitle}>
+              <Icon name="chartLine" tone="mint" /> WPM／準確率趨勢
+            </h2>
             <div className={styles.toggle} role="group" aria-label="趨勢圖的範圍">
               {ranges.map((r) => (
                 <button key={r.id} type="button" className={styles.toggleBtn} aria-pressed={range === r.id} onClick={() => setRange(r.id)}>
@@ -85,9 +91,11 @@ export function DashboardScreen({ records, keyStats, signedIn = false, onBack }:
               ))}
             </div>
           </div>
-          <Card>{trend ? <PerformanceTrendChart trend={trend} /> : <div className={styles.empty}>還沒有戰績 🐾</div>}</Card>
+          <Card>{trend ? <PerformanceTrendChart trend={trend} /> : <div className={styles.empty}>還沒有戰績</div>}</Card>
 
-          <h2 className={styles.sectionTitle}>🎯 弱點排行榜</h2>
+          <h2 className={styles.sectionTitle}>
+            <Icon name="target" tone="yellow" /> 弱點排行榜
+          </h2>
           <Card>
             <WeaknessList report={weaknesses} />
             <p className={styles.footnote}>
@@ -97,16 +105,16 @@ export function DashboardScreen({ records, keyStats, signedIn = false, onBack }:
         </>
       ) : (
         <Card className={styles.guide}>
-          <div className={styles.guideEmoji} aria-hidden="true">
-            🐾
-          </div>
+          <StickerIcon name="paw" tone="pink" size={64} className={styles.guideEmoji} />
           <h2 className={styles.guideTitle}>還沒有數據</h2>
           <p className={styles.guideText}>
             打完一場戰鬥後，這裡會出現你的
             <br />
             鍵盤熱力圖、進步趨勢和弱點排行。
           </p>
-          <Button onClick={onBack}>⚔️ 去打一場</Button>
+          <Button onClick={onBack}>
+            <Icon name="sword" /> 去打一場
+          </Button>
         </Card>
       )}
     </main>
