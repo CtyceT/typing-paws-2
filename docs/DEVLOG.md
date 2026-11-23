@@ -270,6 +270,7 @@ select source, count(*) from public.ai_usage group by 1;
 - prompt 到 v2 為止，不再迭代；階段 10 玩家自訂怪物移到「課程結束後」。
 
 **實機驗證**：同「階段 4」的 1～6 步；第 3 步在 `ai_usage` 應該看到 `source` 是 `groq`、`prompt_version` 是 `v2`。
+**結果**：2026-11-23 專案負責人回報線上實機驗證 2～6 步通過，4.11 結案。
 選簡單難度時 AI 題目最多 20 題。之後如果 Groq 失敗，可以用這個查詢看錯誤代號：
 ```sql
 select created_at, a ->> 'provider' as provider, a ->> 'reason' as reason, a ->> 'error_code' as error_code
