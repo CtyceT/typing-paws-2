@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { supabaseBackend } from './backend.ts'
 import { createTrainingHandler, DAILY_LIMIT } from './handler.ts'
+import { CURRENT_PROMPT_VERSION as V } from './prompts/index.ts'
 import { fakeBackend, fakeProvider, GOOD_NORMAL, NORMAL_REQUEST } from './testing.ts'
 
 const URL_ = 'https://project.supabase.co/functions/v1/training-words'
@@ -71,7 +72,7 @@ describe('生成與備援（4.6）', () => {
     expect(await res.json()).toEqual({ items: GOOD_NORMAL, source: 'gemini', limit: 10, remaining: 9 })
     expect(state.usage).toHaveLength(1)
     expect(state.usage[0]).toMatchObject({ userId: 'alice', feature: 'training', source: 'gemini', counted: true, request: NORMAL_REQUEST })
-    expect(state.usage[0].result).toMatchObject({ prompt_version: 'v1', model: 'gemini-test', raw_count: 15, valid_count: 15, reject_reason: null })
+    expect(state.usage[0].result).toMatchObject({ prompt_version: V, model: 'gemini-test', raw_count: 15, valid_count: 15, reject_reason: null })
     expect(state.usage[0].result?.latency_ms).toBeGreaterThanOrEqual(0)
     expect(state.usage[0].result?.attempts).toHaveLength(1)
   })
@@ -152,7 +153,15 @@ describe('題庫快取（4.7）', () => {
       ['alice', 'gemini', true],
       ['bob', 'cache', false],
     ])
-    expect(state.usage[1].result).toMatchObject({ prompt_version: 'v1', model: 'gemini-test', valid_count: 15 })
+    expect(state.usage[1].result).toMatchObject({ prompt_version: V, model: 'gemini-test', valid_count: 15 })
+  })
+
+  it('快取裡有冷僻字的舊題目不會被拿來用', async () => {
+    const { handler, state, gemini } = setup()
+    const rare = ['quoth', 'thymus', 'zenith', 'quasar', 'azimuth', 'thrum', 'thatch', 'quokka', 'zephyr', 'thane', 'quaff', 'zloty', 'thews', 'quire', 'zooid']
+    state.cache.set(`${V}|normal|space|q+th+z`, { key: 'k', promptVersion: V, request: NORMAL_REQUEST, items: rare, provider: 'gemini', model: 'm', ttlHours: 24, expiresAt: state.now + 1000 })
+    expect((await (await handler(post(NORMAL_REQUEST))).json()).source).toBe('gemini')
+    expect(gemini.calls).toBe(1)
   })
 
   it('難度或主題不同就不是同一份快取', async () => {
@@ -186,7 +195,7 @@ describe('題庫快取（4.7）', () => {
     state.failCache = true
     expect((await (await handler(post(NORMAL_REQUEST))).json()).source).toBe('gemini')
     state.failCache = false
-    state.cache.set('v1|normal|space|q+th+z', { key: 'k', promptVersion: 'v1', request: NORMAL_REQUEST, items: ['<script>'], provider: 'gemini', model: 'm', ttlHours: 24, expiresAt: state.now + 1000 })
+    state.cache.set(`${V}|normal|space|q+th+z`, { key: 'k', promptVersion: V, request: NORMAL_REQUEST, items: ['<script>'], provider: 'gemini', model: 'm', ttlHours: 24, expiresAt: state.now + 1000 })
     expect((await (await handler(post(NORMAL_REQUEST))).json()).source).toBe('gemini')
     expect(gemini.calls).toBe(2)
   })

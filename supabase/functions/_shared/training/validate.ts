@@ -1,8 +1,16 @@
-// LLM 輸出驗證（ROADMAP 4.5）：JSON 格式、只允許可列印 ASCII、長度限制、不當用字過濾、每題都要含弱點鍵。
+// LLM 輸出驗證（ROADMAP 4.5）：JSON 格式、只允許可列印 ASCII、長度限制、不當用字過濾、每題都要含弱點鍵、（選用）常用字檢查。
 import { HARD_MAX_WORDS, ITEM_LENGTH, MIN_ITEMS, TARGET_ITEM_COUNT, type TrainingRequest } from './request.ts'
 
 /** 單一題目不合格的原因 */
-export type RejectReason = 'not_string' | 'not_ascii' | 'bad_chars' | 'length' | 'banned_word' | 'missing_target' | 'duplicate'
+export type RejectReason = 'not_string' | 'not_ascii' | 'bad_chars' | 'length' | 'banned_word' | 'missing_target' | 'rare_word' | 'duplicate'
+
+export interface ValidateOptions {
+  /**
+   * 常用字檢查：有給的話，題目裡的每個字（小寫，只含字母與撇號）都要通過，否則不合格原因是 rare_word。
+   * Edge Function 會給（見 common.ts）；前端不給，因為字表很大，而且題目已經在 Edge Function 檢查過。
+   */
+  isCommonWord?: (word: string) => boolean
+}
 /** 整份輸出不合格的原因 */
 export type OutputError = 'invalid_json' | 'bad_shape' | 'too_few'
 
@@ -39,7 +47,7 @@ const HARD_PUNCTUATION = ",.!?'-"
 const countLetters = (s: string) => s.replace(/[^A-Za-z]/g, '').length
 
 /** 檢查一題。合格回傳整理過的題目（去頭尾空白；簡單、普通轉小寫；彎引號換成直的），不合格回傳原因（不含 duplicate） */
-export function checkItem(raw: unknown, req: TrainingRequest): { item: string } | { reason: Exclude<RejectReason, 'duplicate'> } {
+export function checkItem(raw: unknown, req: TrainingRequest, options: ValidateOptions = {}): { item: string } | { reason: Exclude<RejectReason, 'duplicate'> } {
   if (typeof raw !== 'string') return { reason: 'not_string' }
   let item = raw.trim().replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
   if (item === '') return { reason: 'length' }
@@ -58,17 +66,19 @@ export function checkItem(raw: unknown, req: TrainingRequest): { item: string } 
   const lower = item.toLowerCase()
   if (lower.split(/[^a-z]+/).some((word) => BANNED_WORDS.has(word))) return { reason: 'banned_word' }
   if (!req.weaknesses.some((w) => lower.includes(w))) return { reason: 'missing_target' }
+  const { isCommonWord } = options
+  if (isCommonWord && !(lower.match(/[a-z]+(?:'[a-z]+)*/g) ?? []).every((word) => isCommonWord(word))) return { reason: 'rare_word' }
   return { item }
 }
 
 /** 檢查一串題目：不合格與重複的丟掉，合格的最多留 TARGET_ITEM_COUNT 題 */
-export function validateItems(values: readonly unknown[], req: TrainingRequest): ValidationResult {
+export function validateItems(values: readonly unknown[], req: TrainingRequest, options: ValidateOptions = {}): ValidationResult {
   const items: string[] = []
   const seen = new Set<string>()
   const rejects: Partial<Record<RejectReason, number>> = {}
   const reject = (reason: RejectReason) => (rejects[reason] = (rejects[reason] ?? 0) + 1)
   for (const value of values) {
-    const checked = checkItem(value, req)
+    const checked = checkItem(value, req, options)
     if ('reason' in checked) reject(checked.reason)
     else if (seen.has(checked.item.toLowerCase())) reject('duplicate')
     else {
@@ -92,7 +102,7 @@ export function extractJson(text: string): unknown {
 }
 
 /** 驗證 LLM 的原始輸出（應該是 {"items": [...]}） */
-export function validateTrainingOutput(text: string, req: TrainingRequest): ValidationResult {
+export function validateTrainingOutput(text: string, req: TrainingRequest, options: ValidateOptions = {}): ValidationResult {
   let parsed: unknown
   try {
     parsed = extractJson(text)
@@ -101,7 +111,7 @@ export function validateTrainingOutput(text: string, req: TrainingRequest): Vali
   }
   const items = (parsed as { items?: unknown } | null)?.items
   if (!Array.isArray(items)) return failed('bad_shape')
-  return validateItems(items, req)
+  return validateItems(items, req, options)
 }
 
 /** 打亂順序（不改動原本的陣列）。快取命中時用，同一位玩家重複練才不會每次都是同樣的順序 */

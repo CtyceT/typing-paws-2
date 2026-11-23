@@ -2,7 +2,11 @@
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import type { LlmProvider, ProviderName } from './providers.ts'
 import type { TrainingRequest } from './request.ts'
-import { validateTrainingOutput, type RejectReason } from './validate.ts'
+import { isCommonWord } from './common.ts'
+import { validateTrainingOutput, type RejectReason, type ValidateOptions } from './validate.ts'
+
+/** 線上的驗證規則：基本檢查加上常用字檢查 */
+export const SERVER_VALIDATION: ValidateOptions = { isCommonWord }
 
 /** 每個供應商最多等這麼久 */
 export const PROVIDER_TIMEOUT_MS = 8000
@@ -39,6 +43,8 @@ export interface GenerateOptions {
   promptVersion?: string
   timeoutMs?: number
   now?: () => number
+  /** 驗證規則；沒給就用線上的規則（含常用字檢查）。評估腳本用它重現「沒有常用字檢查」的舊規則 */
+  validation?: ValidateOptions
 }
 
 /** 對單一供應商生成一次並驗證 */
@@ -55,7 +61,7 @@ export async function attemptGeneration(req: TrainingRequest, provider: LlmProvi
   }
   const latency_ms = Math.max(0, Math.round(now() - started))
   if (!result.ok) return { ...base, ok: false, latency_ms, raw_count: 0, valid_count: 0, reason: result.error, rejects: {}, detail: result.detail, items: [] }
-  const v = validateTrainingOutput(result.text, req)
+  const v = validateTrainingOutput(result.text, req, options.validation ?? SERVER_VALIDATION)
   return { ...base, ok: v.ok, latency_ms, raw_count: v.rawCount, valid_count: v.validCount, reason: v.topReason, rejects: v.rejects, items: v.ok ? v.items : [] }
 }
 

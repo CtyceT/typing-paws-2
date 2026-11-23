@@ -5,7 +5,7 @@ import { fakeTraining } from '../test/fakeCloud.ts'
 import { loadTrainingWords, TRAINING_TIMEOUT_MS } from './loadTrainingWords.ts'
 
 const request: TrainingRequest = { difficulty: 'normal', theme: 'space', weaknesses: ['q', 'th', 'z'] }
-const GOOD = ['quartz', 'zenith', 'thrust', 'quasar', 'zodiac', 'thermal', 'quiet', 'zebra', 'theory', 'quest', 'frozen', 'earth', 'equal', 'dozen', 'months']
+const GOOD = ['quartz', 'zipper', 'thrust', 'liquid', 'zodiac', 'thermal', 'quiet', 'zebra', 'theory', 'quest', 'frozen', 'earth', 'equal', 'dozen', 'months']
 
 afterEach(() => vi.useRealTimers())
 

@@ -1,7 +1,7 @@
 // 弱點特訓 Edge Function 的處理流程（ROADMAP 4.2、4.3、4.6、4.7）。
 // 這裡不碰 Deno 的 API：資料庫與 LLM 都從外面傳進來，所以整個流程可以在 Vitest 裡用假的實作測試。
 import type { Backend, UsageResult } from './backend.ts'
-import { generateTraining, type GenerateOptions } from './generate.ts'
+import { generateTraining, SERVER_VALIDATION, type GenerateOptions } from './generate.ts'
 import { CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import type { LlmProvider } from './providers.ts'
 import { MIN_ITEMS, parseTrainingRequest, trainingCacheKey } from './request.ts'
@@ -86,7 +86,7 @@ export function createTrainingHandler(deps: HandlerDeps): (request: Request) => 
     try {
       const cached = await backend.cacheGet(cacheKey)
       // 快取的內容也再驗一次，壞掉的當作沒有
-      const valid = cached && Array.isArray(cached.items) ? validateItems(cached.items, req) : null
+      const valid = cached && Array.isArray(cached.items) ? validateItems(cached.items, req, deps.generate?.validation ?? SERVER_VALIDATION) : null
       if (valid?.ok) {
         const used = await backend
           .usageCacheHit(userId, TRAINING_FEATURE, req, { ...base, model: cached?.model ?? null, valid_count: valid.validCount })

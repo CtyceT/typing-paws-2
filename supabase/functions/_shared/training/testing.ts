@@ -4,7 +4,7 @@ import type { LlmProvider, ProviderName, ProviderResult } from './providers.ts'
 import type { TrainingRequest } from './request.ts'
 
 /** 15 個合格的普通難度單字（都含 q、z 或 th） */
-export const GOOD_NORMAL = ['quartz', 'zenith', 'thrust', 'quasar', 'zodiac', 'thermal', 'quiet', 'zebra', 'theory', 'quest', 'frozen', 'earth', 'equal', 'dozen', 'months']
+export const GOOD_NORMAL = ['quartz', 'zipper', 'thrust', 'liquid', 'zodiac', 'thermal', 'quiet', 'zebra', 'theory', 'quest', 'frozen', 'earth', 'equal', 'dozen', 'months']
 export const NORMAL_REQUEST: TrainingRequest = { difficulty: 'normal', theme: 'space', weaknesses: ['q', 'th', 'z'] }
 
 /** 假的供應商：照順序回傳事先準備好的結果（用完之後重複最後一個），並記下被呼叫幾次 */

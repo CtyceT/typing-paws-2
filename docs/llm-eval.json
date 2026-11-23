@@ -1,6 +1,6 @@
 {
   "runs": {
-    "v1": {
+    "v1|basic": {
       "ranAt": "2026-11-16T14:24:23.396Z",
       "timeoutMs": 8000,
       "cases": [
@@ -539,6 +539,1099 @@
                 "Lunch break at 4pm",
                 "Physics; theorems ahead"
               ]
+            }
+          }
+        }
+      ],
+      "prompt": "v1",
+      "validation": "basic"
+    },
+    "v2|common": {
+      "prompt": "v2",
+      "validation": "common",
+      "ranAt": "2026-11-16T14:53:03.921Z",
+      "timeoutMs": 8000,
+      "cases": [
+        {
+          "difficulty": "easy",
+          "theme": "daily",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1999,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 1
+              },
+              "sample": [
+                "tree",
+                "tent",
+                "true",
+                "tire",
+                "team",
+                "test"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 926,
+              "raw_count": 30,
+              "valid_count": 21,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 9
+              },
+              "sample": [
+                "tree",
+                "rest",
+                "tire",
+                "rent",
+                "term",
+                "rate"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "school",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1434,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2065,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "missing_target",
+              "rejects": {
+                "missing_target": 1
+              },
+              "sample": [
+                "think",
+                "thin",
+                "thing",
+                "this",
+                "that",
+                "math"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "fantasy",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1549,
+              "raw_count": 30,
+              "valid_count": 25,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4,
+                "missing_target": 1
+              },
+              "sample": [
+                "axe",
+                "quiz",
+                "zone",
+                "zero",
+                "maze",
+                "quartz"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2376,
+              "raw_count": 30,
+              "valid_count": 21,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 8,
+                "duplicate": 1
+              },
+              "sample": [
+                "quiz",
+                "quest",
+                "quick",
+                "quiet",
+                "quartz",
+                "zebra"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "space",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2180,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2
+              },
+              "sample": [
+                "jet",
+                "jump",
+                "joke",
+                "jug",
+                "jaw",
+                "joy"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2345,
+              "raw_count": 27,
+              "valid_count": 22,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 5
+              },
+              "sample": [
+                "jet",
+                "jive",
+                "jolly",
+                "vibe",
+                "vast",
+                "move"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "space",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 134,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2
+              },
+              "sample": [
+                "earth",
+                "orbit",
+                "enter",
+                "route",
+                "timer",
+                "react"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3544,
+              "raw_count": 30,
+              "valid_count": 23,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 6,
+                "banned_word": 1
+              },
+              "sample": [
+                "planet",
+                "rocket",
+                "meteor",
+                "asteroid",
+                "comet",
+                "orbit"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "daily",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1367,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2660,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "missing_target",
+              "rejects": {
+                "missing_target": 1,
+                "rare_word": 1
+              },
+              "sample": [
+                "thing",
+                "within",
+                "thirty",
+                "knitting",
+                "month",
+                "hinting"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "school",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2035,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "length",
+              "rejects": {
+                "length": 2,
+                "rare_word": 2
+              },
+              "sample": [
+                "zebra",
+                "excel",
+                "maximize",
+                "liquid",
+                "quartz",
+                "dozen"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3807,
+              "raw_count": 30,
+              "valid_count": 25,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4,
+                "missing_target": 1
+              },
+              "sample": [
+                "quizzes",
+                "quiet",
+                "quota",
+                "squeeze",
+                "exams",
+                "extra"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "fantasy",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 4231,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "missing_target",
+              "rejects": {
+                "missing_target": 3
+              },
+              "sample": [
+                "jungle",
+                "knight",
+                "vivid",
+                "major",
+                "token",
+                "value"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3812,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4
+              },
+              "sample": [
+                "jackal",
+                "joker",
+                "jungle",
+                "juice",
+                "jagged",
+                "knight"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "fantasy",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 3505,
+              "raw_count": 30,
+              "valid_count": 30,
+              "reason": null,
+              "rejects": {},
+              "sample": [
+                "the green tree",
+                "defeat the troll",
+                "enter the gate",
+                "retrieval quest",
+                "terrible storm",
+                "treat the injury"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2414,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2
+              },
+              "sample": [
+                "Enter the tower",
+                "Treasure hidden deep",
+                "Rest at the inn",
+                "Rogue steals treasure",
+                "The brave knight",
+                "Quiet forest trek"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "space",
+          "weaknesses": [
+            "ou",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1431,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3578,
+              "raw_count": 30,
+              "valid_count": 23,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 7
+              },
+              "sample": [
+                "through the nebula",
+                "outward thrust launch",
+                "the quiet orbit",
+                "fourth star route",
+                "bright south horizon",
+                "through unknown void"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "daily",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 2309,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 873,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 3,
+                "bad_chars": 1
+              },
+              "sample": [
+                "Quick fox jumps",
+                "Quiz night fun",
+                "Zebra crossing ahead",
+                "Exact quiz score",
+                "Lazy zebra stroll",
+                "Box of crayons"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "school",
+          "weaknesses": [
+            "4",
+            ";",
+            "th"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 2493,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3200,
+              "raw_count": 30,
+              "valid_count": 24,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 6
+              },
+              "sample": [
+                "Read the fourth page",
+                "Lunch break; homework",
+                "Thick math book",
+                "Science lab; experiments",
+                "Write the theme essay",
+                "Group work; share ideas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "v1|common": {
+      "prompt": "v1",
+      "validation": "common",
+      "ranAt": "2026-11-16T14:55:07.484Z",
+      "timeoutMs": 8000,
+      "cases": [
+        {
+          "difficulty": "easy",
+          "theme": "daily",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1830,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 1004,
+              "raw_count": 30,
+              "valid_count": 22,
+              "reason": "duplicate",
+              "rejects": {
+                "duplicate": 5,
+                "rare_word": 3
+              },
+              "sample": [
+                "tree",
+                "rest",
+                "tire",
+                "rent",
+                "term",
+                "tear"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "school",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1746,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "missing_target",
+              "rejects": {
+                "missing_target": 1
+              },
+              "sample": [
+                "thin",
+                "this",
+                "that",
+                "than",
+                "them",
+                "then"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3283,
+              "raw_count": 29,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "missing_target": 1,
+                "rare_word": 2
+              },
+              "sample": [
+                "think",
+                "thin",
+                "thing",
+                "math",
+                "that",
+                "them"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "fantasy",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 3134,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4
+              },
+              "sample": [
+                "aqua",
+                "quiz",
+                "fuzz",
+                "jazz",
+                "daze",
+                "maze"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": false,
+              "latency_ms": 2630,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_400",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "space",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2838,
+              "raw_count": 30,
+              "valid_count": 22,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 7,
+                "banned_word": 1
+              },
+              "sample": [
+                "jet",
+                "jar",
+                "joy",
+                "jig",
+                "jug",
+                "jaw"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 1284,
+              "raw_count": 28,
+              "valid_count": 23,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 5
+              },
+              "sample": [
+                "jive",
+                "jack",
+                "junk",
+                "vibe",
+                "lava",
+                "navy"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "space",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2413,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "length",
+              "rejects": {
+                "length": 2,
+                "rare_word": 1
+              },
+              "sample": [
+                "earth",
+                "rocket",
+                "orbit",
+                "meteor",
+                "rover",
+                "sector"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": false,
+              "latency_ms": 2745,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_400",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "daily",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1910,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "length",
+              "rejects": {
+                "length": 1
+              },
+              "sample": [
+                "thing",
+                "think",
+                "third",
+                "three",
+                "throw",
+                "month"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2976,
+              "raw_count": 30,
+              "valid_count": 24,
+              "reason": "rare_word",
+              "rejects": {
+                "missing_target": 1,
+                "rare_word": 5
+              },
+              "sample": [
+                "within",
+                "thing",
+                "think",
+                "thinly",
+                "nothing",
+                "author"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "school",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 2939,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": false,
+              "latency_ms": 2504,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_400",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "fantasy",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2556,
+              "raw_count": 30,
+              "valid_count": 25,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 5
+              },
+              "sample": [
+                "vivid",
+                "knife",
+                "major",
+                "valor",
+                "voyage",
+                "jukebox"
+              ]
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3164,
+              "raw_count": 30,
+              "valid_count": 22,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 8
+              },
+              "sample": [
+                "jacket",
+                "jungle",
+                "knave",
+                "velvet",
+                "joker",
+                "village"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "fantasy",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 2405,
+              "raw_count": 30,
+              "valid_count": 14,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 11,
+                "banned_word": 5
+              },
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2892,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4
+              },
+              "sample": [
+                "Enter the forest",
+                "Forgotten treasure map",
+                "Silent river mist",
+                "Eternal night quest",
+                "Restoring ancient rite",
+                "Treasure beyond the reef"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "space",
+          "weaknesses": [
+            "ou",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1923,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3895,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 3
+              },
+              "sample": [
+                "Through the nebula",
+                "Out beyond the stars",
+                "Launch thrust sequence",
+                "Orbiting the moon",
+                "Rough asteroid field",
+                "Southern horizon view"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "daily",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 966,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 1473,
+              "raw_count": 30,
+              "valid_count": 22,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 8
+              },
+              "sample": [
+                "Quick fox jumps",
+                "Exact quiz results",
+                "Boxed quartz gems",
+                "Lazy zebra crossing",
+                "Quick mix of juice",
+                "Exact zip code"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "school",
+          "weaknesses": [
+            "4",
+            ";",
+            "th"
+          ],
+          "kind": "罕見",
+          "results": {
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1816,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": []
+            },
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": false,
+              "latency_ms": 2570,
+              "raw_count": 30,
+              "valid_count": 10,
+              "reason": "length",
+              "rejects": {
+                "length": 12,
+                "rare_word": 8
+              },
+              "sample": []
             }
           }
         }

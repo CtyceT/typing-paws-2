@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generateTraining } from './generate.ts'
 import { geminiProvider, groqProvider } from './providers.ts'
-import { buildTrainingPrompt } from './prompts/index.ts'
+import { buildTrainingPrompt, CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import { fakeProvider, GOOD_NORMAL, NORMAL_REQUEST } from './testing.ts'
 
 describe('generateTraining', () => {
@@ -9,7 +9,7 @@ describe('generateTraining', () => {
     const gemini = fakeProvider('gemini', GOOD_NORMAL)
     const groq = fakeProvider('groq', GOOD_NORMAL)
     const r = await generateTraining(NORMAL_REQUEST, [gemini, groq])
-    expect(r).toMatchObject({ ok: true, provider: 'gemini', model: 'gemini-test', promptVersion: 'v1', items: GOOD_NORMAL })
+    expect(r).toMatchObject({ ok: true, provider: 'gemini', model: 'gemini-test', promptVersion: CURRENT_PROMPT_VERSION, items: GOOD_NORMAL })
     expect(r.attempts).toHaveLength(1)
     expect(r.attempts[0]).toMatchObject({ provider: 'gemini', ok: true, raw_count: 15, valid_count: 15, reason: null })
     expect(groq.calls).toBe(0)
@@ -36,6 +36,15 @@ describe('generateTraining', () => {
     expect(r.ok).toBe(true)
     expect(r.provider).toBe('groq')
     expect(r.attempts[0]).toMatchObject({ ok: false, raw_count: 6, valid_count: 1, reason: 'missing_target', rejects: { missing_target: 5 } })
+  })
+
+  it('Gemini 的題目多半是冷僻字 → 改用 Groq，原因記為 rare_word；關掉常用字檢查時同一份輸出會通過', async () => {
+    const rare = ['quoth', 'thymus', 'zenith', 'quasar', 'azimuth', 'thrum', 'thatch', 'zephyr', 'quaff', 'zloty', 'quartz', 'zebra', 'theory', 'quest', 'earth']
+    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', rare), fakeProvider('groq', GOOD_NORMAL)])
+    expect(r.provider).toBe('groq')
+    expect(r.attempts[0]).toMatchObject({ ok: false, raw_count: 15, valid_count: 5, reason: 'rare_word', rejects: { rare_word: 10 } })
+    const basic = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', rare)], { validation: {} })
+    expect(basic).toMatchObject({ ok: true, provider: 'gemini' })
   })
 
   it('兩家都失敗：ok 是 false、沒有題目，兩次嘗試都有紀錄', async () => {

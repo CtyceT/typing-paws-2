@@ -11,7 +11,8 @@
 //   node scripts/try-llm.mjs --difficulty easy --theme daily --targets q,z --provider groq
 //   node scripts/try-llm.mjs --show-prompt                      只印出 prompt，不呼叫 API（不需要金鑰）
 //   node scripts/try-llm.mjs --eval                             評估模式：固定的測試案例，兩家各跑一次，結果寫到 docs/llm-eval.md
-//   node scripts/try-llm.mjs --eval --prompt v2                 評估另一個 prompt 版本（各版本的結果會並列比較）
+//   node scripts/try-llm.mjs --eval --prompt v1                 評估另一個 prompt 版本（各版本的結果會並列比較）
+//   node scripts/try-llm.mjs --eval --no-common                 不做常用字檢查（重現 v2 之前的驗證規則）
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
@@ -36,6 +37,8 @@ const { values: args } = parseArgs({
     prompt: { type: 'string', default: CURRENT_PROMPT_VERSION },
     // 評估模式每個案例之間等幾毫秒：Gemini 免費額度大約每分鐘 15 次
     delay: { type: 'string', default: '4500' },
+    // 不做常用字檢查（rare_word）：v2 之前的驗證規則
+    'no-common': { type: 'boolean', default: false },
   },
 })
 
@@ -69,6 +72,11 @@ function loadProviders() {
   return wanted.map((name) => all[name])
 }
 
+/** 驗證規則：common 是線上的規則（含常用字檢查），basic 是沒有常用字檢查的舊規則 */
+const VALIDATION = args['no-common'] ? 'basic' : 'common'
+const VALIDATION_LABEL = { basic: '基本', common: '基本＋常用字' }
+const generateOptions = { promptVersion: args.prompt, ...(args['no-common'] && { validation: {} }) }
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const pct = (n, d) => (d > 0 ? `${Math.round((n / d) * 1000) / 10}%` : '—')
 
@@ -84,7 +92,7 @@ async function tryOnce() {
   console.log(`── prompt ${prompt.version}（temperature ${prompt.temperature}）──\n[system]\n${prompt.system}\n\n[user]\n${prompt.user}\n`)
   if (args['show-prompt']) return
   for (const provider of loadProviders()) {
-    const a = await attemptGeneration(req, provider, { promptVersion: args.prompt })
+    const a = await attemptGeneration(req, provider, generateOptions)
     console.log(`── ${provider.name}（${provider.model}）──`)
     console.log(`${a.ok ? '✓ 合格' : '✗ 不合格'}　延遲 ${a.latency_ms} ms　原始 ${a.raw_count} 題 → 合格 ${a.valid_count} 題（門檻 ${MIN_ITEMS[req.difficulty]}）${a.reason ? `　主要原因：${a.reason}` : ''}`)
     if (Object.keys(a.rejects).length > 0) console.log(`被丟掉的題目：${JSON.stringify(a.rejects)}`)
@@ -120,7 +128,7 @@ async function runEval() {
     const req = parseTrainingRequest(c)
     const results = {}
     for (const provider of providers) {
-      const a = await attemptGeneration(req, provider, { promptVersion: args.prompt })
+      const a = await attemptGeneration(req, provider, generateOptions)
       results[provider.name] = { model: a.model, ok: a.ok, latency_ms: a.latency_ms, raw_count: a.raw_count, valid_count: a.valid_count, reason: a.reason, rejects: a.rejects, sample: a.items.slice(0, 6) }
       console.log(`[${i + 1}/${EVAL_CASES.length}] ${c.difficulty} ${c.weaknesses.join(' ')}　${provider.name}：${a.ok ? '✓' : '✗'} ${a.valid_count}/${a.raw_count} 題　${a.latency_ms} ms${a.reason ? `　${a.reason}` : ''}`)
     }
@@ -128,7 +136,7 @@ async function runEval() {
     if (i < EVAL_CASES.length - 1) await sleep(delay)
   }
   const store = existsSync(EVAL_JSON) ? JSON.parse(readFileSync(EVAL_JSON, 'utf8')) : { runs: {} }
-  store.runs[args.prompt] = { ranAt: new Date().toISOString(), timeoutMs: PROVIDER_TIMEOUT_MS, cases }
+  store.runs[`${args.prompt}|${VALIDATION}`] = { prompt: args.prompt, validation: VALIDATION, ranAt: new Date().toISOString(), timeoutMs: PROVIDER_TIMEOUT_MS, cases }
   writeFileSync(EVAL_JSON, JSON.stringify(store, null, 2) + '\n')
   writeFileSync(EVAL_MD, renderReport(store))
   console.log(`\n已寫入 docs/llm-eval.md（原始數字在 docs/llm-eval.json）`)
@@ -171,22 +179,26 @@ function renderReport(store) {
     '- 做法：固定的 12 個測試案例（3 個難度 × 常見與罕見的弱點組合），每一家各生成一次，用和線上相同的 prompt、驗證規則與逾時設定。',
     '- **案例合格率**：合格題數達到門檻（簡單 10 題、普通與困難 15 題）的案例比例，也就是線上「這一家能不能用」的機率。',
     '- **題目合格率**：LLM 給的題目裡通過驗證的比例。',
+    '- **驗證規則**：「基本」是格式、長度、禁用字、要含弱點鍵；「基本＋常用字」另外要求每個字都在 2 萬字的常用字表上（不在表上記為 rare_word），這是 prompt v2 一起加的、線上使用的規則。',
     '- 每個案例只跑一次，而且 temperature 是 0.9，所以數字會有起伏；差距不大時不代表真的有差別。',
     '',
     '## 各版本比較',
     '',
-    '| prompt | 模型 | 案例合格率 | 題目合格率 | 平均延遲 | 不合格原因分布 |',
-    '|---|---|---|---|---|---|',
+    '| prompt | 驗證規則 | 模型 | 案例合格率 | 題目合格率 | 平均延遲 | 呼叫失敗 | 不合格原因分布 |',
+    '|---|---|---|---|---|---|---|---|',
   ]
   for (const v of versions) {
-    for (const p of providersOf(store.runs[v])) {
-      const s = summarize(store.runs[v].cases, p)
-      out.push(`| ${v} | ${s.model} | ${s.passed}/${s.total}（${pct(s.passed, s.total)}） | ${s.valid}/${s.raw}（${pct(s.valid, s.raw)}） | ${s.avgLatency} ms | ${reasonText(s.reasons)} |`)
+    const run = store.runs[v]
+    for (const p of providersOf(run)) {
+      const s = summarize(run.cases, p)
+      // 呼叫失敗：沒有拿到任何題目的次數（HTTP 503、429、逾時…），和題目品質無關
+      const callErrors = s.reasons.filter(([k]) => /^(http_|timeout|network|empty|bad_response)/.test(k))
+      out.push(`| ${run.prompt} | ${VALIDATION_LABEL[run.validation]} | ${s.model} | ${s.passed}/${s.total}（${pct(s.passed, s.total)}） | ${s.valid}/${s.raw}（${pct(s.valid, s.raw)}） | ${s.avgLatency} ms | ${reasonText(callErrors)} | ${reasonText(s.reasons.filter((r) => !callErrors.includes(r)))} |`)
     }
   }
   for (const v of [...versions].reverse()) {
     const run = store.runs[v]
-    out.push('', `## prompt ${v}`, '', `執行時間：${run.ranAt}　每次呼叫的逾時：${run.timeoutMs} ms`, '', '### 依難度與弱點類型', '', '| 模型 | 分組 | 案例合格率 | 題目合格率 | 平均延遲 | 不合格原因分布 |', '|---|---|---|---|---|---|')
+    out.push('', `## prompt ${run.prompt}（驗證規則：${VALIDATION_LABEL[run.validation]}）`, '', `執行時間：${run.ranAt}　每次呼叫的逾時：${run.timeoutMs} ms`, '', '### 依難度與弱點類型', '', '| 模型 | 分組 | 案例合格率 | 題目合格率 | 平均延遲 | 不合格原因分布 |', '|---|---|---|---|---|---|')
     const groups = [
       ...['easy', 'normal', 'hard'].map((d) => [DIFFICULTY_LABEL[d], (c) => c.difficulty === d]),
       ...['常見', '罕見'].map((k) => [`${k}弱點`, (c) => c.kind === k]),

@@ -1,6 +1,7 @@
 // 出題 prompt 的版本登記。每個版本一個檔案（v1.ts、v2.ts…），用量紀錄（ai_usage.prompt_version）和快取鍵都帶著版本號。
 import type { TrainingRequest } from '../request.ts'
 import { PROMPT_V1 } from './v1.ts'
+import { PROMPT_V2 } from './v2.ts'
 
 export interface PromptTemplate {
   /** 版本號，例如 v1 */
@@ -12,10 +13,10 @@ export interface PromptTemplate {
   user(req: TrainingRequest): string
 }
 
-export const PROMPTS: Readonly<Record<string, PromptTemplate>> = { [PROMPT_V1.version]: PROMPT_V1 }
+export const PROMPTS: Readonly<Record<string, PromptTemplate>> = { [PROMPT_V1.version]: PROMPT_V1, [PROMPT_V2.version]: PROMPT_V2 }
 
 /** 線上使用的版本 */
-export const CURRENT_PROMPT_VERSION = PROMPT_V1.version
+export const CURRENT_PROMPT_VERSION = PROMPT_V2.version
 
 /** 組好要送給 LLM 的內容 */
 export interface BuiltPrompt {
