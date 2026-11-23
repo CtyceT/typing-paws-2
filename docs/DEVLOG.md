@@ -241,3 +241,26 @@ group by 1;
 -- 快取命中率
 select source, count(*) from public.ai_usage group by 1;
 ```
+
+## 階段 4 收尾：prompt v2、常用字檢查、主力對調（2026-11-16 ～ 11-23）
+
+決定記在 `docs/DECISIONS.md`（D72～D75），數字在 `docs/llm-eval.md`。
+
+**做了什麼**
+- prompt v2（`prompts/v2.ts`）：要求國中生認得的常用字，困難難度再強調長度並給範例。
+- 常用字檢查：2 萬字常用字表（`scripts/build-common-words.mjs` 產生），不在表上的字記為 `rare_word`；之後加了各主題 47～50 字的白名單（`theme-words.ts`）。
+- 主力改成 Groq、備援改成 Gemini（`PROVIDER_ORDER`）。
+- 評估腳本存下被判冷僻字的字和 HTTP 錯誤的回應內容，報告裡各有一張表；舊的評估結果標為「基本＋常用字」（加白名單之前）。
+- 重新部署 `training-words`（version 3），下載線上的程式碼和 commit 逐檔比對，13 個檔案都一致；未登入呼叫仍是 401。
+
+**遇到的問題與解法**
+- **上一段對話因為用量上限中斷**：v2 的程式寫好、評估跑完、而且已經部署（11/16 22:56 的 version 2），但沒有 commit。
+  11-23 先把當時的狀態原樣 commit 備份，再繼續。
+- **Gemini 一直回 503（high demand）**：v2 評估 5 次，11-23 重跑又是 503 ×5、逾時 ×3，12 個案例只有 4 個合格。這是主力對調的主要原因。
+- **Groq 的 HTTP 400**：v1＋常用字那一輪出現 3 次，但當時沒有存回應內容；11-23 重跑沒有重現，原因不明，先不加重試（D75）。
+- **主題字白名單效果比預期小**：擬的字（nebula、asteroid、dragon…）幾乎都已經在常用字表上，真正多放行的只有 12 個。
+  從被擋的字清單看，誤殺主要是一般字（pixel、kayak、ember、xylophone…），還有星期、月份（SCOWL 當專有名詞，全部不在表上）。
+- **Groq 偶爾大量重複**：11-23 的簡單 `in` `th` 案例 30 題裡 23 題重複，只剩 6 題合格，是 Groq 唯一沒過的案例（換 Gemini 也是 503）。
+- **`supabase functions deploy` 在代理模式會要求確認**：加 `--yes` 才會真的部署。
+
+**實機驗證**：同「階段 4」的 1～6 步；第 3 步在 `ai_usage` 應該看到 `source` 是 `groq`、`prompt_version` 是 `v2`。

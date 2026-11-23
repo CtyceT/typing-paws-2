@@ -331,6 +331,7 @@
 ## 4.1 LLM 供應商與模型
 
 **D55. 主力用 Google Gemini 的 `gemini-3.5-flash-lite`，備援用 Groq 的 `gpt-oss-120b`（2026-11-16 由專案負責人決定）。**
+> 2026-11-23 起主力與備援對調，見 D72。下面「失敗時的順序」和 D61 的 Gemini／Groq 要對調著讀。
 - Gemini 免費額度大約 15 RPM、500 次／天，而且是「整個專案」共用，不是每把金鑰各算一份。
   所以一定要有題庫快取（4.7）和每人每日上限（4.3），不能讓少數人把全部人的額度用完。
 - Groq 是 OpenAI 相容的 API；模型在 API 裡的完整代號是 `openai/gpt-oss-120b`。
@@ -386,7 +387,7 @@
 - 驗證前會做的整理：去頭尾空白；簡單、普通轉小寫；彎引號換成直的。這些是 LLM 常見的小偏差，直接丟掉太浪費。
 - 困難難度允許的標點是 `, . ! ? ' -`，加上「弱點本身」的符號。
 - 禁用字用整個字比對（不會誤判 class、assess），清單偏保守：連 kill、gun、hate 這類字也擋。清單在 `validate.ts` 的 `BANNED_WORDS`。
-- 驗證只檢查格式，檢查不了「是不是真的英文單字」。實測偶爾會出現冷僻字（例如 quoth）。
+- 驗證只檢查格式，檢查不了「是不是真的英文單字」。實測偶爾會出現冷僻字（例如 quoth）。→ prompt v2 加了常用字檢查（`rare_word`），見 D73。
 
 **D65. `ai_usage` 記錄生成品質：`prompt_version`、`model`、`latency_ms`、`raw_count`、`valid_count`、`reject_reason`，另外有 `attempts`（JSON）。**
 - 上面那幾欄記的是「最後一次嘗試」；`attempts` 是每一次嘗試的細節（Gemini 失敗再用 Groq 時會有兩筆），期末報告要算各家合格率時用它。
@@ -420,3 +421,56 @@
 - 「之前」是這一場以前、本機保留的最近 30 場的平均。差距不到 1 個百分點算「差不多」。
 - 只比錯誤率，沒有比反應時間：單場每個鍵的計時樣本很少，比較出來不穩定。
 - 這一區下面會標明題目是 AI 出的還是內建字庫。
+
+## 4.x 收尾：prompt v2、常用字檢查、主力對調（2026-11-16 ～ 11-23）
+
+**D72. 主力改成 Groq（`openai/gpt-oss-120b`），備援改成 Gemini（`gemini-3.5-flash-lite`）（2026-11-23 由專案負責人決定）。**
+- 理由：prompt v2 的評估裡 Groq 12/12 個案例合格，Gemini 有 5 次 HTTP 503（high demand）；Groq 的每日免費額度也比較多。
+  11-23 重跑一次，Gemini 又有 503 ×5、逾時 ×3，只有 4/12 合格（見 `docs/llm-eval.md`）。
+- 順序寫在 `providers.ts` 的 `PROVIDER_ORDER`，Edge Function 和評估腳本都用 `buildProviders()` 照這個順序建立。
+- 其他規則不變：每家逾時 8 秒、各打一次，兩家都失敗才回 502、前端改用內建字庫。
+
+**D73. 線上的驗證多一項常用字檢查：題目裡每個字都要在 2 萬字的常用字表上，或在該主題的白名單上，否則是 `rare_word`。**
+- 常用字表：OpenSubtitles 詞頻前段、而且 SCOWL（大小 10～50）裡有的全小寫字，取前 20000 個（`scripts/build-common-words.mjs`，產生 `common-words.ts`）。
+- 接受常用字的規則變化（複數、過去式、進行式、比較級、-ly）、常見縮寫和所有格（`common.ts`）。
+- 只在 Edge Function 檢查。前端的驗證不做這一項（字表約 160 kB，而且題目已經在伺服器檢查過）。
+- prompt v2（`prompts/v2.ts`）同時要求「國中生認得的常用字」，困難難度再強調長度並給範例。
+- **主題字白名單**（`theme-words.ts`）：只在該主題有效，同樣接受規則變化（asteroids、enchanted）。初版每個主題 47～50 字，請專案負責人確認：
+  - 太空：space planet star moon sun orbit comet galaxy nebula asteroid meteor meteorite rocket astronaut alien satellite telescope gravity universe cosmos cosmic crater eclipse lunar solar stellar launch shuttle spaceship spacecraft starship mars jupiter saturn venus mercury neptune uranus pluto quasar pulsar supernova zenith horizon oxygen capsule module rover probe countdown
+  - 奇幻：wizard witch dragon knight castle kingdom princess prince queen king magic magical spell potion wand sword shield armor quest hero treasure crown throne tower dungeon goblin troll elf dwarf giant fairy unicorn griffin phoenix sorcerer enchant scroll rune relic legend myth beast gem jewel cave realm villain
+  - 校園：classroom teacher student lesson homework exam quiz test grade pencil eraser notebook textbook backpack ruler crayon marker chalk whiteboard desk locker library librarian principal recess lunch cafeteria science math history geography art music gym project essay report spelling vocabulary alphabet semester diploma campus dictionary calculator scissors glue classmate
+  - 日常：breakfast lunch dinner kitchen bedroom bathroom shower toothbrush toothpaste pillow blanket sofa couch laundry grocery market sandwich cereal juice coffee tea pizza noodle bicycle bus subway umbrella jacket sweater sneakers wallet phone laptop keyboard weekend neighbor picnic puppy kitten garden vacuum fridge microwave napkin yogurt pancake cookie chores alarm mailbox
+  - 實際效果有限：上面的字絕大多數本來就在常用字表上，真正多放行的只有 12 個（starship jupiter saturn venus neptune uranus pluto quasar pulsar zenith enchant whiteboard）。
+- 11-23 評估被擋的字裡，有一部分是誤殺（正常、國中生看得懂的字）：pixel、kayak、thicken、javelin、ember、thunderous、southward、xylophone、zany、zippy、doze、max、theorem、thursday。
+  其中 thursday 是系統性的漏洞：SCOWL 把星期、月份當專有名詞（大寫開頭），所以全部不在表上。要不要補、補哪些，等專案負責人決定。
+
+**D74. 被判冷僻字的字（`rare_words`）和 HTTP 錯誤的回應內容（`detail`）只給評估腳本用，不存進資料庫。**
+- `attemptGeneration` 會回傳這兩項，`try-llm.mjs --eval` 把它們寫進 `docs/llm-eval.json`，報告裡列出「被判為冷僻字的字」和「呼叫失敗的回應內容」。
+- Edge Function 寫 `ai_usage.attempts` 前會拿掉（延續 D65）。之後如果要在線上追誤殺，再決定要不要存。
+
+**D75. Groq 的 HTTP 400 先不加「同一家重試一次」。**
+- v1＋常用字那一輪出現過 3 次，但當時沒有存回應內容。11-23 重跑時 Groq 12 次都成功，沒有重現，所以不知道是不是 JSON 輸出失敗。
+- 依專案負責人的條件（「如果是 JSON 輸出失敗才加重試」），原因沒有確認前不加。現在 Groq 失敗會直接換 Gemini，遊戲不會卡住。
+
+---
+
+# 時程與範圍（2026-11-23 由專案負責人決定）
+
+> 時程、順序和範圍是專案負責人定的；D77～D79 的「理由」是 Claude 整理的草稿，請專案負責人確認或修改。
+
+**D76. 期末專題 12/22 在 Gather.town 線上分享，要交 2～3 分鐘的簡報影片。**
+- 12/14 功能凍結；12/14～16 完整測試與修 bug；12/17～19 錄影片。
+- 理由：留一週給測試和影片，展示當天不能出現壞掉的功能。12/14 之後只修 bug，不加功能。
+
+**D77. 剩下的功能依這個順序做：① 弱點特訓收尾 ② AI 怪物 ③ AI 故事模式 ④ AI 每週建議（有時間才做）。**
+- 弱點特訓已經可以用，收尾（Groq 主力、prompt v2、實機驗證）成本最低，而且是 AI 個人化的核心，排第一。
+- AI 怪物是影片裡最顯眼的「生成式 AI」成果，同時展示文字與圖像生成，對應課程的兩大主題，排第二。
+- 故事模式要做新的長文本打字畫面，工作量大，排第三。
+- 每週建議在儀表板上，展示效果較弱，而且已經有規則產生的弱點分析可以代替，所以有時間才做。
+
+**D78. AI 怪物的圖片由專案負責人用課堂教的 diffusers／Fooocus 生成 12 張；Claude 負責串進遊戲，並用 LLM 生成名字、台詞、弱點屬性。**
+- 理由：圖片生成是課程實作的內容，由本人操作才能在報告裡說明；挑圖、修圖也需要人的判斷。
+- 這取代了 ROADMAP「待決定」裡的「text-to-image 用哪個模型或服務」。
+
+**D79. 每日挑戰排行榜（階段 8）和雙人即時對戰（階段 9）移到「課程結束後」，不在這次範圍內。**
+- 理由：兩個都需要多人同時測試（排行榜要有人上榜、對戰要兩個人），12/14 前很難測完整，而且和「生成式 AI」主題的關係較遠。
