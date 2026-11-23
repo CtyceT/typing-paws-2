@@ -43,9 +43,9 @@ gradient background, complex details
 
 ## 三、12 隻怪物
 
-對應弱點特訓的 4 個主題，每個主題 2 隻小怪＋1 隻魔王。經典闖關可以從全部 12 隻裡抽。
+對應弱點特訓的 4 個主題，每個主題 2 隻小怪＋1 隻魔王。經典闖關每場隨機抽一個主題，三關依序是該主題的小怪、小怪、魔王（DECISIONS D85）。
 
-| 編號 | 主題 | 怪物（暫名） | 描述提示詞（放在共用風格前面） |
+| 編號 | 主題 | 怪物 | 描述提示詞（放在共用風格前面） |
 |---|---|---|---|
 | 01 | 日常 | 失蹤襪子怪 | `a mischievous striped sock monster with tiny arms` |
 | 02 | 日常 | 賴床鬧鐘怪 | `a grumpy round alarm clock monster with two bells on its head` |
@@ -62,7 +62,7 @@ gradient background, complex details
 
 10～12 是 1.0 版的三隻怪物（Bug 蟲、Typo 幽靈、Deadline 龍王），保留下來當作從作業五延續的彩蛋。
 
-名字、台詞、弱點屬性之後交給 LLM 生成，這裡的中文名只是暫名。
+名字、台詞、弱點屬性已由專案負責人手動定案，存在 `src/game/monster-profiles.json`（DECISIONS D89）。LLM 先生成過一版（`docs/monster-profiles-llm.json`），因為和這份生圖計畫對不上而改用手動版本。
 
 ## 四、挑圖標準
 
