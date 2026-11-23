@@ -5,7 +5,7 @@
 - 做法：固定的 12 個測試案例（3 個難度 × 常見與罕見的弱點組合），每一家各生成一次，用和線上相同的 prompt、驗證規則與逾時設定。
 - **案例合格率**：合格題數達到門檻（簡單 10 題、普通與困難 15 題）的案例比例，也就是線上「這一家能不能用」的機率。
 - **題目合格率**：LLM 給的題目裡通過驗證的比例。
-- **驗證規則**：「基本」是格式、長度、禁用字、要含弱點鍵；「基本＋常用字」另外要求每個字都在 2 萬字的常用字表上（不在表上記為 rare_word），這是 prompt v2 一起加的、線上使用的規則。
+- **驗證規則**：「基本」是格式、長度、禁用字、要含弱點鍵；「基本＋常用字」另外要求每個字都在 2 萬字的常用字表上（不在表上記為 rare_word），是 prompt v2 一起加的；「基本＋常用字＋主題字」再讓各主題的白名單（`theme-words.ts`）不受常用字限制，這是目前線上使用的規則。
 - 每個案例只跑一次，而且 temperature 是 0.9，所以數字會有起伏；差距不大時不代表真的有差別。
 
 ## 各版本比較
@@ -16,6 +16,8 @@
 | v1 | 基本 | openai/gpt-oss-120b | 12/12（100%） | 350/356（98.3%） | 3079 ms | — | length ×3、duplicate ×2、missing_target ×1 |
 | v1 | 基本＋常用字 | gemini-3.5-flash-lite | 6/12（50%） | 172/210（81.9%） | 2206 ms | http_503 ×5 | rare_word ×28、banned_word ×6、length ×3、missing_target ×1 |
 | v1 | 基本＋常用字 | openai/gpt-oss-120b | 8/12（66.7%） | 202/267（75.7%） | 2535 ms | http_400 ×3 | rare_word ×46、length ×12、duplicate ×5、missing_target ×2 |
+| v2 | 基本＋常用字＋主題字 | openai/gpt-oss-120b | 11/12（91.7%） | 288/356（80.9%） | 2793 ms | — | rare_word ×44、duplicate ×23、banned_word ×1 |
+| v2 | 基本＋常用字＋主題字 | gemini-3.5-flash-lite | 4/12（33.3%） | 109/120（90.8%） | 3724 ms | http_503 ×5、timeout ×3 | missing_target ×5、rare_word ×5、length ×1 |
 | v2 | 基本＋常用字 | gemini-3.5-flash-lite | 7/12（58.3%） | 193/210（91.9%） | 2056 ms | http_503 ×5 | rare_word ×11、missing_target ×4、length ×2 |
 | v2 | 基本＋常用字 | openai/gpt-oss-120b | 12/12（100%） | 296/357（82.9%） | 2633 ms | — | rare_word ×55、missing_target ×3、duplicate ×1、banned_word ×1、bad_chars ×1 |
 
@@ -66,6 +68,83 @@
 | 困難 | daily | `q` `x` `z` | 罕見 | groq | ✓ | 26／30 | 873 ms | rare_word | `Quick fox jumps` `Quiz night fun` `Zebra crossing ahead` `Exact quiz score` `Lazy zebra stroll` `Box of crayons` |
 | 困難 | school | `4` `;` `th` | 罕見 | gemini | ✗ | 0／0 | 2493 ms | http_503 | — |
 | 困難 | school | `4` `;` `th` | 罕見 | groq | ✓ | 24／30 | 3200 ms | rare_word | `Read the fourth page` `Lunch break; homework` `Thick math book` `Science lab; experiments` `Write the theme essay` `Group work; share ideas` |
+
+## prompt v2（驗證規則：基本＋常用字＋主題字）
+
+執行時間：2026-11-23T14:07:33.124Z　每次呼叫的逾時：8000 ms
+
+### 依難度與弱點類型
+
+| 模型 | 分組 | 案例合格率 | 題目合格率 | 平均延遲 | 不合格原因分布 |
+|---|---|---|---|---|---|
+| openai/gpt-oss-120b | 簡單 | 3/4 | 73.6% | 2330 ms | duplicate ×22、rare_word ×10 |
+| openai/gpt-oss-120b | 普通 | 4/4 | 88.7% | 2806 ms | rare_word ×11、banned_word ×1、duplicate ×1 |
+| openai/gpt-oss-120b | 困難 | 4/4 | 80.8% | 3242 ms | rare_word ×23 |
+| openai/gpt-oss-120b | 常見弱點 | 5/6 | 78.9% | 2647 ms | duplicate ×23、rare_word ×14、banned_word ×1 |
+| openai/gpt-oss-120b | 罕見弱點 | 6/6 | 83% | 2938 ms | rare_word ×30 |
+| gemini-3.5-flash-lite | 簡單 | 1/4 | 90% | 4706 ms | missing_target ×3、http_503 ×2、timeout ×1 |
+| gemini-3.5-flash-lite | 普通 | 1/4 | 90% | 4766 ms | timeout ×2、length ×1、rare_word ×1、missing_target ×1、http_503 ×1 |
+| gemini-3.5-flash-lite | 困難 | 2/4 | 91.7% | 1701 ms | rare_word ×4、http_503 ×2、missing_target ×1 |
+| gemini-3.5-flash-lite | 常見弱點 | 3/6 | 91.1% | 3287 ms | missing_target ×4、rare_word ×3、http_503 ×2、length ×1、timeout ×1 |
+| gemini-3.5-flash-lite | 罕見弱點 | 1/6 | 90% | 4161 ms | http_503 ×3、timeout ×2、rare_word ×2、missing_target ×1 |
+
+### 每個案例
+
+| 難度 | 主題 | 弱點 | 類型 | 模型 | 結果 | 合格／原始 | 延遲 | 主要原因 | 題目範例 |
+|---|---|---|---|---|---|---|---|---|---|
+| 簡單 | daily | `e` `r` `t` | 常見 | groq | ✓ | 29／30 | 2520 ms | rare_word | `tree` `rest` `rent` `tire` `term` `treat` |
+| 簡單 | daily | `e` `r` `t` | 常見 | gemini | ✓ | 27／30 | 1457 ms | missing_target | `tree` `tent` `teeth` `store` `street` `water` |
+| 簡單 | school | `in` `th` | 常見 | groq | ✗ | 6／30 | 1119 ms | duplicate | — |
+| 簡單 | school | `in` `th` | 常見 | gemini | ✗ | 0／0 | 5330 ms | http_503 | — |
+| 簡單 | fantasy | `q` `x` `z` | 罕見 | groq | ✓ | 27／30 | 2647 ms | rare_word | `quiz` `quick` `quest` `quiet` `quilt` `quartz` |
+| 簡單 | fantasy | `q` `x` `z` | 罕見 | gemini | ✗ | 0／0 | 4986 ms | http_503 | — |
+| 簡單 | space | `j` `k` `v` | 罕見 | groq | ✓ | 27／31 | 3035 ms | rare_word | `joke` `jolt` `jive` `jack` `jump` `jet` |
+| 簡單 | space | `j` `k` `v` | 罕見 | gemini | ✗ | 0／0 | 7050 ms | timeout | — |
+| 普通 | space | `e` `r` `t` | 常見 | groq | ✓ | 29／30 | 2932 ms | banned_word | `planet` `rocket` `meteor` `asteroid` `orbit` `crater` |
+| 普通 | space | `e` `r` `t` | 常見 | gemini | ✓ | 27／30 | 1561 ms | length | `earth` `rocket` `travel` `meteor` `planet` `sector` |
+| 普通 | daily | `in` `th` | 常見 | groq | ✓ | 24／30 | 3561 ms | rare_word | `within` `things` `thinly` `thumps` `inning` `winter` |
+| 普通 | daily | `in` `th` | 常見 | gemini | ✗ | 0／0 | 8006 ms | timeout | — |
+| 普通 | school | `q` `x` `z` | 罕見 | groq | ✓ | 26／29 | 1884 ms | rare_word | `quizzed` `quizzes` `quizzer` `examine` `excuse` `exempt` |
+| 普通 | school | `q` `x` `z` | 罕見 | gemini | ✗ | 0／0 | 1490 ms | http_503 | — |
+| 普通 | fantasy | `j` `k` `v` | 罕見 | groq | ✓ | 23／26 | 2848 ms | rare_word | `jewel` `jungle` `jacket` `jackal` `jigsaw` `knight` |
+| 普通 | fantasy | `j` `k` `v` | 罕見 | gemini | ✗ | 0／0 | 8005 ms | timeout | — |
+| 困難 | fantasy | `e` `r` `t` | 常見 | groq | ✓ | 26／30 | 3863 ms | rare_word | `Enter the realm` `Treasure hidden deep` `Elder tree whispers` `Red rune etched` `Torch lit nightly` `Silent river bends` |
+| 困難 | fantasy | `e` `r` `t` | 常見 | gemini | ✗ | 0／0 | 1459 ms | http_503 | — |
+| 困難 | space | `ou` `th` | 常見 | groq | ✓ | 28／30 | 1889 ms | rare_word | `Launch the rocket` `South bound stars` `Through the nebula` `Orbit the moon` `Hidden outpost` `Galaxy route map` |
+| 困難 | space | `ou` `th` | 常見 | gemini | ✓ | 28／30 | 1907 ms | rare_word | `the fourth path` `out through space` `smooth flight` `thought proud` `about the moon` `south route` |
+| 困難 | daily | `q` `x` `z` | 罕見 | groq | ✓ | 25／30 | 2521 ms | rare_word | `quick zip quiz` `extra cozy zone` `quiz on pizza` `mix the quiet` `buzzing taxi stop` `exact zebra crossing` |
+| 困難 | daily | `q` `x` `z` | 罕見 | gemini | ✓ | 27／30 | 2355 ms | rare_word | `quick zap` `extra pizza` `lazy dog` `quiet zone` `mixed nuts` `crazy quiz` |
+| 困難 | school | `4` `;` `th` | 罕見 | groq | ✓ | 18／30 | 4694 ms | rare_word | `Math test 4 times` `Write; think; repeat` `Lunch break; chat` `Study; think; solve` `History homework 4` `Math; theory; quiz` |
+| 困難 | school | `4` `;` `th` | 罕見 | gemini | ✗ | 0／0 | 1082 ms | http_503 | — |
+
+### 被判為冷僻字（rare_word）的字
+
+| 難度 | 主題 | 模型 | 字 |
+|---|---|---|---|
+| 簡單 | daily | groq | `terse` |
+| 簡單 | school | groq | `inthr` `thingy` |
+| 簡單 | fantasy | groq | `waxen` `axial` `pixel` |
+| 簡單 | space | groq | `juke` `kiln` `jink` `kayak` |
+| 普通 | space | gemini | `astro` |
+| 普通 | daily | groq | `thicken` `throng` `inlet` `thieve` `thatch` |
+| 普通 | school | groq | `pixel` `syntax` `quorum` |
+| 普通 | fantasy | groq | `jovial` `javelin` `ravage` |
+| 困難 | fantasy | groq | `treant` `ember` `riverlet` |
+| 困難 | space | groq | `thunderous` `southward` |
+| 困難 | space | gemini | `auth` `southward` |
+| 困難 | daily | groq | `zany` `max` `xylophone` `zestful` `zippy` |
+| 困難 | daily | gemini | `doze` `max` |
+| 困難 | school | groq | `theth` `th` `theorems` `abound` `thursday` `fieldtrip` `theorem` |
+
+### 呼叫失敗的回應內容
+
+| 難度 | 主題 | 模型 | 代號 | 回應內容 |
+|---|---|---|---|---|
+| 簡單 | school | gemini | http_503 | {   "error": {     "code": 503,     "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",     "status": "UNAVAILABLE"   } }  |
+| 簡單 | fantasy | gemini | http_503 | {   "error": {     "code": 503,     "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",     "status": "UNAVAILABLE"   } }  |
+| 普通 | school | gemini | http_503 | {   "error": {     "code": 503,     "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",     "status": "UNAVAILABLE"   } }  |
+| 困難 | fantasy | gemini | http_503 | {   "error": {     "code": 503,     "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",     "status": "UNAVAILABLE"   } }  |
+| 困難 | school | gemini | http_503 | {   "error": {     "code": 503,     "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",     "status": "UNAVAILABLE"   } }  |
 
 ## prompt v1（驗證規則：基本＋常用字）
 

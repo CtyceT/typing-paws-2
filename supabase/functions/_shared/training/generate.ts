@@ -1,4 +1,4 @@
-// 生成題目（ROADMAP 4.6）：依序試每個供應商（Gemini → Groq），第一個通過驗證的就用；每一次嘗試都留下紀錄。
+// 生成題目（ROADMAP 4.6）：依序試每個供應商（Groq → Gemini），第一個通過驗證的就用；每一次嘗試都留下紀錄。
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import type { LlmProvider, ProviderName } from './providers.ts'
 import type { TrainingRequest } from './request.ts'
@@ -25,6 +25,8 @@ export interface Attempt {
   rejects: Partial<Record<RejectReason, number>>
   /** 供應商回傳的錯誤內容（只在本機腳本顯示，寫進資料庫前會拿掉） */
   detail?: string
+  /** 被判為冷僻字的字（評估腳本用來檢查誤殺，寫進資料庫前會拿掉） */
+  rare_words?: string[]
 }
 
 export interface GenerateResult {
@@ -62,7 +64,7 @@ export async function attemptGeneration(req: TrainingRequest, provider: LlmProvi
   const latency_ms = Math.max(0, Math.round(now() - started))
   if (!result.ok) return { ...base, ok: false, latency_ms, raw_count: 0, valid_count: 0, reason: result.error, rejects: {}, detail: result.detail, items: [] }
   const v = validateTrainingOutput(result.text, req, options.validation ?? SERVER_VALIDATION)
-  return { ...base, ok: v.ok, latency_ms, raw_count: v.rawCount, valid_count: v.validCount, reason: v.topReason, rejects: v.rejects, items: v.ok ? v.items : [] }
+  return { ...base, ok: v.ok, latency_ms, raw_count: v.rawCount, valid_count: v.validCount, reason: v.topReason, rejects: v.rejects, rare_words: v.rareWords, items: v.ok ? v.items : [] }
 }
 
 /** 依序試每個供應商，第一個合格的就回傳。全部失敗時 ok 是 false（由呼叫的人退回內建字庫） */

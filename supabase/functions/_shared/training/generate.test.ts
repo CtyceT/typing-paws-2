@@ -1,69 +1,69 @@
 import { describe, expect, it } from 'vitest'
 import { generateTraining } from './generate.ts'
-import { geminiProvider, groqProvider } from './providers.ts'
+import { buildProviders, geminiProvider, groqProvider } from './providers.ts'
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import { fakeProvider, GOOD_NORMAL, NORMAL_REQUEST } from './testing.ts'
 
 describe('generateTraining', () => {
-  it('Gemini 成功就不會呼叫 Groq', async () => {
-    const gemini = fakeProvider('gemini', GOOD_NORMAL)
+  it('Groq 成功就不會呼叫 Gemini', async () => {
     const groq = fakeProvider('groq', GOOD_NORMAL)
-    const r = await generateTraining(NORMAL_REQUEST, [gemini, groq])
-    expect(r).toMatchObject({ ok: true, provider: 'gemini', model: 'gemini-test', promptVersion: CURRENT_PROMPT_VERSION, items: GOOD_NORMAL })
+    const gemini = fakeProvider('gemini', GOOD_NORMAL)
+    const r = await generateTraining(NORMAL_REQUEST, [groq, gemini])
+    expect(r).toMatchObject({ ok: true, provider: 'groq', model: 'groq-test', promptVersion: CURRENT_PROMPT_VERSION, items: GOOD_NORMAL })
     expect(r.attempts).toHaveLength(1)
-    expect(r.attempts[0]).toMatchObject({ provider: 'gemini', ok: true, raw_count: 15, valid_count: 15, reason: null })
-    expect(groq.calls).toBe(0)
+    expect(r.attempts[0]).toMatchObject({ provider: 'groq', ok: true, raw_count: 15, valid_count: 15, reason: null })
+    expect(gemini.calls).toBe(0)
   })
 
   it.each([
     ['429', { ok: false, error: 'http_429' } as const, 'http_429'],
     ['逾時', { ok: false, error: 'timeout' } as const, 'timeout'],
-  ])('Gemini %s → 改用 Groq', async (_name, failure, reason) => {
-    const gemini = fakeProvider('gemini', failure)
-    const groq = fakeProvider('groq', GOOD_NORMAL)
-    const r = await generateTraining(NORMAL_REQUEST, [gemini, groq])
-    expect(r).toMatchObject({ ok: true, provider: 'groq', model: 'groq-test' })
+  ])('Groq %s → 改用 Gemini', async (_name, failure, reason) => {
+    const groq = fakeProvider('groq', failure)
+    const gemini = fakeProvider('gemini', GOOD_NORMAL)
+    const r = await generateTraining(NORMAL_REQUEST, [groq, gemini])
+    expect(r).toMatchObject({ ok: true, provider: 'gemini', model: 'gemini-test' })
     expect(r.attempts.map((a) => [a.provider, a.ok, a.reason])).toEqual([
-      ['gemini', false, reason],
-      ['groq', true, null],
+      ['groq', false, reason],
+      ['gemini', true, null],
     ])
-    expect(gemini.calls).toBe(1)
+    expect(groq.calls).toBe(1)
   })
 
-  it('Gemini 的輸出不合格（題目太長、沒有弱點鍵）→ 改用 Groq，並記下不合格原因', async () => {
+  it('Groq 的輸出不合格（題目太長、沒有弱點鍵）→ 改用 Gemini，並記下不合格原因', async () => {
     const bad = ['planet', 'rocket', 'galaxy', 'comet', 'orbit', 'quartz']
-    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', bad), fakeProvider('groq', GOOD_NORMAL)])
+    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('groq', bad), fakeProvider('gemini', GOOD_NORMAL)])
     expect(r.ok).toBe(true)
-    expect(r.provider).toBe('groq')
+    expect(r.provider).toBe('gemini')
     expect(r.attempts[0]).toMatchObject({ ok: false, raw_count: 6, valid_count: 1, reason: 'missing_target', rejects: { missing_target: 5 } })
   })
 
-  it('Gemini 的題目多半是冷僻字 → 改用 Groq，原因記為 rare_word；關掉常用字檢查時同一份輸出會通過', async () => {
+  it('Groq 的題目多半是冷僻字 → 改用 Gemini，原因記為 rare_word；關掉常用字檢查時同一份輸出會通過', async () => {
     const rare = ['quoth', 'thymus', 'zenith', 'quasar', 'azimuth', 'thrum', 'thatch', 'zephyr', 'quaff', 'zloty', 'quartz', 'zebra', 'theory', 'quest', 'earth']
-    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', rare), fakeProvider('groq', GOOD_NORMAL)])
-    expect(r.provider).toBe('groq')
-    expect(r.attempts[0]).toMatchObject({ ok: false, raw_count: 15, valid_count: 5, reason: 'rare_word', rejects: { rare_word: 10 } })
-    const basic = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', rare)], { validation: {} })
-    expect(basic).toMatchObject({ ok: true, provider: 'gemini' })
+    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('groq', rare), fakeProvider('gemini', GOOD_NORMAL)])
+    expect(r.provider).toBe('gemini')
+    expect(r.attempts[0]).toMatchObject({ ok: false, raw_count: 15, valid_count: 7, reason: 'rare_word', rejects: { rare_word: 8 } }) // zenith、quasar 在太空主題的白名單上
+    const basic = await generateTraining(NORMAL_REQUEST, [fakeProvider('groq', rare)], { validation: {} })
+    expect(basic).toMatchObject({ ok: true, provider: 'groq' })
   })
 
   it('兩家都失敗：ok 是 false、沒有題目，兩次嘗試都有紀錄', async () => {
-    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', { ok: true, text: 'not json' }), fakeProvider('groq', { ok: false, error: 'http_500' })])
+    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('groq', { ok: true, text: 'not json' }), fakeProvider('gemini', { ok: false, error: 'http_500' })])
     expect(r).toMatchObject({ ok: false, items: [], provider: null, model: null })
     expect(r.attempts.map((a) => a.reason)).toEqual(['invalid_json', 'http_500'])
   })
 
   it('供應商丟出例外也不會讓流程壞掉', async () => {
-    const broken = { name: 'gemini' as const, model: 'x', call: () => Promise.reject(new Error('boom')) }
-    const r = await generateTraining(NORMAL_REQUEST, [broken, fakeProvider('groq', GOOD_NORMAL)])
-    expect(r.provider).toBe('groq')
+    const broken = { name: 'groq' as const, model: 'x', call: () => Promise.reject(new Error('boom')) }
+    const r = await generateTraining(NORMAL_REQUEST, [broken, fakeProvider('gemini', GOOD_NORMAL)])
+    expect(r.provider).toBe('gemini')
     expect(r.attempts[0].reason).toBe('network')
   })
 
   it('延遲時間用注入的時鐘計算', async () => {
     let t = 1000
     const now = () => (t += 250)
-    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('gemini', { ok: false, error: 'http_429' }), fakeProvider('groq', GOOD_NORMAL)], { now })
+    const r = await generateTraining(NORMAL_REQUEST, [fakeProvider('groq', { ok: false, error: 'http_429' }), fakeProvider('gemini', GOOD_NORMAL)], { now })
     expect(r.attempts.map((a) => a.latency_ms)).toEqual([250, 250])
     expect(r.latencyMs).toBe(500)
   })
@@ -115,5 +115,13 @@ describe('供應商的請求格式', () => {
     expect(await groqProvider('k', capture(Object.assign(new Error('t'), { name: 'TimeoutError' })).fetchFn).call(prompt, signal)).toEqual({ ok: false, error: 'timeout' })
     expect(await geminiProvider('k', capture(json({ candidates: [] })).fetchFn).call(prompt, signal)).toEqual({ ok: false, error: 'empty' })
     expect(await groqProvider('k', capture(new Response('<html>', { status: 200 })).fetchFn).call(prompt, signal)).toEqual({ ok: false, error: 'bad_response' })
+  })
+})
+
+describe('供應商的順序', () => {
+  it('Groq 主力、Gemini 備援；沒有金鑰的略過', () => {
+    expect(buildProviders({ GROQ_API_KEY: 'q', GEMINI_API_KEY: 'g' }).map((p) => p.name)).toEqual(['groq', 'gemini'])
+    expect(buildProviders({ GROQ_API_KEY: '', GEMINI_API_KEY: 'g' }).map((p) => p.name)).toEqual(['gemini'])
+    expect(buildProviders({})).toEqual([])
   })
 })

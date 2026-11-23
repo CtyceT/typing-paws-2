@@ -36,7 +36,7 @@ const MESSAGES: Readonly<Record<TrainingErrorCode, string>> = {
 
 export interface HandlerDeps {
   backend: Backend
-  /** 依嘗試的順序：Gemini、Groq */
+  /** 依嘗試的順序：Groq、Gemini */
   providers: readonly LlmProvider[]
   allowedOrigins?: readonly string[]
   dailyLimit?: number
@@ -108,7 +108,7 @@ export function createTrainingHandler(deps: HandlerDeps): (request: Request) => 
     }
     if (!usage.allowed || usage.id === null) return fail(429, 'daily_limit', { limit, remaining: 0 })
 
-    // 5. 生成：Gemini → Groq，各自驗證
+    // 5. 生成：Groq → Gemini，各自驗證
     const result = providers.length > 0 ? await generateTraining(req, providers, deps.generate) : { ok: false, items: [], provider: null, model: null, promptVersion, latencyMs: 0, attempts: [] }
     const last = result.attempts.at(-1)
     const finish: UsageResult = {
@@ -120,8 +120,8 @@ export function createTrainingHandler(deps: HandlerDeps): (request: Request) => 
       raw_count: last?.raw_count ?? null,
       valid_count: last?.valid_count ?? null,
       reject_reason: last?.reason ?? (providers.length === 0 ? 'no_provider' : null),
-      // detail 是供應商的原始錯誤內容，不存進資料庫
-      attempts: result.attempts.map((a) => ({ ...a, detail: undefined })),
+      // detail 是供應商的原始錯誤內容、rare_words 是評估用的字清單，都不存進資料庫
+      attempts: result.attempts.map((a) => ({ ...a, detail: undefined, rare_words: undefined })),
     }
     if (result.ok && result.provider && result.model) {
       await backend

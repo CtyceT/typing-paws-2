@@ -546,9 +546,9 @@
       "prompt": "v1",
       "validation": "basic"
     },
-    "v2|common": {
+    "v2|common-v0": {
       "prompt": "v2",
-      "validation": "common",
+      "validation": "common-v0",
       "ranAt": "2026-11-16T14:53:03.921Z",
       "timeoutMs": 8000,
       "cases": [
@@ -1111,9 +1111,9 @@
         }
       ]
     },
-    "v1|common": {
+    "v1|common-v0": {
       "prompt": "v1",
-      "validation": "common",
+      "validation": "common-v0",
       "ranAt": "2026-11-16T14:55:07.484Z",
       "timeoutMs": 8000,
       "cases": [
@@ -1632,6 +1632,613 @@
                 "rare_word": 8
               },
               "sample": []
+            }
+          }
+        }
+      ]
+    },
+    "v2|common": {
+      "prompt": "v2",
+      "validation": "common",
+      "ranAt": "2026-11-23T14:07:33.124Z",
+      "timeoutMs": 8000,
+      "cases": [
+        {
+          "difficulty": "easy",
+          "theme": "daily",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2520,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 1
+              },
+              "sample": [
+                "tree",
+                "rest",
+                "rent",
+                "tire",
+                "term",
+                "treat"
+              ],
+              "rare_words": [
+                "terse"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1457,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "missing_target",
+              "rejects": {
+                "missing_target": 3
+              },
+              "sample": [
+                "tree",
+                "tent",
+                "teeth",
+                "store",
+                "street",
+                "water"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "school",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": false,
+              "latency_ms": 1119,
+              "raw_count": 30,
+              "valid_count": 6,
+              "reason": "duplicate",
+              "rejects": {
+                "rare_word": 2,
+                "duplicate": 22
+              },
+              "sample": [],
+              "rare_words": [
+                "inthr",
+                "thingy"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 5330,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": [],
+              "detail": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n"
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "fantasy",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2647,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 3
+              },
+              "sample": [
+                "quiz",
+                "quick",
+                "quest",
+                "quiet",
+                "quilt",
+                "quartz"
+              ],
+              "rare_words": [
+                "waxen",
+                "axial",
+                "pixel"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 4986,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": [],
+              "detail": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n"
+            }
+          }
+        },
+        {
+          "difficulty": "easy",
+          "theme": "space",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3035,
+              "raw_count": 31,
+              "valid_count": 27,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4
+              },
+              "sample": [
+                "joke",
+                "jolt",
+                "jive",
+                "jack",
+                "jump",
+                "jet"
+              ],
+              "rare_words": [
+                "juke",
+                "kiln",
+                "jink",
+                "kayak"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 7050,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "timeout",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "space",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2932,
+              "raw_count": 30,
+              "valid_count": 29,
+              "reason": "banned_word",
+              "rejects": {
+                "banned_word": 1
+              },
+              "sample": [
+                "planet",
+                "rocket",
+                "meteor",
+                "asteroid",
+                "orbit",
+                "crater"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1561,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "length",
+              "rejects": {
+                "length": 1,
+                "rare_word": 1,
+                "missing_target": 1
+              },
+              "sample": [
+                "earth",
+                "rocket",
+                "travel",
+                "meteor",
+                "planet",
+                "sector"
+              ],
+              "rare_words": [
+                "astro"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "daily",
+          "weaknesses": [
+            "in",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3561,
+              "raw_count": 30,
+              "valid_count": 24,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 5,
+                "duplicate": 1
+              },
+              "sample": [
+                "within",
+                "things",
+                "thinly",
+                "thumps",
+                "inning",
+                "winter"
+              ],
+              "rare_words": [
+                "thicken",
+                "throng",
+                "inlet",
+                "thieve",
+                "thatch"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 8006,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "timeout",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "school",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 1884,
+              "raw_count": 29,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 3
+              },
+              "sample": [
+                "quizzed",
+                "quizzes",
+                "quizzer",
+                "examine",
+                "excuse",
+                "exempt"
+              ],
+              "rare_words": [
+                "pixel",
+                "syntax",
+                "quorum"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1490,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": [],
+              "detail": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n"
+            }
+          }
+        },
+        {
+          "difficulty": "normal",
+          "theme": "fantasy",
+          "weaknesses": [
+            "j",
+            "k",
+            "v"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2848,
+              "raw_count": 26,
+              "valid_count": 23,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 3
+              },
+              "sample": [
+                "jewel",
+                "jungle",
+                "jacket",
+                "jackal",
+                "jigsaw",
+                "knight"
+              ],
+              "rare_words": [
+                "jovial",
+                "javelin",
+                "ravage"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 8005,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "timeout",
+              "rejects": {},
+              "sample": []
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "fantasy",
+          "weaknesses": [
+            "e",
+            "r",
+            "t"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 3863,
+              "raw_count": 30,
+              "valid_count": 26,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 4
+              },
+              "sample": [
+                "Enter the realm",
+                "Treasure hidden deep",
+                "Elder tree whispers",
+                "Red rune etched",
+                "Torch lit nightly",
+                "Silent river bends"
+              ],
+              "rare_words": [
+                "treant",
+                "ember",
+                "riverlet"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1459,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": [],
+              "detail": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n"
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "space",
+          "weaknesses": [
+            "ou",
+            "th"
+          ],
+          "kind": "常見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 1889,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2
+              },
+              "sample": [
+                "Launch the rocket",
+                "South bound stars",
+                "Through the nebula",
+                "Orbit the moon",
+                "Hidden outpost",
+                "Galaxy route map"
+              ],
+              "rare_words": [
+                "thunderous",
+                "southward"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 1907,
+              "raw_count": 30,
+              "valid_count": 28,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2
+              },
+              "sample": [
+                "the fourth path",
+                "out through space",
+                "smooth flight",
+                "thought proud",
+                "about the moon",
+                "south route"
+              ],
+              "rare_words": [
+                "auth",
+                "southward"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "daily",
+          "weaknesses": [
+            "q",
+            "x",
+            "z"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 2521,
+              "raw_count": 30,
+              "valid_count": 25,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 5
+              },
+              "sample": [
+                "quick zip quiz",
+                "extra cozy zone",
+                "quiz on pizza",
+                "mix the quiet",
+                "buzzing taxi stop",
+                "exact zebra crossing"
+              ],
+              "rare_words": [
+                "zany",
+                "max",
+                "xylophone",
+                "zestful",
+                "zippy"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": true,
+              "latency_ms": 2355,
+              "raw_count": 30,
+              "valid_count": 27,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 2,
+                "missing_target": 1
+              },
+              "sample": [
+                "quick zap",
+                "extra pizza",
+                "lazy dog",
+                "quiet zone",
+                "mixed nuts",
+                "crazy quiz"
+              ],
+              "rare_words": [
+                "doze",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "difficulty": "hard",
+          "theme": "school",
+          "weaknesses": [
+            "4",
+            ";",
+            "th"
+          ],
+          "kind": "罕見",
+          "results": {
+            "groq": {
+              "model": "openai/gpt-oss-120b",
+              "ok": true,
+              "latency_ms": 4694,
+              "raw_count": 30,
+              "valid_count": 18,
+              "reason": "rare_word",
+              "rejects": {
+                "rare_word": 12
+              },
+              "sample": [
+                "Math test 4 times",
+                "Write; think; repeat",
+                "Lunch break; chat",
+                "Study; think; solve",
+                "History homework 4",
+                "Math; theory; quiz"
+              ],
+              "rare_words": [
+                "theth",
+                "th",
+                "theorems",
+                "abound",
+                "thursday",
+                "fieldtrip",
+                "theorem"
+              ]
+            },
+            "gemini": {
+              "model": "gemini-3.5-flash-lite",
+              "ok": false,
+              "latency_ms": 1082,
+              "raw_count": 0,
+              "valid_count": 0,
+              "reason": "http_503",
+              "rejects": {},
+              "sample": [],
+              "detail": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n"
             }
           }
         }

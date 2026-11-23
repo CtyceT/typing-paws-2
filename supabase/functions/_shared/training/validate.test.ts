@@ -66,11 +66,24 @@ describe('checkItem', () => {
 describe('常用字檢查（rare_word）', () => {
   const common = { isCommonWord }
 
-  it('單字題：不在常用字表上的字不合格', () => {
+  const school = { ...normal, theme: 'school' as const }
+
+  it('單字題：不在常用字表上的字不合格，並記下是哪個字', () => {
     expect(checkItem('quartz', normal, common)).toEqual({ item: 'quartz' })
-    expect(checkItem('zenith', normal, common)).toEqual({ reason: 'rare_word' })
-    expect(checkItem('quoth', normal, common)).toEqual({ reason: 'rare_word' })
-    expect(checkItem('zzzqq', normal, common)).toEqual({ reason: 'rare_word' })
+    expect(checkItem('zenith', school, common)).toEqual({ reason: 'rare_word', rareWords: ['zenith'] })
+    expect(checkItem('quoth', normal, common)).toEqual({ reason: 'rare_word', rareWords: ['quoth'] })
+    expect(checkItem('zzzqq', normal, common)).toEqual({ reason: 'rare_word', rareWords: ['zzzqq'] })
+  })
+
+  it('主題字白名單：只在該主題不受常用字限制，複數等變化也算', () => {
+    expect(checkItem('zenith', normal, common)).toEqual({ item: 'zenith' })
+    expect(checkItem('quasars', normal, common)).toEqual({ item: 'quasars' })
+    expect(checkItem('quasar', school, common)).toEqual({ reason: 'rare_word', rareWords: ['quasar'] })
+    expect(isCommonWord('pulsars', 'space')).toBe(true)
+    expect(isCommonWord('enchanted', 'fantasy')).toBe(true)
+    expect(isCommonWord('whiteboards', 'school')).toBe(true)
+    expect(isCommonWord('whiteboard', 'space')).toBe(false)
+    expect(isCommonWord('pulsar')).toBe(false)
   })
 
   it('沒有給字表時不做這項檢查（前端）', () => {
@@ -80,8 +93,8 @@ describe('常用字檢查（rare_word）', () => {
   it('片語：每個字都要在表上；大小寫、標點、數字不影響', () => {
     expect(checkItem('Thank you; bye!', hard, common)).toEqual({ item: 'Thank you; bye!' })
     expect(checkItem('Room 4; then go', hard, common)).toEqual({ item: 'Room 4; then go' })
-    expect(checkItem('the thymus gland', hard, common)).toEqual({ reason: 'rare_word' })
-    expect(checkItem('Quoth the raven', hard, common)).toEqual({ reason: 'rare_word' })
+    expect(checkItem('the thymus gland', hard, common)).toEqual({ reason: 'rare_word', rareWords: ['thymus'] })
+    expect(checkItem('Quoth the raven', hard, common)).toEqual({ reason: 'rare_word', rareWords: ['quoth'] })
   })
 
   it('常用字的規則變化、縮寫和所有格算常用字', () => {
@@ -96,8 +109,8 @@ describe('常用字檢查（rare_word）', () => {
   })
 
   it('統計不合格原因', () => {
-    const r = validateTrainingOutput(JSON.stringify({ items: [...GOOD, 'zenith', 'quasar', 'azimuth'] }), normal, common)
-    expect(r).toMatchObject({ ok: true, validCount: 15, rejects: { rare_word: 3 }, topReason: 'rare_word' })
+    const r = validateTrainingOutput(JSON.stringify({ items: [...GOOD, 'quoth', 'azimuth', 'quoth', 'zloty'] }), normal, common)
+    expect(r).toMatchObject({ ok: true, validCount: 15, rejects: { rare_word: 4 }, topReason: 'rare_word', rareWords: ['quoth', 'azimuth', 'zloty'] })
   })
 })
 

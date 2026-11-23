@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { attemptGeneration, PROVIDER_TIMEOUT_MS } from '../supabase/functions/_shared/training/generate.ts'
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION, PROMPTS } from '../supabase/functions/_shared/training/prompts/index.ts'
-import { geminiProvider, groqProvider } from '../supabase/functions/_shared/training/providers.ts'
+import { geminiProvider, groqProvider, PROVIDER_ORDER } from '../supabase/functions/_shared/training/providers.ts'
 import { MIN_ITEMS, parseTrainingRequest } from '../supabase/functions/_shared/training/request.ts'
 
 const root = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
@@ -62,7 +62,7 @@ function loadKeys() {
 function loadProviders() {
   const keys = loadKeys()
   const all = { gemini: keys.GEMINI_API_KEY && geminiProvider(keys.GEMINI_API_KEY), groq: keys.GROQ_API_KEY && groqProvider(keys.GROQ_API_KEY) }
-  const wanted = args.provider === 'both' ? ['gemini', 'groq'] : [args.provider]
+  const wanted = args.provider === 'both' ? [...PROVIDER_ORDER] : [args.provider]
   const missing = wanted.filter((name) => !all[name])
   if (missing.length > 0) {
     console.error(`找不到 ${missing.map((n) => `${n.toUpperCase()}_API_KEY`).join('、')}。`)
@@ -72,9 +72,9 @@ function loadProviders() {
   return wanted.map((name) => all[name])
 }
 
-/** 驗證規則：common 是線上的規則（含常用字檢查），basic 是沒有常用字檢查的舊規則 */
+/** 驗證規則：common 是線上的規則（常用字＋主題字白名單），basic 是沒有常用字檢查的舊規則；common-v0 是加主題字白名單之前的舊紀錄 */
 const VALIDATION = args['no-common'] ? 'basic' : 'common'
-const VALIDATION_LABEL = { basic: '基本', common: '基本＋常用字' }
+const VALIDATION_LABEL = { basic: '基本', 'common-v0': '基本＋常用字', common: '基本＋常用字＋主題字' }
 const generateOptions = { promptVersion: args.prompt, ...(args['no-common'] && { validation: {} }) }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -129,8 +129,15 @@ async function runEval() {
     const results = {}
     for (const provider of providers) {
       const a = await attemptGeneration(req, provider, generateOptions)
-      results[provider.name] = { model: a.model, ok: a.ok, latency_ms: a.latency_ms, raw_count: a.raw_count, valid_count: a.valid_count, reason: a.reason, rejects: a.rejects, sample: a.items.slice(0, 6) }
+      results[provider.name] = {
+        model: a.model, ok: a.ok, latency_ms: a.latency_ms, raw_count: a.raw_count, valid_count: a.valid_count, reason: a.reason, rejects: a.rejects, sample: a.items.slice(0, 6),
+        // 檢查用：被判冷僻字的字、HTTP 錯誤的回應內容（供應商的錯誤訊息，不含金鑰）
+        ...(a.rare_words?.length > 0 && { rare_words: a.rare_words }),
+        ...(a.detail && { detail: a.detail }),
+      }
       console.log(`[${i + 1}/${EVAL_CASES.length}] ${c.difficulty} ${c.weaknesses.join(' ')}　${provider.name}：${a.ok ? '✓' : '✗'} ${a.valid_count}/${a.raw_count} 題　${a.latency_ms} ms${a.reason ? `　${a.reason}` : ''}`)
+      if (a.rare_words?.length > 0) console.log(`  冷僻字：${a.rare_words.join(' ')}`)
+      if (a.detail) console.log(`  錯誤內容：${a.detail}`)
     }
     cases.push({ ...c, weaknesses: req.weaknesses, results })
     if (i < EVAL_CASES.length - 1) await sleep(delay)
@@ -179,7 +186,7 @@ function renderReport(store) {
     '- 做法：固定的 12 個測試案例（3 個難度 × 常見與罕見的弱點組合），每一家各生成一次，用和線上相同的 prompt、驗證規則與逾時設定。',
     '- **案例合格率**：合格題數達到門檻（簡單 10 題、普通與困難 15 題）的案例比例，也就是線上「這一家能不能用」的機率。',
     '- **題目合格率**：LLM 給的題目裡通過驗證的比例。',
-    '- **驗證規則**：「基本」是格式、長度、禁用字、要含弱點鍵；「基本＋常用字」另外要求每個字都在 2 萬字的常用字表上（不在表上記為 rare_word），這是 prompt v2 一起加的、線上使用的規則。',
+    '- **驗證規則**：「基本」是格式、長度、禁用字、要含弱點鍵；「基本＋常用字」另外要求每個字都在 2 萬字的常用字表上（不在表上記為 rare_word），是 prompt v2 一起加的；「基本＋常用字＋主題字」再讓各主題的白名單（`theme-words.ts`）不受常用字限制，這是目前線上使用的規則。',
     '- 每個案例只跑一次，而且 temperature 是 0.9，所以數字會有起伏；差距不大時不代表真的有差別。',
     '',
     '## 各版本比較',
@@ -215,6 +222,17 @@ function renderReport(store) {
         const sample = r.sample.length > 0 ? r.sample.map((s) => `\`${s}\``).join(' ') : '—'
         out.push(`| ${DIFFICULTY_LABEL[c.difficulty]} | ${c.theme} | ${c.weaknesses.map((w) => `\`${w}\``).join(' ')} | ${c.kind} | ${p} | ${r.ok ? '✓' : '✗'} | ${r.valid_count}／${r.raw_count} | ${r.latency_ms} ms | ${r.reason ?? '—'} | ${sample} |`)
       }
+    }
+    // 被判冷僻字的字（2026-11-23 之後的評估才有記錄）
+    const rare = run.cases.flatMap((c) => Object.entries(c.results).filter(([, r]) => r.rare_words?.length > 0).map(([p, r]) => [c, p, r.rare_words]))
+    if (rare.length > 0) {
+      out.push('', '### 被判為冷僻字（rare_word）的字', '', '| 難度 | 主題 | 模型 | 字 |', '|---|---|---|---|')
+      for (const [c, p, words] of rare) out.push(`| ${DIFFICULTY_LABEL[c.difficulty]} | ${c.theme} | ${p} | ${words.map((w) => `\`${w}\``).join(' ')} |`)
+    }
+    const errors = run.cases.flatMap((c) => Object.entries(c.results).filter(([, r]) => r.detail).map(([p, r]) => [c, p, r]))
+    if (errors.length > 0) {
+      out.push('', '### 呼叫失敗的回應內容', '', '| 難度 | 主題 | 模型 | 代號 | 回應內容 |', '|---|---|---|---|---|')
+      for (const [c, p, r] of errors) out.push(`| ${DIFFICULTY_LABEL[c.difficulty]} | ${c.theme} | ${p} | ${r.reason} | ${r.detail.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|')} |`)
     }
   }
   return out.join('\n') + '\n'

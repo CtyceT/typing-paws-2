@@ -41,7 +41,7 @@ async function post(fetchFn: Fetch, url: string, headers: Record<string, string>
   }
 }
 
-/** Google Gemini（主力）。用 responseSchema 要求輸出 {"items": string[]} */
+/** Google Gemini（備援）。用 responseSchema 要求輸出 {"items": string[]} */
 export function geminiProvider(apiKey: string, fetchFn: Fetch = fetch, model: string = GEMINI_MODEL): LlmProvider {
   return {
     name: 'gemini',
@@ -73,7 +73,7 @@ export function geminiProvider(apiKey: string, fetchFn: Fetch = fetch, model: st
   }
 }
 
-/** Groq（備援，OpenAI 相容 API）。用 json_schema 的 strict 模式要求輸出 {"items": string[]} */
+/** Groq（主力，OpenAI 相容 API）。用 json_schema 的 strict 模式要求輸出 {"items": string[]} */
 export function groqProvider(apiKey: string, fetchFn: Fetch = fetch, model: string = GROQ_MODEL): LlmProvider {
   return {
     name: 'groq',
@@ -105,4 +105,16 @@ export function groqProvider(apiKey: string, fetchFn: Fetch = fetch, model: stri
       )
     },
   }
+}
+
+/** 嘗試的順序（D72）：Groq 主力、Gemini 備援。沒有設定金鑰的那一家略過 */
+export const PROVIDER_ORDER: readonly ProviderName[] = ['groq', 'gemini']
+
+/** 依 PROVIDER_ORDER 建立供應商；金鑰是空字串的略過 */
+export function buildProviders(keys: { GROQ_API_KEY?: string; GEMINI_API_KEY?: string }, fetchFn: Fetch = fetch): LlmProvider[] {
+  const make: Record<ProviderName, () => LlmProvider | null> = {
+    groq: () => (keys.GROQ_API_KEY ? groqProvider(keys.GROQ_API_KEY, fetchFn) : null),
+    gemini: () => (keys.GEMINI_API_KEY ? geminiProvider(keys.GEMINI_API_KEY, fetchFn) : null),
+  }
+  return PROVIDER_ORDER.map((name) => make[name]()).filter((p): p is LlmProvider => p !== null)
 }

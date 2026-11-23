@@ -1,5 +1,5 @@
 // LLM 輸出驗證（ROADMAP 4.5）：JSON 格式、只允許可列印 ASCII、長度限制、不當用字過濾、每題都要含弱點鍵、（選用）常用字檢查。
-import { HARD_MAX_WORDS, ITEM_LENGTH, MIN_ITEMS, TARGET_ITEM_COUNT, type TrainingRequest } from './request.ts'
+import { HARD_MAX_WORDS, ITEM_LENGTH, MIN_ITEMS, TARGET_ITEM_COUNT, type TrainingRequest, type TrainingTheme } from './request.ts'
 
 /** 單一題目不合格的原因 */
 export type RejectReason = 'not_string' | 'not_ascii' | 'bad_chars' | 'length' | 'banned_word' | 'missing_target' | 'rare_word' | 'duplicate'
@@ -7,9 +7,10 @@ export type RejectReason = 'not_string' | 'not_ascii' | 'bad_chars' | 'length' |
 export interface ValidateOptions {
   /**
    * 常用字檢查：有給的話，題目裡的每個字（小寫，只含字母與撇號）都要通過，否則不合格原因是 rare_word。
+   * theme 是這次的主題，讓主題字白名單（theme-words.ts）也能通過。
    * Edge Function 會給（見 common.ts）；前端不給，因為字表很大，而且題目已經在 Edge Function 檢查過。
    */
-  isCommonWord?: (word: string) => boolean
+  isCommonWord?: (word: string, theme: TrainingTheme) => boolean
 }
 /** 整份輸出不合格的原因 */
 export type OutputError = 'invalid_json' | 'bad_shape' | 'too_few'
@@ -27,6 +28,8 @@ export interface ValidationResult {
   error: OutputError | null
   /** 主要的不合格原因：整份壞掉時是 error，否則是最多題的那一種原因；都沒有是 null */
   topReason: string | null
+  /** 被判為冷僻字的字（不重複，依出現順序），用來檢查常用字表有沒有誤殺 */
+  rareWords: string[]
 }
 
 /**
@@ -47,7 +50,11 @@ const HARD_PUNCTUATION = ",.!?'-"
 const countLetters = (s: string) => s.replace(/[^A-Za-z]/g, '').length
 
 /** 檢查一題。合格回傳整理過的題目（去頭尾空白；簡單、普通轉小寫；彎引號換成直的），不合格回傳原因（不含 duplicate） */
-export function checkItem(raw: unknown, req: TrainingRequest, options: ValidateOptions = {}): { item: string } | { reason: Exclude<RejectReason, 'duplicate'> } {
+export function checkItem(
+  raw: unknown,
+  req: TrainingRequest,
+  options: ValidateOptions = {},
+): { item: string } | { reason: Exclude<RejectReason, 'duplicate'>; rareWords?: string[] } {
   if (typeof raw !== 'string') return { reason: 'not_string' }
   let item = raw.trim().replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
   if (item === '') return { reason: 'length' }
@@ -67,7 +74,10 @@ export function checkItem(raw: unknown, req: TrainingRequest, options: ValidateO
   if (lower.split(/[^a-z]+/).some((word) => BANNED_WORDS.has(word))) return { reason: 'banned_word' }
   if (!req.weaknesses.some((w) => lower.includes(w))) return { reason: 'missing_target' }
   const { isCommonWord } = options
-  if (isCommonWord && !(lower.match(/[a-z]+(?:'[a-z]+)*/g) ?? []).every((word) => isCommonWord(word))) return { reason: 'rare_word' }
+  if (isCommonWord) {
+    const rareWords = (lower.match(/[a-z]+(?:'[a-z]+)*/g) ?? []).filter((word) => !isCommonWord(word, req.theme))
+    if (rareWords.length > 0) return { reason: 'rare_word', rareWords }
+  }
   return { item }
 }
 
@@ -76,10 +86,14 @@ export function validateItems(values: readonly unknown[], req: TrainingRequest, 
   const items: string[] = []
   const seen = new Set<string>()
   const rejects: Partial<Record<RejectReason, number>> = {}
+  const rareWords = new Set<string>()
   const reject = (reason: RejectReason) => (rejects[reason] = (rejects[reason] ?? 0) + 1)
   for (const value of values) {
     const checked = checkItem(value, req, options)
-    if ('reason' in checked) reject(checked.reason)
+    if ('reason' in checked) {
+      reject(checked.reason)
+      for (const word of checked.rareWords ?? []) rareWords.add(word)
+    }
     else if (seen.has(checked.item.toLowerCase())) reject('duplicate')
     else {
       seen.add(checked.item.toLowerCase())
@@ -88,10 +102,10 @@ export function validateItems(values: readonly unknown[], req: TrainingRequest, 
   }
   const ok = items.length >= MIN_ITEMS[req.difficulty]
   const top = (Object.entries(rejects) as [RejectReason, number][]).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-  return { ok, items, rawCount: values.length, validCount: items.length, rejects, error: ok ? null : 'too_few', topReason: top ?? (ok ? null : 'too_few') }
+  return { ok, items, rawCount: values.length, validCount: items.length, rejects, error: ok ? null : 'too_few', topReason: top ?? (ok ? null : 'too_few'), rareWords: [...rareWords] }
 }
 
-const failed = (error: OutputError): ValidationResult => ({ ok: false, items: [], rawCount: 0, validCount: 0, rejects: {}, error, topReason: error })
+const failed = (error: OutputError): ValidationResult => ({ ok: false, items: [], rawCount: 0, validCount: 0, rejects: {}, error, topReason: error, rareWords: [] })
 
 /** 從 LLM 的文字輸出取出 JSON：容許前後有 ```json 圍欄或多餘的文字 */
 export function extractJson(text: string): unknown {
