@@ -14,10 +14,11 @@ describe('倒數', () => {
 
 describe('introMessage', () => {
   it('顯示怪物名字、台詞與輸入法提醒', () => {
-    const m = introMessage(MONSTERS[0])
-    expect(m.emoji).toBe('🐛')
-    expect(m.title).toBe('小 Bug 蟲 出現了！')
-    expect(m.text).toContain('「嘰嘰！我會讓你的程式跑不動！」')
+    const first = MONSTERS[0]
+    const m = introMessage(first)
+    expect(m.emoji).toBe(first.emoji)
+    expect(m.title).toBe(`${first.name} 出現了！`)
+    expect(m.text).toContain(`「${first.line}」`)
     expect(m.text).toContain('英文')
   })
 })
@@ -26,7 +27,8 @@ describe('stageClearMessage', () => {
   it('顯示獎勵、回血與下一個對手', () => {
     const m = stageClearMessage(state({ stage: 0, phase: 'stageClear', playerHp: 70 }), '喵喵')
     expect(m.title).toBe('第 1 關 CLEAR！')
-    expect(m.text).toBe('過關獎勵 +650 分，喵喵恢復 20 HP。\n下一個對手：👻 Typo 幽靈\n「嘿嘿～你一定會打錯字的～」')
+    const next = MONSTERS[1]
+    expect(m.text).toBe(`過關獎勵 +650 分，喵喵恢復 20 HP。\n下一個對手：${next.emoji} ${next.name}\n「${next.line}」`)
   })
 
   it('血量接近全滿時只補到滿', () => {

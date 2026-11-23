@@ -2,7 +2,6 @@ import { calcAccuracy, calcWpm } from './stats.ts'
 import { comboMultiplier, CRIT_MULTIPLIER } from './combo.ts'
 import { PLAYER_MAX_HP } from './constants.ts'
 import { DIFFICULTIES } from './difficulty.ts'
-import { MONSTERS } from './monsters.ts'
 import { previewWords } from './queue.ts'
 import type { BattleState } from './battle.ts'
 
@@ -62,7 +61,7 @@ export function battleHud(state: BattleState): BattleHud {
   const chargePct = chargeRatio * 100
   const multiplier = comboMultiplier(state.combo)
   return {
-    stageLabel: `第 ${state.stage + 1} / ${MONSTERS.length} 關 ・ ${DIFFICULTIES[state.difficulty].label}`,
+    stageLabel: `第 ${state.stage + 1} / ${state.monsters.length} 關 ・ ${DIFFICULTIES[state.difficulty].label}`,
     timeText: `${(state.activeMs / 1000).toFixed(1)}s`,
     wpm: calcWpm(state.correct, state.activeMs),
     accuracyText: `${calcAccuracy(state.correct, state.typed)}%`,

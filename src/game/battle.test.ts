@@ -14,8 +14,11 @@ import {
 import { comboMultiplier } from './combo.ts'
 import type { Difficulty } from './difficulty.ts'
 import { createSeededRng } from './rng.ts'
+import { themeLineup } from './monsters.ts'
 import { calcAccuracy, calcStars } from './stats.ts'
 import { WORDS } from './words.ts'
+
+const DAILY = themeLineup('daily')
 
 const run = (state: BattleState, ...actions: BattleAction[]) => actions.reduce(battleReducer, state)
 const char = (c: string, roll = 0.5): BattleAction => ({ type: 'char', char: c, roll })
@@ -46,15 +49,15 @@ function tickUntilAttack(state: BattleState): BattleState {
 
 describe('數值公式', () => {
   it('怪物血量 = 基礎血量 × 難度倍率', () => {
-    expect([0, 1, 2].map((st) => monsterMaxHp(st, 'easy'))).toEqual([60, 90, 140])
-    expect([0, 1, 2].map((st) => monsterMaxHp(st, 'normal'))).toEqual([96, 144, 224])
-    expect([0, 1, 2].map((st) => monsterMaxHp(st, 'hard'))).toEqual([156, 234, 364])
+    expect(DAILY.map((m) => monsterMaxHp(m, 'easy'))).toEqual([60, 90, 140])
+    expect(DAILY.map((m) => monsterMaxHp(m, 'normal'))).toEqual([96, 144, 224])
+    expect(DAILY.map((m) => monsterMaxHp(m, 'hard'))).toEqual([156, 234, 364])
   })
 
   it('怪物傷害 = 難度傷害 × 怪物倍率', () => {
-    expect([0, 1, 2].map((st) => monsterAttackDamage(st, 'easy'))).toEqual([8, 9, 10])
-    expect([0, 1, 2].map((st) => monsterAttackDamage(st, 'normal'))).toEqual([12, 13, 16])
-    expect([0, 1, 2].map((st) => monsterAttackDamage(st, 'hard'))).toEqual([15, 17, 20])
+    expect(DAILY.map((m) => monsterAttackDamage(m, 'easy'))).toEqual([8, 9, 10])
+    expect(DAILY.map((m) => monsterAttackDamage(m, 'normal'))).toEqual([12, 13, 16])
+    expect(DAILY.map((m) => monsterAttackDamage(m, 'hard'))).toEqual([15, 17, 20])
   })
 
   it('過關獎勵 = 300 × 關卡 + 剩餘血量 × 5', () => {

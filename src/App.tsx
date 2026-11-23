@@ -6,6 +6,8 @@ import {
   DIFFICULTY_ORDER,
   HEROES,
   planTraining,
+  randomTheme,
+  themeLineup,
   resultSyncStatus,
   summarizeSession,
   syncStatus,
@@ -16,6 +18,7 @@ import {
   type GameMode,
   type LegacyImport,
   type NewRecordKind,
+  type Rng,
   type SessionMiss,
   type TrainingFeedbackRow,
   type TrainingPlan,
@@ -47,7 +50,7 @@ type Screen =
   | { name: 'menu' }
   | { name: 'dashboard' }
   | { name: 'training-loading'; difficulty: Difficulty; targets: readonly TrainingTarget[]; theme: TrainingTheme; loading: Promise<TrainingWords>; cancel: () => void }
-  | { name: 'battle'; difficulty: Difficulty; run: number; training?: TrainingSession }
+  | { name: 'battle'; difficulty: Difficulty; run: number; monsterTheme: TrainingTheme; training?: TrainingSession }
   | {
       name: 'result'
       id: string
@@ -55,6 +58,7 @@ type Screen =
       newRecord: NewRecordKind
       misses: SessionMiss[]
       run: number
+      monsterTheme: TrainingTheme
       training?: TrainingSession & { rows: TrainingFeedbackRow[] }
     }
 
@@ -71,10 +75,12 @@ function legacySummary(legacy: LegacyImport): string {
 export interface AppProps {
   /** 雲端功能（登入）；沒給就用環境變數設定的 Supabase 專案，null 表示只有訪客模式。測試時可以換成假的 */
   cloud?: Cloud | null
+  /** 經典闖關抽怪物主題用的亂數；測試時可以固定 */
+  random?: Rng
 }
 
 /** 最外層：先確定登入狀態，再顯示遊戲。換帳號（登入、登出）時整個遊戲重新建立，回到主選單 */
-function App({ cloud = defaultCloud }: AppProps) {
+function App({ cloud = defaultCloud, random = Math.random }: AppProps) {
   const auth = useAuth(cloud?.auth ?? null)
   if (auth.status === 'loading') {
     return (
@@ -83,16 +89,17 @@ function App({ cloud = defaultCloud }: AppProps) {
       </main>
     )
   }
-  return <Game key={auth.user?.id ?? 'guest'} user={auth.user} cloud={cloud} />
+  return <Game key={auth.user?.id ?? 'guest'} user={auth.user} cloud={cloud} random={random} />
 }
 
 interface GameProps {
   /** 登入的人；null 是訪客 */
   user: AuthUser | null
   cloud: Cloud | null
+  random: Rng
 }
 
-function Game({ user, cloud }: GameProps) {
+function Game({ user, cloud, random }: GameProps) {
   /** 這個帳號的雲端資料；訪客或沒有雲端功能時是 null（換帳號時整個 Game 會重新建立，所以只需要建立一次） */
   const [cloudData] = useState(() => (user && cloud ? cloud.data(user.id) : null))
   // 訪客和每個帳號在這個瀏覽器裡各有一份資料，互不混用
@@ -150,7 +157,9 @@ function Game({ user, cloud }: GameProps) {
   }
   const trainingReady = useCallback((words: TrainingWords) => {
     setScreen((current) =>
-      current.name === 'training-loading' ? { name: 'battle', difficulty: current.difficulty, run: 0, training: { targets: current.targets, theme: current.theme, words } } : current,
+      current.name === 'training-loading'
+        ? { name: 'battle', difficulty: current.difficulty, run: 0, monsterTheme: current.theme, training: { targets: current.targets, theme: current.theme, words } }
+        : current,
     )
   }, [])
   const answerLegacy = (answer: 'imported' | 'skipped') => {
@@ -176,9 +185,19 @@ function Game({ user, cloud }: GameProps) {
       // 特訓成效要和「這一場之前」的統計比，所以在存檔之前先算好
       const rows = training && trainingFeedback(training.targets, summarizeSession(state.keyLog, { sessionId: 'feedback', playedAt: 0 }), aggregateKeyStats(keyStats))
       const saved = player.addGame(result, state.keyLog, training ? 'training' : 'classic')
-      setScreen({ name: 'result', result, ...saved, run: screen.run, ...(training && rows && { training: { ...training, rows } }) })
+      setScreen({ name: 'result', result, ...saved, run: screen.run, monsterTheme: screen.monsterTheme, ...(training && rows && { training: { ...training, rows } }) })
     }
-    return <BattleScreen key={screen.run} hero={hero} difficulty={screen.difficulty} words={training?.words.words} onExit={goMenu} onFinish={finish} />
+    return (
+      <BattleScreen
+        key={screen.run}
+        hero={hero}
+        difficulty={screen.difficulty}
+        words={training?.words.words}
+        monsters={themeLineup(screen.monsterTheme)}
+        onExit={goMenu}
+        onFinish={finish}
+      />
+    )
   }
   if (screen.name === 'result') {
     const { training } = screen
@@ -187,6 +206,8 @@ function Game({ user, cloud }: GameProps) {
         name: 'battle',
         difficulty: screen.result.difficulty,
         run: screen.run + 1,
+        // 再挑戰一次：同一組怪物
+        monsterTheme: screen.monsterTheme,
         ...(training && { training: { targets: training.targets, theme: training.theme, words: training.words } }),
       })
     return (
@@ -226,7 +247,7 @@ function Game({ user, cloud }: GameProps) {
         mode={mode}
         onSelectMode={setMode}
         training={{ plans, theme, onSelectTheme: setTheme, onStart: startTraining, onSignIn: cloud ? () => setSignIn('open') : undefined }}
-        onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0 })}
+        onStart={(difficulty) => setScreen({ name: 'battle', difficulty, run: 0, monsterTheme: randomTheme(random) })}
         onOpenDashboard={() => setScreen({ name: 'dashboard' })}
         accountBar={
           <AccountBar

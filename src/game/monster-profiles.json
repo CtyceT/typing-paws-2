@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-11-23T14:30:23.779Z",
+  "model": "groq/openai/gpt-oss-120b",
+  "prompt_version": "monster-v1",
+  "monsters": [
+    {
+      "id": "monster-01",
+      "theme": "daily",
+      "boss": false,
+      "name": "鬧鐘小叮",
+      "line": "嗶嗶作響，快打字把我關掉！",
+      "weakKeys": [
+        "s"
+      ],
+      "look": "A tiny round alarm clock with big cartoon eyes, bright red body, tiny metal claws, and a springy tail that wiggles when it rings."
+    },
+    {
+      "id": "monster-02",
+      "theme": "daily",
+      "boss": false,
+      "name": "早餐麵包怪",
+      "line": "香噴噴的挑釁，打不出字我就變硬！",
+      "weakKeys": [
+        "b"
+      ],
+      "look": "A fluffy golden-brown bread slice with a cheeky smile, butter pats as ears, and sprinkles that look like tiny stars on its surface."
+    },
+    {
+      "id": "monster-03",
+      "theme": "daily",
+      "boss": true,
+      "name": "洗衣大魔王",
+      "line": "旋轉旋轉，打字快點把我洗走！",
+      "weakKeys": [
+        "w"
+      ],
+      "look": "A large, bubbly washing machine with oversized eyes on the door, swirling blue water patterns, and rubbery arms that wave laundry socks."
+    },
+    {
+      "id": "monster-04",
+      "theme": "fantasy",
+      "boss": false,
+      "name": "糖果小鼠",
+      "line": "快打字，別讓我吃掉你的分數！",
+      "weakKeys": [
+        "p"
+      ],
+      "look": "A tiny round mouse with pastel pink fur, oversized ears, and a candy cane tail, big sparkling eyes and a cheeky grin."
+    },
+    {
+      "id": "monster-05",
+      "theme": "fantasy",
+      "boss": false,
+      "name": "霧光蝙蝠",
+      "line": "打錯字我就噴出霧氣，你怕嗎？",
+      "weakKeys": [
+        "w"
+      ],
+      "look": "A small bat with soft lavender wings, glowing teal eyes, and a fluffy belly; its wings flutter like cotton clouds."
+    },
+    {
+      "id": "monster-06",
+      "theme": "fantasy",
+      "boss": true,
+      "name": "星辰大魔王",
+      "line": "挑戰我，輸的只能寫星星！",
+      "weakKeys": [
+        "s"
+      ],
+      "look": "A majestic dragon-sized creature covered in midnight-blue scales dotted with tiny silver stars, crowned with a comet tail and gentle amber eyes."
+    },
+    {
+      "id": "monster-07",
+      "theme": "space",
+      "boss": false,
+      "name": "星塵小彈",
+      "line": "嗚呼！快打出字母，我要閃閃發亮啦！",
+      "weakKeys": [
+        "s"
+      ],
+      "look": "Tiny spherical creature, shimmering silver with sparkling star dust speckles, tiny antennae glowing blue, cute grin and wobbling bounce."
+    },
+    {
+      "id": "monster-08",
+      "theme": "space",
+      "boss": false,
+      "name": "彈跳隕石鼠",
+      "line": "哎呀呀，你打錯字我就彈跳！快快快！",
+      "weakKeys": [
+        "r"
+      ],
+      "look": "Round rock body covered in pastel purple craters, small paws, big round eyes, a tiny rocket tail that wobbles, smiling cheeks."
+    },
+    {
+      "id": "monster-09",
+      "theme": "space",
+      "boss": true,
+      "name": "黑洞大魔王",
+      "line": "哼！輸入錯誤，我會把你吸進無盡的空虛！",
+      "weakKeys": [
+        "g"
+      ],
+      "look": "Large swirling vortex with a cartoonish face, deep navy core, bright orange rim, tiny star-shaped teeth, hovering with gentle aura."
+    },
+    {
+      "id": "monster-10",
+      "theme": "school",
+      "boss": false,
+      "name": "紙張小精靈",
+      "line": "快打字，別讓我變成紙飛機！",
+      "weakKeys": [
+        "s"
+      ],
+      "look": "A tiny floating sheet with a bright yellow border, eyes like tiny ink drops, and a mischievous smile."
+    },
+    {
+      "id": "monster-11",
+      "theme": "school",
+      "boss": false,
+      "name": "粉筆怪",
+      "line": "你的鍵盤能擦掉我的粉筆痕跡嗎？",
+      "weakKeys": [
+        "c"
+      ],
+      "look": "A short, chubby creature made of white chalk, with a crumbling body, stubby arms, and a chalk-dust halo."
+    },
+    {
+      "id": "monster-12",
+      "theme": "school",
+      "boss": true,
+      "name": "考試大魔王",
+      "line": "答對我才能通過，快打出正確單字！",
+      "weakKeys": [
+        "t",
+        "e"
+      ],
+      "look": "A towering figure wearing a giant blackboard cape, red ink eyes, a clock for a head, and holding a massive pencil sword."
+    }
+  ]
+}

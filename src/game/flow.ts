@@ -1,5 +1,5 @@
 import { stageBonus, stageHealAmount, type BattleState } from './battle.ts'
-import { MONSTERS, type Monster } from './monsters.ts'
+import type { Monster } from './monsters.ts'
 
 /** 開打前的倒數：每一步顯示的文字與停留的毫秒數 */
 export const COUNTDOWN_STEPS: readonly { text: string; ms: number }[] = [
@@ -36,7 +36,7 @@ export function introMessage(monster: Monster): FlowMessage {
 export function stageClearMessage(state: BattleState, heroName: string): FlowMessage {
   const bonus = stageBonus(state.stage, state.playerHp)
   const healed = Math.round(stageHealAmount(state.playerHp))
-  const next = MONSTERS[state.stage + 1]
+  const next = state.monsters[state.stage + 1]
   const heal = healed > 0 ? `，${heroName}恢復 ${healed} HP` : ''
   return {
     emoji: '🎉',

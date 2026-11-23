@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { CountdownOverlay, MessageDialog } from '../components/index.ts'
-import { currentMonster, HEROES, introMessage, stageClearMessage, type BattleState, type Difficulty, type HeroId } from '../game/index.ts'
+import { preloadMonsterImages } from '../components/monsterImages.ts'
+import { currentMonster, HEROES, introMessage, stageClearMessage, type BattleState, type Difficulty, type HeroId, type Monster } from '../game/index.ts'
 import styles from './BattleScreen.module.css'
 import { BattleView } from './BattleView.tsx'
 import { useBattleEffects } from './useBattleEffects.ts'
@@ -11,6 +12,8 @@ export interface BattleScreenProps {
   difficulty: Difficulty
   /** 這一場的題目；沒給就用這個難度的內建字庫（弱點特訓會傳 AI 出的題目進來） */
   words?: readonly string[]
+  /** 這一場的三關怪物；沒給就用日常主題 */
+  monsters?: readonly Monster[]
   /** 放棄，回主選單（不記錄成績） */
   onExit: () => void
   /** 整場結束（通關或被打倒），帶著結束時的戰鬥狀態 */
@@ -18,11 +21,14 @@ export interface BattleScreenProps {
 }
 
 /** 戰鬥畫面：BattleView 負責畫面，useBattleSession 負責流程，這裡把訊息視窗接上去 */
-export function BattleScreen({ hero, difficulty, words, onExit, onFinish }: BattleScreenProps) {
-  const session = useBattleSession(difficulty, words)
+export function BattleScreen({ hero, difficulty, words, monsters, onExit, onFinish }: BattleScreenProps) {
+  const session = useBattleSession(difficulty, words, monsters)
   const { battle } = session
   const effects = useBattleEffects(session.eventLog, battle.stage)
   const heroName = HEROES[hero].name
+
+  // 進戰鬥時下載這一場三關的怪物圖（D84）
+  useEffect(() => preloadMonsterImages(battle.monsters), [battle.monsters])
 
   // 結束的動畫播完後通知外面切到結算畫面（只通知一次）
   const reported = useRef(false)

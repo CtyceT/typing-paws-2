@@ -4,6 +4,7 @@ import type { BattleResult } from '../game/index.ts'
 import { ResultScreen } from './ResultScreen.tsx'
 
 const result = (over: Partial<BattleResult> = {}): BattleResult => ({
+  monsterName: '洗衣大魔王',
   difficulty: 'normal',
   win: true,
   wpm: 52,
@@ -21,7 +22,7 @@ describe('結算畫面', () => {
   it('通關：標題、副標、開心的勇者、三顆星、六項數據與評語', () => {
     render(<ResultScreen hero="shiba" result={result()} onRetry={() => {}} onMenu={() => {}} />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('🏆 通關成功！')
-    expect(screen.getByText('普通模式 ・ 打倒了 Deadline 龍王！')).toBeInTheDocument()
+    expect(screen.getByText('普通模式 ・ 打倒了 洗衣大魔王！')).toBeInTheDocument()
     expect(document.querySelector('svg')).toHaveAttribute('data-expression', 'happy')
     expect(screen.getByRole('img', { name: '3 顆星（滿分 3 顆）' })).toBeInTheDocument()
     for (const [label, value] of [['WPM', '52'], ['準確率', '97.3%'], ['最高 Combo', '41'], ['分數', '5120'], ['總傷害', '464'], ['用時', '83.4s']]) {
@@ -32,9 +33,9 @@ describe('結算畫面', () => {
   })
 
   it('失敗：顯示被打倒的標題、止步的關卡、受傷的勇者、零顆星', () => {
-    render(<ResultScreen hero="panda" result={result({ win: false, stars: 0, stage: 2, accuracy: 80 })} onRetry={() => {}} onMenu={() => {}} />)
+    render(<ResultScreen hero="panda" result={result({ win: false, stars: 0, stage: 2, accuracy: 80, monsterName: '早餐麵包怪' })} onRetry={() => {}} onMenu={() => {}} />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('熊熊被打倒了…')
-    expect(screen.getByText('普通模式 ・ 止步於第 2 關（Typo 幽靈）')).toBeInTheDocument()
+    expect(screen.getByText('普通模式 ・ 止步於第 2 關（早餐麵包怪）')).toBeInTheDocument()
     expect(document.querySelector('svg')).toHaveAttribute('data-expression', 'hurt')
     expect(screen.getByRole('img', { name: '0 顆星（滿分 3 顆）' })).toBeInTheDocument()
     expect(screen.getByText(/先求穩再求快/)).toBeInTheDocument()

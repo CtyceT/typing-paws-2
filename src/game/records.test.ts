@@ -18,6 +18,7 @@ import {
 } from './records.ts'
 
 const result = (over: Partial<BattleResult> = {}): BattleResult => ({
+  monsterName: '洗衣大魔王',
   difficulty: 'easy',
   win: true,
   wpm: 40,

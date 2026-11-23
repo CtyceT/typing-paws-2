@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { themeLineup } from '../game/index.ts'
 import { BattleScreen } from './BattleScreen.tsx'
+
+const DAILY = themeLineup('daily')
 
 beforeEach(() => {
   vi.useFakeTimers({
@@ -34,7 +37,7 @@ const startBattle = () => {
 describe('開場與倒數', () => {
   it('先顯示開場訊息，這時打字不算', () => {
     setup()
-    expect(dialog()).toHaveAccessibleName('小 Bug 蟲 出現了！')
+    expect(dialog()).toHaveAccessibleName(`${DAILY[0].name} 出現了！`)
     typeKey(currentWord()[0])
     expect(statValue('準確率')).toBe('100%')
     expect(screen.getByText('60/60')).toBeInTheDocument()
@@ -138,7 +141,7 @@ describe('遊戲迴圈', () => {
     advance(900)
     expect(dialog()).toHaveAccessibleName('第 1 關 CLEAR！')
     expect(dialog()).toHaveTextContent('喵喵恢復 8 HP')
-    expect(dialog()).toHaveTextContent('Typo 幽靈')
+    expect(dialog()).toHaveTextContent(DAILY[1].name)
     pressEnter()
     expect(dialog()).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('3')
@@ -263,7 +266,7 @@ describe('暫停', () => {
   it('開場訊息與倒數中不能暫停', () => {
     setup()
     typeKey('Escape')
-    expect(dialog()).toHaveAccessibleName('小 Bug 蟲 出現了！')
+    expect(dialog()).toHaveAccessibleName(`${DAILY[0].name} 出現了！`)
     pressEnter()
     typeKey('Escape')
     setHidden(true)
@@ -334,7 +337,7 @@ describe('輸入法防呆與 Caps Lock 提醒', () => {
   it('開場訊息時偵測到只提示，不會蓋掉開場訊息', () => {
     setup()
     composing()
-    expect(dialog()).toHaveAccessibleName('小 Bug 蟲 出現了！')
+    expect(dialog()).toHaveAccessibleName(`${DAILY[0].name} 出現了！`)
     expect(warning()).toHaveTextContent('偵測到中文輸入法')
   })
 

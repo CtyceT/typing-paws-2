@@ -2,7 +2,7 @@ import { comboMultiplier, COMBO_STEP, isCrit, wordDamage } from './combo.ts'
 import { CHARGE_PUSHBACK, MISS_PENALTY, PLAYER_MAX_HP, STAGE_HEAL } from './constants.ts'
 import { DIFFICULTIES, type Difficulty } from './difficulty.ts'
 import type { KeyEvent } from './keystats.ts'
-import { MONSTERS, type Monster } from './monsters.ts'
+import { themeLineup, type Monster } from './monsters.ts'
 import { advanceQueue, createQueue, type WordQueue } from './queue.ts'
 import type { Rng } from './rng.ts'
 import { WORDS } from './words.ts'
@@ -30,6 +30,8 @@ export interface BattleState {
   difficulty: Difficulty
   /** 這場用的字庫（內建字庫或 AI 出的題目） */
   words: readonly string[]
+  /** 這場的三關怪物，依出場順序（同一個主題的小怪、小怪、魔王） */
+  monsters: readonly Monster[]
   /** 目前第幾關，從 0 開始 */
   stage: number
   phase: BattlePhase
@@ -87,17 +89,17 @@ export const HP_BONUS = 5
 /** 每點傷害的分數 */
 export const SCORE_PER_DAMAGE = 10
 
-export function currentMonster(state: Pick<BattleState, 'stage'>): Monster {
-  return MONSTERS[state.stage]
+export function currentMonster(state: Pick<BattleState, 'stage' | 'monsters'>): Monster {
+  return state.monsters[state.stage]
 }
 
-export function monsterMaxHp(stage: number, difficulty: Difficulty): number {
-  return Math.round(MONSTERS[stage].hp * DIFFICULTIES[difficulty].hpScale)
+export function monsterMaxHp(monster: Monster, difficulty: Difficulty): number {
+  return Math.round(monster.hp * DIFFICULTIES[difficulty].hpScale)
 }
 
-/** 怪物這一關每次攻擊的傷害 */
-export function monsterAttackDamage(stage: number, difficulty: Difficulty): number {
-  return Math.round(DIFFICULTIES[difficulty].monsterDamage * MONSTERS[stage].damageScale)
+/** 怪物每次攻擊的傷害 */
+export function monsterAttackDamage(monster: Monster, difficulty: Difficulty): number {
+  return Math.round(DIFFICULTIES[difficulty].monsterDamage * monster.damageScale)
 }
 
 /** 過關獎勵分數 */
@@ -113,15 +115,19 @@ export function stageHealAmount(playerHp: number): number {
 export interface CreateBattleOptions {
   /** 自訂字庫；不給就用該難度的內建字庫 */
   words?: readonly string[]
+  /** 這場的三關怪物；不給就用日常主題 */
+  monsters?: readonly Monster[]
   rng?: Rng
 }
 
 export function createBattle(difficulty: Difficulty, options: CreateBattleOptions = {}): BattleState {
   const words = options.words && options.words.length > 0 ? options.words : WORDS[difficulty]
-  const maxHp = monsterMaxHp(0, difficulty)
+  const monsters = options.monsters && options.monsters.length > 0 ? options.monsters : themeLineup('daily')
+  const maxHp = monsterMaxHp(monsters[0], difficulty)
   return {
     difficulty,
     words,
+    monsters,
     stage: 0,
     phase: 'ready',
     paused: false,
@@ -209,7 +215,7 @@ function onChar(s: BattleState, char: string, roll: number): BattleState {
   // 怪物被打倒
   const bonus = stageBonus(s.stage, s.playerHp)
   events.push({ type: 'monsterDefeated', stage: s.stage, bonus })
-  const last = s.stage >= MONSTERS.length - 1
+  const last = s.stage >= s.monsters.length - 1
   if (last) events.push({ type: 'victory' })
   return { ...hit, score: hit.score + bonus, phase: last ? 'won' : 'stageClear' }
 }
@@ -222,7 +228,7 @@ function onTick(s: BattleState, dtMs: number): BattleState {
   if (charge < 1) return { ...ticked, charge, events: [] }
 
   // 蓄力滿了：怪物攻擊
-  const damage = monsterAttackDamage(s.stage, s.difficulty)
+  const damage = monsterAttackDamage(currentMonster(s), s.difficulty)
   const playerHp = Math.max(0, s.playerHp - damage)
   const events: BattleEvent[] = [{ type: 'monsterAttack', damage, comboLost: s.combo }]
   if (playerHp <= 0) events.push({ type: 'playerDefeated' })
@@ -231,7 +237,7 @@ function onTick(s: BattleState, dtMs: number): BattleState {
 
 function onNextStage(s: BattleState, roll: number): BattleState {
   const stage = s.stage + 1
-  const maxHp = monsterMaxHp(stage, s.difficulty)
+  const maxHp = monsterMaxHp(s.monsters[stage], s.difficulty)
   return {
     ...s,
     stage,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createBattle, type BattleState } from './battle.ts'
+import { themeLineup } from './monsters.ts'
 import { battleResult, resultComment, resultStats, resultSubtitle, resultTitle } from './result.ts'
 
 const ended = (over: Partial<BattleState>): BattleState => ({ ...createBattle('normal'), ...over })
@@ -7,7 +8,7 @@ const ended = (over: Partial<BattleState>): BattleState => ({ ...createBattle('n
 describe('battleResult', () => {
   it('通關：算出各項數據與星等', () => {
     const r = battleResult(ended({ phase: 'won', stage: 2, correct: 200, typed: 208, activeMs: 60000, maxCombo: 33, score: 4321, damage: 300, playerHp: 60 }))
-    expect(r).toEqual({ difficulty: 'normal', win: true, wpm: 40, accuracy: 96.2, maxCombo: 33, score: 4321, damage: 300, durationMs: 60000, stage: 3, stars: 3 })
+    expect(r).toEqual({ difficulty: 'normal', win: true, wpm: 40, accuracy: 96.2, maxCombo: 33, score: 4321, damage: 300, durationMs: 60000, stage: 3, monsterName: themeLineup('daily')[2].name, stars: 3 })
   })
 
   it('星等：血量不到 50 最多 2 星，準確率不到 85 只有 1 星', () => {
@@ -27,9 +28,9 @@ describe('結算文字', () => {
 
   it('標題與副標', () => {
     expect(resultTitle(win, '喵喵')).toBe('🏆 通關成功！')
-    expect(resultSubtitle(win)).toBe('普通模式 ・ 打倒了 Deadline 龍王！')
+    expect(resultSubtitle(win)).toBe(`普通模式 ・ 打倒了 ${themeLineup('daily')[2].name}！`)
     expect(resultTitle(lost, '熊熊')).toBe('熊熊被打倒了…')
-    expect(resultSubtitle(lost)).toBe('普通模式 ・ 止步於第 2 關（Typo 幽靈）')
+    expect(resultSubtitle(lost)).toBe(`普通模式 ・ 止步於第 2 關（${themeLineup('daily')[1].name}）`)
   })
 
   it('六項數據', () => {

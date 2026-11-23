@@ -1,6 +1,5 @@
 import type { BattleState } from './battle.ts'
 import { DIFFICULTIES, type Difficulty } from './difficulty.ts'
-import { MONSTERS } from './monsters.ts'
 import { calcAccuracy, calcStars, calcWpm } from './stats.ts'
 
 /** 一場戰鬥結束後的成績 */
@@ -18,6 +17,8 @@ export interface BattleResult {
   durationMs: number
   /** 打到第幾關（從 1 開始；通關是最後一關） */
   stage: number
+  /** 最後一關（打倒或被打倒時）的怪物名字，結算畫面的副標題用；不存進紀錄 */
+  monsterName: string
   stars: 0 | 1 | 2 | 3
 }
 
@@ -35,6 +36,7 @@ export function battleResult(state: BattleState): BattleResult {
     damage: state.damage,
     durationMs: state.activeMs,
     stage: state.stage + 1,
+    monsterName: state.monsters[state.stage].name,
     stars: calcStars(win, accuracy, state.playerHp),
   }
 }
@@ -45,8 +47,7 @@ export function resultTitle(result: BattleResult, heroName: string): string {
 
 export function resultSubtitle(result: BattleResult): string {
   const label = DIFFICULTIES[result.difficulty].label
-  const monster = MONSTERS[result.stage - 1]
-  return result.win ? `${label}模式 ・ 打倒了 ${monster.name}！` : `${label}模式 ・ 止步於第 ${result.stage} 關（${monster.name}）`
+  return result.win ? `${label}模式 ・ 打倒了 ${result.monsterName}！` : `${label}模式 ・ 止步於第 ${result.stage} 關（${result.monsterName}）`
 }
 
 /** 結算畫面的六項數據，依顯示順序 */

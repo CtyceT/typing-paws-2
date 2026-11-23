@@ -3,7 +3,7 @@ import { addResult, EMPTY_RECORDS, type BattleResult } from '../game/index.ts'
 import { clearRecords, loadRecords, saveRecords } from './records.ts'
 
 const LEGACY_KEY = 'typingPaws.v1'
-const result: BattleResult = { difficulty: 'easy', win: true, wpm: 40, accuracy: 95, maxCombo: 20, score: 3000, damage: 290, durationMs: 60000, stage: 3, stars: 3 }
+const result: BattleResult = { difficulty: 'easy', win: true, wpm: 40, accuracy: 95, maxCombo: 20, score: 3000, damage: 290, durationMs: 60000, stage: 3, monsterName: '洗衣大魔王', stars: 3 }
 const sample = addResult(EMPTY_RECORDS, result, { id: 'a', playedAt: 1790000000000 })
 
 beforeEach(() => localStorage.clear())

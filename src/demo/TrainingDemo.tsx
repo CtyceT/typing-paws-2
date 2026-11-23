@@ -14,7 +14,7 @@ const READY: TrainingPlan = { status: 'ready', relative: false, targets: TARGETS
 const HARD: TrainingPlan = { status: 'ready', relative: false, targets: [{ kind: 'char', key: ';', errorRate: 0.5, attempts: 12 }, ...TARGETS.slice(0, 2)] }
 const PLANS: Record<Difficulty, TrainingPlan> = { easy: READY, normal: READY, hard: HARD }
 const NOT_ENOUGH: TrainingPlan = { status: 'insufficient', totalAttempts: 42, needed: 100 }
-const RESULT: BattleResult = { difficulty: 'normal', win: true, wpm: 48, accuracy: 94.2, maxCombo: 31, score: 4380, damage: 464, durationMs: 91200, stage: 3, stars: 2 }
+const RESULT: BattleResult = { difficulty: 'normal', win: true, wpm: 48, accuracy: 94.2, maxCombo: 31, score: 4380, damage: 464, durationMs: 91200, stage: 3, monsterName: '洗衣大魔王', stars: 2 }
 const never = new Promise<never>(() => {})
 const noop = () => {}
 
