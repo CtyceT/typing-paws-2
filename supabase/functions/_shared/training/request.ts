@@ -9,8 +9,13 @@ export type TrainingTheme = (typeof TRAINING_THEMES)[number]
 
 /** 一次請求最多送幾個弱點（只送最弱的幾個：題目比較集中，快取也比較容易命中） */
 export const MAX_TARGETS = 3
-/** 請 LLM 生成幾題；回傳給前端的題數上限也是這個數 */
+/** 所有難度裡最多的題數（prompt v1 固定要求這個數，v1 不再改動） */
 export const TARGET_ITEM_COUNT = 30
+/**
+ * 各難度請 LLM 生成幾題；回傳給前端的題數上限也是這個數（D80）。
+ * 簡單難度是 3～6 個字母的短單字，選擇少，要 30 題時容易大量重複，所以只要 20 題。
+ */
+export const ITEM_COUNT: Readonly<Record<TrainingDifficulty, number>> = { easy: 20, normal: TARGET_ITEM_COUNT, hard: TARGET_ITEM_COUNT }
 /** 驗證後至少要剩幾題才算合格。簡單難度配上 q、z、x 這類字母時真實單字不多，門檻比較低 */
 export const MIN_ITEMS: Readonly<Record<TrainingDifficulty, number>> = { easy: 10, normal: 15, hard: 15 }
 /** 每一題的長度（字元數）。簡單、普通是一個小寫單字；困難是片語，另外限制最多 4 個字 */

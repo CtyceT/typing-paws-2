@@ -5,6 +5,17 @@ import type { TrainingTheme } from './request.ts'
 
 const words = (s: string): ReadonlySet<string> => new Set(s.trim().split(/\s+/))
 
+/**
+ * 全主題通用的放行清單（D73 之後補的，2026-11-23）：
+ * 1. 星期與月份：字表的來源字典把它們當專有名詞（大寫開頭），所以全部不在常用字表上。
+ * 2. 評估中被誤判為冷僻字的正常字。
+ */
+export const EXTRA_WORDS: ReadonlySet<string> = words(`
+  monday tuesday wednesday thursday friday saturday sunday
+  january february march april may june july august september october november december
+  pixel kayak thicken javelin ember thunderous southward xylophone zany zippy doze max theorem jovial syntax inlet
+`)
+
 export const THEME_WORDS: Readonly<Record<TrainingTheme, ReadonlySet<string>>> = {
   space: words(`
     space planet star moon sun orbit comet galaxy nebula asteroid meteor meteorite rocket astronaut alien satellite

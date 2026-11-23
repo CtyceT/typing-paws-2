@@ -263,4 +263,16 @@ select source, count(*) from public.ai_usage group by 1;
 - **Groq 偶爾大量重複**：11-23 的簡單 `in` `th` 案例 30 題裡 23 題重複，只剩 6 題合格，是 Groq 唯一沒過的案例（換 Gemini 也是 503）。
 - **`supabase functions deploy` 在代理模式會要求確認**：加 `--yes` 才會真的部署。
 
+**11-23 結案的修改**（D80～D82，沒有重跑評估）
+- 全主題通用的放行清單：19 個星期、月份，加上評估中被誤殺的 16 個字。
+- 簡單難度只要 20 題（prompt 與驗證上限），普通、困難維持 30 題。
+- 供應商的錯誤代號（例如 Groq 的 `json_validate_failed`）存進 `ai_usage.attempts` 的 `error_code`。
+- prompt 到 v2 為止，不再迭代；階段 10 玩家自訂怪物移到「課程結束後」。
+
 **實機驗證**：同「階段 4」的 1～6 步；第 3 步在 `ai_usage` 應該看到 `source` 是 `groq`、`prompt_version` 是 `v2`。
+選簡單難度時 AI 題目最多 20 題。之後如果 Groq 失敗，可以用這個查詢看錯誤代號：
+```sql
+select created_at, a ->> 'provider' as provider, a ->> 'reason' as reason, a ->> 'error_code' as error_code
+from public.ai_usage, jsonb_array_elements(attempts) a
+where a ->> 'error_code' is not null order by created_at desc;
+```

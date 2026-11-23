@@ -1,5 +1,5 @@
 // LLM 輸出驗證（ROADMAP 4.5）：JSON 格式、只允許可列印 ASCII、長度限制、不當用字過濾、每題都要含弱點鍵、（選用）常用字檢查。
-import { HARD_MAX_WORDS, ITEM_LENGTH, MIN_ITEMS, TARGET_ITEM_COUNT, type TrainingRequest, type TrainingTheme } from './request.ts'
+import { HARD_MAX_WORDS, ITEM_COUNT, ITEM_LENGTH, MIN_ITEMS, type TrainingRequest, type TrainingTheme } from './request.ts'
 
 /** 單一題目不合格的原因 */
 export type RejectReason = 'not_string' | 'not_ascii' | 'bad_chars' | 'length' | 'banned_word' | 'missing_target' | 'rare_word' | 'duplicate'
@@ -18,7 +18,7 @@ export type OutputError = 'invalid_json' | 'bad_shape' | 'too_few'
 export interface ValidationResult {
   /** 合格題數有沒有達到這個難度的門檻 */
   ok: boolean
-  /** 合格的題目（最多 TARGET_ITEM_COUNT 題） */
+  /** 合格的題目（最多 ITEM_COUNT[難度] 題） */
   items: string[]
   /** LLM 原本給了幾題 */
   rawCount: number
@@ -81,7 +81,7 @@ export function checkItem(
   return { item }
 }
 
-/** 檢查一串題目：不合格與重複的丟掉，合格的最多留 TARGET_ITEM_COUNT 題 */
+/** 檢查一串題目：不合格與重複的丟掉，合格的最多留 ITEM_COUNT[難度] 題 */
 export function validateItems(values: readonly unknown[], req: TrainingRequest, options: ValidateOptions = {}): ValidationResult {
   const items: string[] = []
   const seen = new Set<string>()
@@ -97,7 +97,7 @@ export function validateItems(values: readonly unknown[], req: TrainingRequest, 
     else if (seen.has(checked.item.toLowerCase())) reject('duplicate')
     else {
       seen.add(checked.item.toLowerCase())
-      if (items.length < TARGET_ITEM_COUNT) items.push(checked.item)
+      if (items.length < ITEM_COUNT[req.difficulty]) items.push(checked.item)
     }
   }
   const ok = items.length >= MIN_ITEMS[req.difficulty]

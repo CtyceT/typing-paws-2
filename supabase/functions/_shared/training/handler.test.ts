@@ -102,6 +102,13 @@ describe('生成與備援（4.6）', () => {
     await handler(post(NORMAL_REQUEST))
     expect(JSON.stringify(state.usage[0].result)).not.toContain('raw provider error body')
   })
+
+  it('供應商的錯誤代號會存進用量紀錄（D82），被判冷僻字的字不會', async () => {
+    const { handler, state } = setup({ groq: [{ ok: false, error: 'http_400', detail: '{"error":{"code":"json_validate_failed"}}', code: 'json_validate_failed' }] })
+    await handler(post(NORMAL_REQUEST))
+    expect(state.usage[0].result?.attempts).toMatchObject([{ provider: 'groq', reason: 'http_400', error_code: 'json_validate_failed' }, { provider: 'gemini', ok: true }])
+    expect(JSON.stringify(state.usage[0].result)).not.toContain('rare_words')
+  })
 })
 
 describe('每日上限（4.3）', () => {

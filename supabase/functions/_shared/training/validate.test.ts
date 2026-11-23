@@ -75,6 +75,13 @@ describe('常用字檢查（rare_word）', () => {
     expect(checkItem('zzzqq', normal, common)).toEqual({ reason: 'rare_word', rareWords: ['zzzqq'] })
   })
 
+  it('全主題通用的放行清單：星期、月份和評估中被誤殺的字，每個主題都算', () => {
+    for (const word of ['monday', 'thursday', 'january', 'december', 'mondays', 'pixel', 'pixels', 'kayak', 'theorems', 'xylophone', 'zany', 'max', 'inlet']) {
+      expect(isCommonWord(word), word).toBe(true)
+    }
+    expect(checkItem('Quiz on Thursday', { ...hard, weaknesses: ['th'] }, common)).toEqual({ item: 'Quiz on Thursday' })
+  })
+
   it('主題字白名單：只在該主題不受常用字限制，複數等變化也算', () => {
     expect(checkItem('zenith', normal, common)).toEqual({ item: 'zenith' })
     expect(checkItem('quasars', normal, common)).toEqual({ item: 'quasars' })
@@ -152,6 +159,13 @@ describe('validateTrainingOutput', () => {
     const words = ['zoo', 'quiz', 'zip', 'zero', 'zone', 'quit', 'zap', 'zest', 'quad', 'maze']
     expect(validateTrainingOutput(out(words), easy).ok).toBe(true)
     expect(validateTrainingOutput(out(words.slice(0, 9)), easy)).toMatchObject({ ok: false, error: 'too_few' })
+  })
+
+  it('簡單難度最多留 20 題（D80）', () => {
+    const many = ['zoo', 'quiz', 'zip', 'zero', 'zone', 'quit', 'zap', 'zest', 'quad', 'maze', 'size', 'lazy', 'haze', 'doze', 'quiet', 'quite', 'quote', 'queen', 'zebra', 'prize', 'froze', 'squid', 'aqua', 'fuzz', 'jazz']
+    const r = validateItems(many, easy)
+    expect(r.rawCount).toBe(25)
+    expect(r.items).toHaveLength(20)
   })
 
   it('最多留 30 題', () => {

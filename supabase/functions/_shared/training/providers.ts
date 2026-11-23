@@ -3,8 +3,28 @@ import type { BuiltPrompt } from './prompts/index.ts'
 
 export type ProviderName = 'gemini' | 'groq'
 
-/** 呼叫結果：成功是模型輸出的文字；失敗是原因代號（http_429、http_500、timeout、network、empty…） */
-export type ProviderResult = { ok: true; text: string } | { ok: false; error: string; detail?: string }
+/**
+ * 呼叫結果：成功是模型輸出的文字；失敗是原因代號（http_429、http_500、timeout、network、empty…）。
+ * code 是供應商錯誤內容裡的錯誤代號（例如 Groq 的 json_validate_failed、Gemini 的 UNAVAILABLE），會存進 ai_usage（D82）。
+ */
+export type ProviderResult = { ok: true; text: string } | { ok: false; error: string; detail?: string; code?: string }
+
+/**
+ * 從錯誤回應取出供應商的錯誤代號：OpenAI 相容格式（Groq）是 error.code 或 error.type，Gemini 是 error.status。
+ * 只接受 1～64 個英數、底線、點、連字號，其他一律不收，避免把任意文字存進資料庫。
+ */
+export function providerErrorCode(body: string): string | undefined {
+  let error: unknown
+  try {
+    error = (JSON.parse(body) as { error?: unknown } | null)?.error
+  } catch {
+    return undefined
+  }
+  if (!error || typeof error !== 'object') return undefined
+  const { code, type, status } = error as Record<string, unknown>
+  const pick = [code, type, status].find((v) => typeof v === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(v))
+  return pick as string | undefined
+}
 
 export interface LlmProvider {
   name: ProviderName
@@ -29,8 +49,9 @@ async function post(fetchFn: Fetch, url: string, headers: Record<string, string>
   }
   if (!response.ok) {
     // detail 只給本機的測試腳本看，不會存進資料庫或回給前端
-    const detail = await response.text().then((t) => t.slice(0, 300), () => '')
-    return { ok: false, error: `http_${response.status}`, detail }
+    const body = await response.text().catch(() => '')
+    const code = providerErrorCode(body)
+    return { ok: false, error: `http_${response.status}`, detail: body.slice(0, 300), ...(code && { code }) }
   }
   try {
     const text = pick(await response.json())

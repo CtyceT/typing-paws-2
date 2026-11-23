@@ -25,6 +25,8 @@ export interface Attempt {
   rejects: Partial<Record<RejectReason, number>>
   /** 供應商回傳的錯誤內容（只在本機腳本顯示，寫進資料庫前會拿掉） */
   detail?: string
+  /** 供應商的錯誤代號（例如 json_validate_failed），只在 HTTP 錯誤時有；會存進資料庫（D82） */
+  error_code?: string
   /** 被判為冷僻字的字（評估腳本用來檢查誤殺，寫進資料庫前會拿掉） */
   rare_words?: string[]
 }
@@ -62,7 +64,7 @@ export async function attemptGeneration(req: TrainingRequest, provider: LlmProvi
     result = { ok: false as const, error: 'network' }
   }
   const latency_ms = Math.max(0, Math.round(now() - started))
-  if (!result.ok) return { ...base, ok: false, latency_ms, raw_count: 0, valid_count: 0, reason: result.error, rejects: {}, detail: result.detail, items: [] }
+  if (!result.ok) return { ...base, ok: false, latency_ms, raw_count: 0, valid_count: 0, reason: result.error, rejects: {}, detail: result.detail, ...(result.code && { error_code: result.code }), items: [] }
   const v = validateTrainingOutput(result.text, req, options.validation ?? SERVER_VALIDATION)
   return { ...base, ok: v.ok, latency_ms, raw_count: v.rawCount, valid_count: v.validCount, reason: v.topReason, rejects: v.rejects, rare_words: v.rareWords, items: v.ok ? v.items : [] }
 }

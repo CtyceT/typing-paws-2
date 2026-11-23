@@ -2,7 +2,7 @@
 // 這個檔案會載入約 160 kB 的字表，只給 Edge Function 和本機腳本用；前端的驗證不做這一項（題目已經在 Edge Function 檢查過）。
 import { COMMON_WORDS } from './common-words.ts'
 import type { TrainingTheme } from './request.ts'
-import { THEME_WORDS } from './theme-words.ts'
+import { EXTRA_WORDS, THEME_WORDS } from './theme-words.ts'
 
 /** 常見的縮寫（字表裡只有純字母的字，所以另外列） */
 const CONTRACTIONS: ReadonlySet<string> = new Set(
@@ -19,7 +19,7 @@ const undouble = (stem: string) => (stem.length >= 3 && stem.at(-1) === stem.at(
 /**
  * 是不是常用字。字表上有就算；另外接受常用字的規則變化（複數、過去式、進行式、比較級、-ly）和常見的縮寫、所有格，
  * 這樣 "castles"、"jumped"、"Beth's" 不會因為字表剛好沒收而被當成冷僻字。
- * 有給 theme 的話，該主題的白名單（theme-words.ts）也算，同樣接受規則變化。
+ * 全主題通用的放行清單（EXTRA_WORDS）一律算；有給 theme 的話，該主題的白名單（THEME_WORDS）也算。兩者同樣接受規則變化。
  * word 要先轉成小寫，只含字母與撇號。
  */
 export function isCommonWord(word: string, theme?: TrainingTheme): boolean {
@@ -29,7 +29,7 @@ export function isCommonWord(word: string, theme?: TrainingTheme): boolean {
     return word.endsWith("'s") ? isCommonWord(word.slice(0, -2), theme) : false
   }
   const themeWords = theme ? THEME_WORDS[theme] : undefined
-  const has = (w: string) => w.length >= 2 && (COMMON_WORDS.has(w) || themeWords?.has(w) === true)
+  const has = (w: string) => w.length >= 2 && (COMMON_WORDS.has(w) || EXTRA_WORDS.has(w) || themeWords?.has(w) === true)
   if (has(word)) return true
   const tries: string[] = []
   const strip = (suffix: string, ...endings: string[]) => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { TrainingRequest } from '../request.ts'
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION, PROMPTS } from './index.ts'
 
 describe('buildTrainingPrompt', () => {
@@ -20,6 +21,13 @@ describe('buildTrainingPrompt', () => {
     expect(prompt.user).toContain('5 to 8 letters')
     expect(prompt.user).toContain('space adventure')
     expect(prompt.user).toContain('Write 30 practice items')
+  })
+
+  it('簡單難度只要 20 題（v2 起，D80）；v1 維持 30 題', () => {
+    const req: TrainingRequest = { difficulty: 'easy', theme: 'daily', weaknesses: ['q'] }
+    expect(buildTrainingPrompt(req, 'v2').user).toContain('Write 20 practice items')
+    expect(buildTrainingPrompt(req, 'v1').user).toContain('Write 30 practice items')
+    expect(buildTrainingPrompt({ ...req, difficulty: 'hard' }, 'v2').user).toContain('Write 30 practice items')
   })
 
   it('每題都要含目標，罕見字母可以少一點（不再要求每個目標至少 8 題）', () => {

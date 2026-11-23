@@ -379,7 +379,7 @@
 - 理由：戰鬥的字庫本來就是「一個難度一串題目」，困難難度的片語就是句子。
 - 各難度的規則：簡單 3～6 個小寫字母（比經典闖關的 3～5 寬，否則 q、z、x 湊不到足夠的真實單字）、普通 5～8 個小寫字母、
   困難是 1～4 個字、6～24 個字元的片語（prompt 要求 2～4 個字、8～24 個字元，驗證放寬一點）。
-- 合格門檻：簡單 10 題、普通與困難 15 題；最多回傳 30 題。
+- 合格門檻：簡單 10 題、普通與困難 15 題；最多回傳 30 題（簡單難度 11-23 改成 20 題，見 D80）。
 
 **D64. 驗證規則（Edge Function 和前端各驗一次）。**
 - 不合格原因：`not_string`、`not_ascii`、`bad_chars`、`length`、`banned_word`、`missing_target`、`duplicate`；
@@ -442,7 +442,9 @@
   - 日常：breakfast lunch dinner kitchen bedroom bathroom shower toothbrush toothpaste pillow blanket sofa couch laundry grocery market sandwich cereal juice coffee tea pizza noodle bicycle bus subway umbrella jacket sweater sneakers wallet phone laptop keyboard weekend neighbor picnic puppy kitten garden vacuum fridge microwave napkin yogurt pancake cookie chores alarm mailbox
   - 實際效果有限：上面的字絕大多數本來就在常用字表上，真正多放行的只有 12 個（starship jupiter saturn venus neptune uranus pluto quasar pulsar zenith enchant whiteboard）。
 - 11-23 評估被擋的字裡，有一部分是誤殺（正常、國中生看得懂的字）：pixel、kayak、thicken、javelin、ember、thunderous、southward、xylophone、zany、zippy、doze、max、theorem、thursday。
-  其中 thursday 是系統性的漏洞：SCOWL 把星期、月份當專有名詞（大寫開頭），所以全部不在表上。要不要補、補哪些，等專案負責人決定。
+  其中 thursday 是系統性的漏洞：SCOWL 把星期、月份當專有名詞（大寫開頭），所以全部不在表上。
+- **全主題通用的放行清單**（`theme-words.ts` 的 `EXTRA_WORDS`，11-23 由專案負責人決定）：7 個星期、12 個月份，加上上面 16 個誤殺的字（thursday 已在星期裡）。
+  每個主題都適用，也接受規則變化（mondays、theorems）。主題字白名單維持初版不再改。
 
 **D74. 被判冷僻字的字（`rare_words`）和 HTTP 錯誤的回應內容（`detail`）只給評估腳本用，不存進資料庫。**
 - `attemptGeneration` 會回傳這兩項，`try-llm.mjs --eval` 把它們寫進 `docs/llm-eval.json`，報告裡列出「被判為冷僻字的字」和「呼叫失敗的回應內容」。
@@ -451,6 +453,7 @@
 **D75. Groq 的 HTTP 400 先不加「同一家重試一次」。**
 - v1＋常用字那一輪出現過 3 次，但當時沒有存回應內容。11-23 重跑時 Groq 12 次都成功，沒有重現，所以不知道是不是 JSON 輸出失敗。
 - 依專案負責人的條件（「如果是 JSON 輸出失敗才加重試」），原因沒有確認前不加。現在 Groq 失敗會直接換 Gemini，遊戲不會卡住。
+- 為了之後在線上抓到原因，錯誤代號改成會存進資料庫，見 D82。
 
 ---
 
@@ -472,5 +475,25 @@
 - 理由：圖片生成是課程實作的內容，由本人操作才能在報告裡說明；挑圖、修圖也需要人的判斷。
 - 這取代了 ROADMAP「待決定」裡的「text-to-image 用哪個模型或服務」。
 
-**D79. 每日挑戰排行榜（階段 8）和雙人即時對戰（階段 9）移到「課程結束後」，不在這次範圍內。**
-- 理由：兩個都需要多人同時測試（排行榜要有人上榜、對戰要兩個人），12/14 前很難測完整，而且和「生成式 AI」主題的關係較遠。
+**D79. 每日挑戰排行榜（階段 8）、雙人即時對戰（階段 9）和玩家自訂怪物（階段 10，11-23 補上）移到「課程結束後」，不在這次範圍內。**
+- 理由：排行榜和對戰都需要多人同時測試（排行榜要有人上榜、對戰要兩個人），12/14 前很難測完整，而且和「生成式 AI」主題的關係較遠。
+- 玩家自訂怪物要即時呼叫圖像生成 API（費用、內容過濾、次數上限都要另外處理），而 AI 怪物（階段 6）已經能展示圖像生成。
+
+---
+
+# 階段 4 結案（2026-11-23 由專案負責人決定）
+
+**D80. 簡單難度的題數從 30 改成 20。**
+- 理由：3～6 個字母的短單字選擇少，要 30 題時容易大量重複（11-23 評估 Groq 的簡單 `in` `th` 30 題裡 23 題重複）。
+- `request.ts` 的 `ITEM_COUNT` 是各難度的題數，prompt v2 要求這個數，驗證後最多也只留這個數。普通、困難維持 30 題，合格門檻不變（簡單 10 題）。
+- prompt v1 不改，仍然要求 30 題（`TARGET_ITEM_COUNT`）。快取裡舊的簡單難度題目驗證時會截成 20 題，不用清快取。
+
+**D81. prompt 的調整到 v2 為止，之後不再迭代。**
+- 理由：剩下的時間留給 AI 怪物和故事模式（D77）。v2 加上常用字檢查和放行清單已經夠用，Groq 主力的案例合格率是 11～12/12。
+- 這次 v2 的修改（簡單 20 題、放行清單）沒有重跑評估，`docs/llm-eval.md` 最後一次的數字是 11-23 修改前的。
+
+**D82. 供應商的錯誤代號存進 `ai_usage.attempts` 的 `error_code`。**
+- 從錯誤回應的 JSON 取出：OpenAI 相容格式（Groq）是 `error.code` 或 `error.type`，Gemini 是 `error.status`。
+  只接受 1～64 個英數、底線、點、連字號，其他一律不收，所以不會把任意文字存進資料庫。
+- `attempts` 本來就是 JSON 欄位，不需要新的 migration。完整的錯誤內容（`detail`）和冷僻字清單（`rare_words`）仍然不存（D74）。
+- 用途：之後 Groq 再出現 400 時，在 SQL Editor 查 `attempts` 就看得到是不是 `json_validate_failed`。

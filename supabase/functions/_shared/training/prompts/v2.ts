@@ -1,8 +1,10 @@
 // 弱點特訓出題 prompt，版本 v2（2026-11-16）。和 v1 的差別：
 // 1. 要求用國中生認得的常用字（v1 偶爾出現 quoth、thymus 這類冷僻字；驗證也同時加了常用字檢查）。
 // 2. 困難難度再強調長度限制，並給範例（v1 配數字、符號的弱點時，Gemini 的題目常常超過 24 個字元）。
+// 3. 簡單難度只要 20 題（2026-11-23 加，D80）：短單字選擇少，30 題時容易重複。
+// v2 是最後一版 prompt（D81），之後不再迭代。
 // v1 留在 v1.ts 不要改，`node scripts/try-llm.mjs --eval --prompt v1` 可以重跑來比較。
-import { ITEM_LENGTH, HARD_MAX_WORDS, TARGET_ITEM_COUNT, type TrainingDifficulty, type TrainingRequest, type TrainingTheme } from '../request.ts'
+import { ITEM_COUNT, ITEM_LENGTH, HARD_MAX_WORDS, type TrainingDifficulty, type TrainingRequest, type TrainingTheme } from '../request.ts'
 import type { PromptTemplate } from './index.ts'
 
 const SYSTEM = [
@@ -33,7 +35,7 @@ const DIFFICULTY: Readonly<Record<TrainingDifficulty, string[]>> = {
 function user(req: TrainingRequest): string {
   const targets = req.weaknesses.map((w) => JSON.stringify(w)).join(', ')
   return [
-    `Write ${TARGET_ITEM_COUNT} practice items for a typing drill.`,
+    `Write ${ITEM_COUNT[req.difficulty]} practice items for a typing drill.`,
     '',
     `Target keys: ${targets}`,
     '- EVERY item must contain at least one target key.',

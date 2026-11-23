@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generateTraining } from './generate.ts'
-import { buildProviders, geminiProvider, groqProvider } from './providers.ts'
+import { buildProviders, geminiProvider, groqProvider, providerErrorCode } from './providers.ts'
 import { buildTrainingPrompt, CURRENT_PROMPT_VERSION } from './prompts/index.ts'
 import { fakeProvider, GOOD_NORMAL, NORMAL_REQUEST } from './testing.ts'
 
@@ -106,6 +106,17 @@ describe('供應商的請求格式', () => {
     expect(body.model).toBe('openai/gpt-oss-120b')
     expect(body.messages.map((m: { role: string }) => m.role)).toEqual(['system', 'user'])
     expect(body.response_format.json_schema.strict).toBe(true)
+  })
+
+  it('HTTP 錯誤時取出供應商的錯誤代號（Groq 是 error.code，Gemini 是 error.status），不合格式的不收', async () => {
+    const groq400 = { error: { message: 'Failed to generate JSON', type: 'invalid_request_error', code: 'json_validate_failed' } }
+    expect(await groqProvider('k', capture(json(groq400, 400)).fetchFn).call(prompt, signal)).toMatchObject({ ok: false, error: 'http_400', code: 'json_validate_failed' })
+    expect(await geminiProvider('k', capture(json({ error: { code: 503, status: 'UNAVAILABLE' } }, 503)).fetchFn).call(prompt, signal)).toMatchObject({ code: 'UNAVAILABLE' })
+    expect(providerErrorCode('<html>bad gateway</html>')).toBeUndefined()
+    expect(providerErrorCode(JSON.stringify({ error: { code: 'has spaces and ; stuff' } }))).toBeUndefined()
+    expect(providerErrorCode(JSON.stringify({ error: 'plain string' }))).toBeUndefined()
+    const r = await generateTraining(NORMAL_REQUEST, [groqProvider('k', capture(json(groq400, 400)).fetchFn)])
+    expect(r.attempts[0]).toMatchObject({ reason: 'http_400', error_code: 'json_validate_failed' })
   })
 
   it('HTTP 錯誤、斷線、逾時、空回應各有代號', async () => {
